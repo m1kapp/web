@@ -13,6 +13,8 @@ import {
   AppShell,
 } from "./ui-parts";
 import { countryFlag, deviceIcon, extractDomain } from "@/lib/format";
+import { ShareButton } from "./share-button";
+import { getUnlockedAchievements, getLockedAchievements } from "@/lib/achievements";
 
 interface SiteData {
   slug: string;
@@ -29,7 +31,9 @@ interface SiteData {
   color: string | null;
   badgeStyle: string | null;
   badgeLabel: string | null;
+  badgeEmoji: string | null;
   userId: string | null;
+  todayCount: number;
 }
 
 interface DashboardViewProps {
@@ -94,6 +98,11 @@ export function DashboardView({ data, host, isOwner = false }: DashboardViewProp
 
             <Divider />
 
+            {/* 수집한 뱃지 */}
+            <AchievementSection data={data} />
+
+            <Divider />
+
             {/* 배지 설정 */}
             <Section className="pb-12">
               <BadgeConfigurator
@@ -102,6 +111,8 @@ export function DashboardView({ data, host, isOwner = false }: DashboardViewProp
                 initialColor={data.color || undefined}
                 initialStyle={data.badgeStyle || undefined}
                 initialLabel={data.badgeLabel || undefined}
+                initialEmoji={data.badgeEmoji || undefined}
+                counts={{ total: data.total, weekly: data.weekly, daily: data.todayCount }}
                 isOwner={isOwner}
               />
             </Section>
@@ -162,6 +173,50 @@ function DashboardHeader({
   );
 }
 
+function AchievementSection({ data }: { data: SiteData }) {
+  const counts = { total: data.total, weekly: data.weekly, daily: data.todayCount };
+  const unlocked = getUnlockedAchievements(counts);
+  const locked = getLockedAchievements(counts);
+
+  return (
+    <Section>
+      <h3 className="text-xs font-semibold text-zinc-500 mb-3">
+        수집한 배지 <span className="text-zinc-300 font-normal">{unlocked.length}/{unlocked.length + locked.length}</span>
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {unlocked.map((a) => (
+          <div
+            key={a.name}
+            className="flex items-center gap-1 rounded-full bg-zinc-50 px-2.5 py-1 group relative"
+          >
+            <span className="text-sm">{a.icon}</span>
+            <span className="text-[10px] font-medium text-zinc-700">{a.name}</span>
+            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
+              <div className="bg-zinc-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap">
+                {a.condition}
+              </div>
+            </div>
+          </div>
+        ))}
+        {locked.slice(0, 3).map((a) => (
+          <div
+            key={a.name}
+            className="flex items-center gap-1 rounded-full bg-zinc-50 px-2.5 py-1 opacity-30"
+          >
+            <span className="text-sm grayscale">{a.icon}</span>
+            <span className="text-[10px] font-medium text-zinc-400">{a.name}</span>
+          </div>
+        ))}
+        {locked.length > 3 && (
+          <div className="flex items-center rounded-full bg-zinc-50 px-2.5 py-1 opacity-30">
+            <span className="text-[10px] text-zinc-400">+{locked.length - 3}</span>
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 function SiteHero({ data }: { data: SiteData }) {
   const { accent } = useAccent();
   const progress = Math.min(data.total / 1000, 1);
@@ -172,7 +227,6 @@ function SiteHero({ data }: { data: SiteData }) {
     <Section className="pt-6 pb-2">
       {/* 사이트 정보 */}
       <div className="flex items-center gap-3 mb-5">
-        {/* OG 이미지 or 컬러 아이콘 */}
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
           style={{ backgroundColor: data.color || accent }}
@@ -182,13 +236,15 @@ function SiteHero({ data }: { data: SiteData }) {
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-bold text-zinc-900 dark:text-white truncate">
+          <h1 className="text-lg font-bold text-zinc-900 truncate">
             {displayName}
           </h1>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">
+          <p className="text-xs text-zinc-400 truncate">
             {data.slug}
           </p>
         </div>
+        {/* 공유 */}
+        <ShareButton slug={data.slug} title={displayName} />
       </div>
 
       {/* 숫자 + 게이지바 */}
@@ -200,9 +256,21 @@ function SiteHero({ data }: { data: SiteData }) {
             </span>
             <span className="text-sm text-zinc-300 dark:text-zinc-600 font-medium">/ 1K</span>
           </div>
-          <span className="text-xs tabular-nums text-zinc-400 dark:text-zinc-500 font-medium">
-            {percentage}%
-          </span>
+          <div className="flex items-center gap-1.5">
+            {data.total >= 1000 && (
+              <span className="text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full" style={{ backgroundColor: accent }}>
+                1K 달성!
+              </span>
+            )}
+            {data.total >= 500 && data.total < 1000 && (
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-500">
+                500 돌파
+              </span>
+            )}
+            <span className="text-xs tabular-nums text-zinc-400 font-medium">
+              {percentage}%
+            </span>
+          </div>
         </div>
         <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
           <div

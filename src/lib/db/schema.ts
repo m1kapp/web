@@ -9,6 +9,7 @@ export const sites = pgTable("sites", {
   color: text("color").default("#ec4899"),
   badgeStyle: text("badge_style").default("flat"),
   badgeLabel: text("badge_label").default("m1k"),
+  badgeEmoji: text("badge_emoji"),
   ogTitle: text("og_title"),
   ogDescription: text("og_description"),
   ogImage: text("og_image"),

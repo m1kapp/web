@@ -31,7 +31,7 @@ export default function Home() {
   const [recentSites, setRecentSites] = useState<RecentSite[]>([]);
   const [mySites, setMySites] = useState<RecentSite[]>([]);
   const [bgColor, setBgColor] = useState("#0f172a");
-  const [tab, setTab] = useState<"home" | "store" | "my">("home");
+  const [tab, setTab] = useState<"home" | "store" | "badge" | "my">("home");
   const router = useRouter();
   const { isSignedIn } = useUser();
 
@@ -155,6 +155,8 @@ export default function Home() {
                 setRecentSites(await res.json());
               }}
             />
+          ) : tab === "badge" ? (
+            <BadgeWorldTab bgColor={bgColor} />
           ) : (
             <MyTab sites={mySites} isSignedIn={!!isSignedIn} bgColor={bgColor} />
           )}
@@ -185,6 +187,18 @@ export default function Home() {
                 <rect x="14" y="3" width="7" height="7" rx="1" />
                 <rect x="3" y="14" width="7" height="7" rx="1" />
                 <rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+            }
+          />
+          <TabButton
+            active={tab === "badge"}
+            onClick={() => setTab("badge")}
+            activeColor={bgColor}
+            label="배지 월드"
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "badge" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.77 4 4 0 0 1 0 6.76 4 4 0 0 1-4.78 4.77 4 4 0 0 1-6.74 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                <path d="m9 12 2 2 4-4" />
               </svg>
             }
           />
@@ -226,23 +240,35 @@ function HomeTab({
   return (
     <>
       {/* 히어로 */}
-      <div className="px-4 pt-10 pb-8 text-center">
-        <div className="mb-5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/badge/m1k.vercel.app.svg?view=true"
-            alt="m1k hits"
-            className="inline-block"
-          />
-        </div>
-
-        <h1 className="text-6xl font-black tracking-tighter text-zinc-900 mb-2">
+      <div className="px-4 pt-8 pb-6 text-center">
+        <h1 className="text-5xl font-black tracking-tighter text-zinc-900 mb-1">
           m1k
         </h1>
-        <p className="text-zinc-400 text-sm mb-8">
+        <p className="text-zinc-500 text-sm mb-6">
           나는 1K를 만들거야!
         </p>
 
+        {/* 3스텝 온보딩 */}
+        <div className="flex gap-3 mb-6">
+          {[
+            { step: "1", title: "주소 입력", desc: "사이트 URL만" },
+            { step: "2", title: "배지 달기", desc: "코드 복사 붙여넣기" },
+            { step: "3", title: "1K 달성", desc: "방문자 추적 시작" },
+          ].map((s) => (
+            <div key={s.step} className="flex-1 rounded-xl bg-zinc-50 py-3 px-2">
+              <div
+                className="w-6 h-6 rounded-full mx-auto mb-1.5 flex items-center justify-center text-[10px] font-bold text-white"
+                style={{ backgroundColor: bgColor }}
+              >
+                {s.step}
+              </div>
+              <p className="text-[11px] font-semibold text-zinc-700">{s.title}</p>
+              <p className="text-[9px] text-zinc-400">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* 입력 폼 */}
         <form onSubmit={onSubmit} className="space-y-2.5">
           <div className="flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-3.5 focus-within:border-zinc-400 transition-colors">
             <span className="text-zinc-300 text-sm shrink-0">https://</span>
@@ -267,18 +293,6 @@ function HomeTab({
             {loading ? "시작하는 중..." : "시작하기"}
           </button>
         </form>
-
-        <div className="mt-5 flex justify-center gap-2 flex-wrap">
-          {["배지 임베드", "국가 분석", "디바이스", "리퍼러"].map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] font-medium rounded-full px-2.5 py-0.5"
-              style={{ color: bgColor, backgroundColor: `${bgColor}12` }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
       </div>
 
       {/* 최근 등록 */}
@@ -503,6 +517,108 @@ function MyTab({
       ) : (
         <EmptyState message="아직 등록한 사이트가 없어요" />
       )}
+    </div>
+  );
+}
+
+// ── 배지 월드 — 달성 뱃지 시스템 ──
+const ACHIEVEMENT_BADGES = [
+  {
+    category: "누적 달성",
+    desc: "전체 방문수 기준",
+    items: [
+      { icon: "🌱", name: "새싹", condition: "첫 방문자", threshold: 1 },
+      { icon: "🐣", name: "병아리", condition: "누적 10명", threshold: 10 },
+      { icon: "🔥", name: "불꽃", condition: "누적 50명", threshold: 50 },
+      { icon: "⭐", name: "스타", condition: "누적 100명", threshold: 100 },
+      { icon: "👑", name: "왕관", condition: "누적 250명", threshold: 250 },
+      { icon: "💎", name: "다이아", condition: "누적 500명", threshold: 500 },
+      { icon: "🏆", name: "트로피", condition: "누적 750명", threshold: 750 },
+      { icon: "🚀", name: "로켓", condition: "1K 달성!", threshold: 1000 },
+    ],
+  },
+  {
+    category: "주간 달성",
+    desc: "이번 주 방문수 기준",
+    items: [
+      { icon: "🐢", name: "거북이", condition: "주간 1명", threshold: 1 },
+      { icon: "🐇", name: "토끼", condition: "주간 10명", threshold: 10 },
+      { icon: "🦅", name: "독수리", condition: "주간 50명", threshold: 50 },
+      { icon: "🐉", name: "용", condition: "주간 100명", threshold: 100 },
+    ],
+  },
+  {
+    category: "일간 달성",
+    desc: "오늘 방문수 기준",
+    items: [
+      { icon: "☀️", name: "맑음", condition: "오늘 1명", threshold: 1 },
+      { icon: "🌈", name: "무지개", condition: "오늘 10명", threshold: 10 },
+      { icon: "⚡", name: "번개", condition: "오늘 50명", threshold: 50 },
+      { icon: "🌋", name: "폭발", condition: "오늘 100명", threshold: 100 },
+    ],
+  },
+  {
+    category: "특별 배지",
+    desc: "특수 조건 달성",
+    items: [
+      { icon: "🌍", name: "글로벌", condition: "3개국 이상 방문", threshold: 0 },
+      { icon: "📱", name: "모바일 킹", condition: "모바일 방문 50% 이상", threshold: 0 },
+      { icon: "🔗", name: "입소문", condition: "리퍼러 3곳 이상", threshold: 0 },
+      { icon: "📅", name: "꾸준함", condition: "30일 연속 방문", threshold: 0 },
+    ],
+  },
+];
+
+function BadgeWorldTab({ bgColor }: { bgColor: string }) {
+  return (
+    <div className="px-4 py-5">
+      <h2 className="text-lg font-bold text-zinc-900 mb-1">배지 월드</h2>
+      <p className="text-xs text-zinc-400 mb-6">
+        방문자가 늘어날수록 새로운 배지를 획득해요
+      </p>
+
+      <div className="space-y-6">
+        {ACHIEVEMENT_BADGES.map((group) => (
+          <div key={group.category}>
+            <div className="mb-3">
+              <h3
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: bgColor }}
+              >
+                {group.category}
+              </h3>
+              <p className="text-[10px] text-zinc-400">{group.desc}</p>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {group.items.map((badge) => (
+                <div
+                  key={badge.name}
+                  className="flex flex-col items-center rounded-xl bg-zinc-50 py-3 px-1 group relative"
+                >
+                  <span className="text-2xl mb-1">{badge.icon}</span>
+                  <p className="text-[10px] font-semibold text-zinc-700">{badge.name}</p>
+                  <p className="text-[8px] text-zinc-400">{badge.condition}</p>
+
+                  {/* 호버 툴팁 */}
+                  <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
+                    <div className="bg-zinc-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap">
+                      {badge.condition}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* 안내 */}
+      <div className="mt-6 rounded-xl bg-zinc-50 p-4">
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          배지는 사이트 상세 페이지에서 자동으로 표시돼요.
+          방문자가 늘어날수록 더 많은 배지를 모을 수 있어요!
+        </p>
+      </div>
     </div>
   );
 }

@@ -27,6 +27,12 @@ async function getSiteData(slug: string) {
     .from(hits)
     .where(and(eq(hits.siteId, site.id), gte(hits.date, weekAgo.toISOString().split("T")[0])));
 
+  const todayStr = new Date().toISOString().split("T")[0];
+  const [todayResult] = await db
+    .select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` })
+    .from(hits)
+    .where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr)));
+
   const monthAgo = new Date();
   monthAgo.setDate(monthAgo.getDate() - 30);
   const [monthlyResult] = await db
@@ -78,7 +84,9 @@ async function getSiteData(slug: string) {
     color: site.color ?? null,
     badgeStyle: site.badgeStyle ?? null,
     badgeLabel: site.badgeLabel ?? null,
+    badgeEmoji: site.badgeEmoji ?? null,
     userId: site.userId ?? null,
+    todayCount: Number(todayResult.total),
   };
 }
 

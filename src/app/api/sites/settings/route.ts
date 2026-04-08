@@ -12,11 +12,12 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { slug, color, badgeStyle, badgeLabel } = body as {
+  const { slug, color, badgeStyle, badgeLabel, badgeEmoji } = body as {
     slug: string;
     color?: string;
     badgeStyle?: string;
     badgeLabel?: string;
+    badgeEmoji?: string | null;
   };
 
   if (!slug) {
@@ -35,10 +36,11 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "권한이 없습니다" }, { status: 403 });
   }
 
-  const updates: Record<string, string> = {};
+  const updates: Record<string, string | null> = {};
   if (color) updates.color = color;
   if (badgeStyle) updates.badgeStyle = badgeStyle;
   if (badgeLabel) updates.badgeLabel = badgeLabel;
+  if (badgeEmoji !== undefined) updates.badgeEmoji = badgeEmoji;
 
   if (Object.keys(updates).length > 0) {
     await db.update(sites).set(updates).where(eq(sites.id, site.id));

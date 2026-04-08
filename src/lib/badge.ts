@@ -34,7 +34,16 @@ const CHAR_WIDTHS: Record<string, number> = {
 
 function textWidth(text: string): number {
   let w = 0;
-  for (const ch of text) w += CHAR_WIDTHS[ch] ?? 6.5;
+  for (const ch of text) {
+    if (CHAR_WIDTHS[ch] !== undefined) {
+      w += CHAR_WIDTHS[ch];
+    } else if (ch.codePointAt(0)! > 0x1F00) {
+      // 이모지/유니코드 심볼 — 넓게
+      w += 14;
+    } else {
+      w += 6.5;
+    }
+  }
   return w;
 }
 

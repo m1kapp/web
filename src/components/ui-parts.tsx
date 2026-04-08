@@ -46,10 +46,18 @@ export function StatChip({
 }
 
 // ── 빈 상태 ──
-export function EmptyState({ message }: { message: string }) {
+export function EmptyState({ message, icon }: { message: string; icon?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-center py-12">
-      <p className="text-sm text-zinc-300 dark:text-zinc-600">{message}</p>
+    <div className="flex flex-col items-center justify-center py-12 gap-2">
+      {icon || (
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-200">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M8 15h8" />
+          <circle cx="9" cy="9" r="1" fill="currentColor" stroke="none" />
+          <circle cx="15" cy="9" r="1" fill="currentColor" stroke="none" />
+        </svg>
+      )}
+      <p className="text-sm text-zinc-400">{message}</p>
     </div>
   );
 }
@@ -106,7 +114,7 @@ export function AppShell({
 }) {
   return (
     <div
-      className={`mx-auto max-w-[430px] w-full min-h-dvh flex flex-col border-x border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 shadow-sm ${className}`}
+      className={`mx-auto max-w-[430px] w-full h-dvh flex flex-col border-x border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 shadow-sm ${className}`}
     >
       {children}
     </div>

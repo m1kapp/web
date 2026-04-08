@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
 import { sites, hits, hitLogs } from "@/lib/db/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, gte } from "drizzle-orm";
 import { generateBadge } from "@/lib/badge";
 import { createHash } from "crypto";
 import { scrapeOg } from "@/lib/og";
@@ -114,24 +114,43 @@ export async function GET(
     }
   }
 
-  // 총 방문수 + 오늘 방문수 조회
-  const [result] = await db
-    .select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` })
-    .from(hits)
-    .where(eq(hits.siteId, site.id));
+  // 기간별 방문수 조회
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
 
-  const todayStr = new Date().toISOString().split("T")[0];
-  const [todayResult] = await db
-    .select({ today: sql<number>`coalesce(sum(${hits.count}), 0)` })
-    .from(hits)
-    .where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr)));
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const monthAgo = new Date(now);
+  monthAgo.setDate(monthAgo.getDate() - 30);
 
-  const total = Number(result.total);
-  const todayCount = Number(todayResult.today);
+  const [[totalR], [todayR], [weeklyR], [monthlyR]] = await Promise.all([
+    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
+    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
+    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, weekAgo.toISOString().split("T")[0]))),
+    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, monthAgo.toISOString().split("T")[0]))),
+  ]);
 
-  // 쿼리 파라미터 > 사이트 저장값 > 기본값
-  const svg = generateBadge(total, 1000, {
-    label: urlObj.searchParams.get("label") || site.badgeLabel || "m1k",
+  const counts = {
+    total: Number(totalR.v),
+    today: Number(todayR.v),
+    weekly: Number(weeklyR.v),
+    monthly: Number(monthlyR.v),
+  };
+
+  // type 파라미터: total(기본), today, weekly, monthly
+  const badgeType = (urlObj.searchParams.get("type") || "total") as keyof typeof counts;
+  const displayCount = counts[badgeType] ?? counts.total;
+
+  // 라벨 자동 설정
+  const typeLabels: Record<string, string> = {
+    total: urlObj.searchParams.get("label") || site.badgeLabel || "m1k",
+    today: urlObj.searchParams.get("label") || "today",
+    weekly: urlObj.searchParams.get("label") || "weekly",
+    monthly: urlObj.searchParams.get("label") || "monthly",
+  };
+
+  const svg = generateBadge(displayCount, 1000, {
+    label: typeLabels[badgeType] || "m1k",
     color: urlObj.searchParams.get("color")
       ? `#${urlObj.searchParams.get("color")}`
       : site.color || undefined,
@@ -139,7 +158,7 @@ export async function GET(
       ? `#${urlObj.searchParams.get("labelColor")}`
       : undefined,
     style: (urlObj.searchParams.get("style") || site.badgeStyle || "flat") as "flat" | "flat-square" | "rounded" | "cyworld",
-  }, todayCount);
+  }, counts.today);
 
   // 조회 전용은 30초 캐시, 카운트용은 5초
   const maxAge = viewOnly ? 30 : 5;
@@ -148,7 +167,7 @@ export async function GET(
     headers: {
       "Content-Type": "image/svg+xml",
       "Cache-Control": `public, max-age=${maxAge}, s-maxage=${maxAge}, stale-while-revalidate=60`,
-      "ETag": `"${total}-${todayCount}"`,
+      "ETag": `"${counts.total}-${counts.today}"`,
     },
   });
 }
