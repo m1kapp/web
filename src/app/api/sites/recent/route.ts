@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sites, hits } from "@/lib/db/schema";
-import { sql, desc, asc, ilike, or } from "drizzle-orm";
+import { sql, desc, asc, ilike, or, eq, and } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
 
 export async function GET(request: NextRequest) {
@@ -10,6 +10,17 @@ export async function GET(request: NextRequest) {
   const sort = url.searchParams.get("sort") || "recent";
 
   const totalSubquery = sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id}), 0)`;
+
+  const whereCondition = q
+    ? and(
+        eq(sites.verified, true),
+        or(
+          ilike(sites.title, `%${q}%`),
+          ilike(sites.ogTitle, `%${q}%`),
+          ilike(sites.ogDescription, `%${q}%`)
+        )
+      )
+    : eq(sites.verified, true);
 
   let query = db
     .select({
@@ -24,18 +35,8 @@ export async function GET(request: NextRequest) {
       total: totalSubquery,
       createdAt: sites.createdAt,
     })
-    .from(sites);
-
-  if (q) {
-    query = query.where(
-      or(
-        ilike(sites.slug, `%${q}%`),
-        ilike(sites.title, `%${q}%`),
-        ilike(sites.ogTitle, `%${q}%`),
-        ilike(sites.ogDescription, `%${q}%`)
-      )
-    ) as typeof query;
-  }
+    .from(sites)
+    .where(whereCondition);
 
   if (sort === "popular") {
     query = query.orderBy(desc(totalSubquery)) as typeof query;

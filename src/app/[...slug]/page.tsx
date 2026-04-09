@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs } from "@/lib/db/schema";
+import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte, desc } from "drizzle-orm";
 import { DashboardView } from "@/components/dashboard-view";
 import { auth } from "@clerk/nextjs/server";
@@ -69,6 +69,12 @@ async function getSiteData(slug: string) {
     .orderBy(desc(sql`count(*)`))
     .limit(5);
 
+  // 부스트 총량 계산
+  const [boostResult] = await db
+    .select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` })
+    .from(pointLogs)
+    .where(and(eq(pointLogs.targetSiteId, site.id), eq(pointLogs.type, "inject")));
+
   return {
     slug: site.slug,
     title: site.title,
@@ -87,6 +93,9 @@ async function getSiteData(slug: string) {
     badgeEmoji: site.badgeEmoji ?? null,
     userId: site.userId ?? null,
     todayCount: Number(todayResult.total),
+    verified: site.verified,
+    parentId: site.parentId ?? null,
+    boosted: Number(boostResult.total),
   };
 }
 
@@ -97,7 +106,7 @@ export default async function DashboardPage({ params }: Props) {
   if (!data) notFound();
 
   const { userId } = await auth();
-  const host = process.env.NEXT_PUBLIC_HOST || "m1k.vercel.app";
+  const host = process.env.NEXT_PUBLIC_HOST || "m1k.app";
   const isOwner = !!userId && data.userId === userId;
 
   return <DashboardView data={data} host={host} isOwner={isOwner} />;

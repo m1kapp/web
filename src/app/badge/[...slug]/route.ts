@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 import { sites, hits, hitLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte } from "drizzle-orm";
 import { generateBadge } from "@/lib/badge";
+import { getCurrentGoal } from "@/lib/achievements";
 import { createHash } from "crypto";
-import { scrapeOg } from "@/lib/og";
 
 export const runtime = "nodejs";
 
@@ -13,46 +13,20 @@ export async function GET(
   { params }: { params: Promise<{ slug: string[] }> }
 ) {
   const { slug: slugParts } = await params;
-  // /badge/my-project.svg → slug = "my-project"
   const rawSlug = slugParts.join("/").replace(/\.svg$/, "");
-  const slug = rawSlug.toLowerCase().trim();
+  const slug = rawSlug.trim();
 
   if (!slug) {
     return new Response("Missing slug", { status: 400 });
   }
 
-  // 사이트 조회 or 자동 등록
+  // 사이트 조회 (short code 기반)
   let site = await db.query.sites.findFirst({
     where: eq(sites.slug, slug),
   });
 
   if (!site) {
-    // 신규: OG 수집 후 등록
-    const og = await scrapeOg(slug);
-    const [newSite] = await db
-      .insert(sites)
-      .values({
-        slug,
-        title: og.title || slug,
-        url: `https://${slug}`,
-        ogTitle: og.title,
-        ogDescription: og.description,
-        ogImage: og.image,
-      })
-      .returning();
-    site = newSite;
-  } else if (!site.ogTitle && !site.ogImage) {
-    // 기존인데 OG 없으면 백그라운드 수집
-    scrapeOg(slug).then(async (og) => {
-      if (og.title || og.image) {
-        await db.update(sites).set({
-          title: og.title || slug,
-          ogTitle: og.title,
-          ogDescription: og.description,
-          ogImage: og.image,
-        }).where(eq(sites.id, site!.id));
-      }
-    }).catch(() => {});
+    return new Response("Not found", { status: 404 });
   }
 
   // ?view=true → 조회 전용 (카운트 안 올림)
@@ -111,6 +85,18 @@ export async function GET(
           target: [hits.siteId, hits.date],
           set: { count: sql`${hits.count} + 1` },
         });
+
+      // Referer가 등록된 사이트 도메인과 일치하면 → 인증 완료
+      if (!site.verified && referer && site.url) {
+        try {
+          const refererHost = new URL(referer).hostname;
+          const siteHost = new URL(site.url).hostname;
+          if (refererHost === siteHost || refererHost.endsWith(`.${siteHost}`)) {
+            await db.update(sites).set({ verified: true }).where(eq(sites.id, site.id));
+            site = { ...site, verified: true };
+          }
+        } catch {}
+      }
     }
   }
 
@@ -149,7 +135,8 @@ export async function GET(
     monthly: urlObj.searchParams.get("label") || "monthly",
   };
 
-  const svg = generateBadge(displayCount, 1000, {
+  const currentGoal = getCurrentGoal(counts.total);
+  const svg = generateBadge(displayCount, currentGoal.goal, {
     label: typeLabels[badgeType] || "m1k",
     color: urlObj.searchParams.get("color")
       ? `#${urlObj.searchParams.get("color")}`

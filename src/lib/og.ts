@@ -12,7 +12,7 @@ export async function scrapeOg(url: string): Promise<OgData> {
     const res = await fetch(fetchUrl, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; m1k-bot/1.0; +https://m1k.vercel.app)",
+          "Mozilla/5.0 (compatible; m1k-bot/1.0; +https://m1k.app)",
       },
       signal: AbortSignal.timeout(8000),
       redirect: "follow",

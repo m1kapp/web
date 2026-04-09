@@ -4,52 +4,68 @@ import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { scrapeOg } from "@/lib/og";
 import { auth } from "@clerk/nextjs/server";
+import { idToSlug } from "@/lib/utils";
+import dns from "dns/promises";
 
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+  }
+
   const body = await request.json();
   const { url } = body as { url?: string };
 
-  const slug = url?.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  const rawUrl = url?.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
 
-  if (!slug) {
+  if (!rawUrl) {
     return NextResponse.json({ error: "URL을 입력해주세요" }, { status: 400 });
   }
 
-  // 이미 등록된 사이트
+  const fullUrl = `https://${rawUrl}`;
+
+  // 도메인 존재 확인 (DNS 조회)
+  const hostname = rawUrl.split("/")[0];
+  try {
+    await dns.resolve(hostname);
+  } catch {
+    return NextResponse.json({ error: "존재하지 않는 도메인이에요" }, { status: 400 });
+  }
+
+  // 이미 등록된 사이트 (URL 기준)
   const existing = await db.query.sites.findFirst({
-    where: eq(sites.slug, slug),
+    where: eq(sites.url, fullUrl),
   });
 
   if (existing) {
-    // 소유자 없는 사이트 + 로그인 유저 → 소유권 획득
-    if (!existing.userId && userId) {
-      await db.update(sites).set({ userId }).where(eq(sites.id, existing.id));
-      existing.userId = userId;
-    }
-    if (!existing.ogTitle && !existing.ogImage) {
-      refreshOg(existing.id, slug);
+    if (existing.userId !== userId) {
+      return NextResponse.json({ error: "이미 다른 사용자가 등록한 사이트예요" }, { status: 409 });
     }
     return NextResponse.json(existing);
   }
 
   // 신규 등록 + OG 수집
-  const og = await scrapeOg(slug);
+  const og = await scrapeOg(rawUrl);
 
   const [site] = await db
     .insert(sites)
     .values({
-      slug,
-      userId: userId || null,
-      title: og.title || slug,
-      url: `https://${slug}`,
+      slug: "tmp",
+      userId,
+      title: og.title || rawUrl,
+      url: fullUrl,
       ogTitle: og.title,
       ogDescription: og.description,
       ogImage: og.image,
     })
     .returning();
 
-  return NextResponse.json(site);
+  // id 기반 base62 slug 부여
+  const slug = idToSlug(site.id);
+  await db.update(sites).set({ slug }).where(eq(sites.id, site.id));
+
+  return NextResponse.json({ ...site, slug });
 }
 
 async function refreshOg(siteId: number, slug: string) {

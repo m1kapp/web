@@ -18,11 +18,20 @@ export async function GET(
     return NextResponse.json({ error: "프로젝트를 찾을 수 없습니다" }, { status: 404 });
   }
 
-  // 총 방문수
-  const [totalResult] = await db
-    .select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` })
-    .from(hits)
-    .where(eq(hits.siteId, site.id));
+  // 총 방문수 + 기간별
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const weekAgo = new Date(now);
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const monthAgo = new Date(now);
+  monthAgo.setDate(monthAgo.getDate() - 30);
+
+  const [[totalResult], [todayResult], [weeklyResult], [monthlyResult]] = await Promise.all([
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, weekAgo.toISOString().split("T")[0]))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, monthAgo.toISOString().split("T")[0]))),
+  ]);
 
   // 최근 90일 일별 데이터 (잔디용)
   const ninetyDaysAgo = new Date();
@@ -81,6 +90,9 @@ export async function GET(
     title: site.title,
     url: site.url,
     total,
+    weekly: Number(weeklyResult.total),
+    monthly: Number(monthlyResult.total),
+    todayCount: Number(todayResult.total),
     progress: Math.min(total / 1000, 1),
     daily,
     countries,

@@ -5,7 +5,8 @@ import { useState } from "react";
 export function ShareButton({ slug, title }: { slug: string; title: string }) {
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
-  const url = `https://m1k.vercel.app/${slug}`;
+  const host = process.env.NEXT_PUBLIC_HOST || "m1k.app";
+  const url = `https://${host}/${slug}`;
 
   async function handleCopyLink() {
     await navigator.clipboard.writeText(url);

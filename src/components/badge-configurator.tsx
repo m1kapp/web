@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { CodeSnippet } from "./code-snippet";
 import { useAccent, ACCENT_COLORS, type AccentHex } from "@/lib/theme-context";
-import { getUnlockedAchievements, type SiteCounts } from "@/lib/achievements";
+import type { SiteCounts } from "@/lib/achievements";
 
 interface BadgeConfiguratorProps {
   slug: string;
@@ -11,7 +11,6 @@ interface BadgeConfiguratorProps {
   initialColor?: string;
   initialStyle?: string;
   initialLabel?: string;
-  initialEmoji?: string;
   counts?: SiteCounts;
   isOwner?: boolean;
 }
@@ -36,7 +35,6 @@ export function BadgeConfigurator({
   initialColor,
   initialStyle,
   initialLabel,
-  initialEmoji,
   counts = { total: 0, weekly: 0, daily: 0 },
   isOwner = false,
 }: BadgeConfiguratorProps) {
@@ -48,9 +46,7 @@ export function BadgeConfigurator({
   const [style, setStyle] = useState<BadgeStyle>(
     (initialStyle as BadgeStyle) || "flat"
   );
-  const [emoji, setEmoji] = useState(initialEmoji || "");
   const [saved, setSaved] = useState(false);
-  const unlockedEmojis = getUnlockedAchievements(counts);
 
   useEffect(() => {
     if (color in ACCENT_COLORS) {
@@ -68,16 +64,14 @@ export function BadgeConfigurator({
         color,
         badgeStyle: style,
         badgeLabel: label,
-        badgeEmoji: emoji || null,
       }),
     });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  }, [slug, color, style, label, emoji]);
+  }, [slug, color, style, label]);
 
   const params = new URLSearchParams();
-  const displayLabel = emoji ? `${emoji} ${label}` : label;
-  if (displayLabel !== "m1k") params.set("label", displayLabel);
+  if (label !== "m1k") params.set("label", label);
   if (color !== "#ec4899") params.set("color", color.replace("#", ""));
   if (style !== "flat") params.set("style", style);
   const qs = params.toString() ? `?${params.toString()}` : "";
@@ -168,36 +162,6 @@ export function BadgeConfigurator({
           ))}
         </div>
 
-        {/* 이모지 장착 */}
-        {unlockedEmojis.length > 0 && (
-          <div>
-            <p className="text-[10px] text-zinc-500 mb-1.5">달성 이모지 장착</p>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                onClick={() => setEmoji("")}
-                className={`w-8 h-8 rounded-lg text-xs flex items-center justify-center transition-all ${
-                  !emoji ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200"
-                }`}
-              >
-                없음
-              </button>
-              {unlockedEmojis.map((a) => (
-                <button
-                  key={a.icon}
-                  onClick={() => setEmoji(a.icon)}
-                  className={`w-8 h-8 rounded-lg text-lg flex items-center justify-center transition-all hover:scale-110 ${
-                    emoji === a.icon
-                      ? "bg-zinc-100 ring-2 ring-zinc-900"
-                      : "bg-zinc-50 hover:bg-zinc-100"
-                  }`}
-                  title={a.name}
-                >
-                  {a.icon}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* 코드 */}

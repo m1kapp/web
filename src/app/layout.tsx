@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { PaddleProvider } from "@/components/paddle-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -51,6 +52,7 @@ export default function RootLayout({
             },
           }}
         >
+          <PaddleProvider />
           {children}
         </ClerkProvider>
       </body>
