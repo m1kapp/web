@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
+import { fontFamily } from "@m1kapp/ui";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -33,7 +34,7 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css"
         />
       </head>
-      <body className="min-h-full font-[family-name:var(--font-pretendard),Tossface,system-ui,sans-serif]">
+      <body className="min-h-full" style={{ fontFamily: fontFamily.pretendard }}>
         <ClerkProvider
           appearance={{
             layout: {
