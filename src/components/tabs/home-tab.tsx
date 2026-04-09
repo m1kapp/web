@@ -121,11 +121,11 @@ export function HomeTab({
           <p className="text-lg text-zinc-400 dark:text-zinc-500 min-h-7 mb-4">
             <TypewriterHero bgColor={bgColor} />
           </p>
-          <p className="text-zinc-400 dark:text-zinc-500 text-base font-medium mb-1">
-            그럼에도 불구하고,
+          <p className="text-2xl font-black tracking-tight leading-snug text-zinc-900 dark:text-white">
+            방문자 1,000명
           </p>
-          <p className="text-3xl font-black tracking-tight leading-snug" style={{ color: bgColor }}>
-            1K를 만들어보는 경험.
+          <p className="text-2xl font-black tracking-tight leading-snug" style={{ color: bgColor }}>
+            함께 만들어봐요.
           </p>
         </div>
 

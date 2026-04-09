@@ -7,10 +7,10 @@ import crypto from "crypto";
 // 부스트 상품 매핑 (Paddle Price ID → 부스트 수량)
 // Paddle 대시보드에서 상품 만들고 여기에 매핑
 const BOOST_PRODUCTS: Record<string, number> = {
+  [process.env.PADDLE_PRICE_100 || "pri_100"]: 100,
   [process.env.PADDLE_PRICE_300 || "pri_300"]: 300,
-  [process.env.PADDLE_PRICE_1000 || "pri_1000"]: 1000,
-  [process.env.PADDLE_PRICE_3000 || "pri_3000"]: 3000,
-  [process.env.PADDLE_PRICE_10000 || "pri_10000"]: 10000,
+  [process.env.PADDLE_PRICE_600 || "pri_600"]: 600,
+  [process.env.PADDLE_PRICE_900 || "pri_900"]: 900,
 };
 
 function verifySignature(rawBody: string, signature: string | null): boolean {

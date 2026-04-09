@@ -5,10 +5,10 @@ import { useUser } from "@clerk/nextjs";
 import { useAccent } from "@/lib/theme-context";
 
 const BOOST_PLANS = [
+  { label: "100", boosts: 100, price: "₩2,000", priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_100 || "" },
   { label: "300", boosts: 300, price: "₩3,000", priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_300 || "" },
-  { label: "1,000", boosts: 1000, price: "₩10,000", priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_1000 || "", popular: true },
-  { label: "3,000", boosts: 3000, price: "₩30,000", priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_3000 || "" },
-  { label: "10,000", boosts: 10000, price: "₩100,000", priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_10000 || "" },
+  { label: "600", boosts: 600, price: "₩4,000", priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_600 || "", popular: true },
+  { label: "900", boosts: 900, price: "₩5,000", priceId: process.env.NEXT_PUBLIC_PADDLE_PRICE_900 || "" },
 ];
 
 export function BoostShop({ onPurchased }: { onPurchased?: () => void }) {
