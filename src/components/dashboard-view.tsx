@@ -4,15 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GrassMap } from "./grass-map";
 import { BadgeConfigurator } from "./badge-configurator";
-import { Watermark } from "./watermark";
+import { Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/ui";
 import { AccentProvider, useAccent } from "@/lib/theme-context";
-import {
-  Section,
-  Divider,
-  StatChip,
-  AnalyticsSection,
-  AppShell,
-} from "./ui-parts";
+import { AnalyticsSection } from "./ui-parts";
 import { countryFlag, deviceIcon, extractDomain } from "@/lib/format";
 import { ShareButton } from "./share-button";
 import { getUnlockedAchievements, getLockedAchievements, getCurrentGoal, GOAL_TIERS, calcStreak } from "@/lib/achievements";

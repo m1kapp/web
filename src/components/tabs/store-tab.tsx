@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { SiteCard } from "@/components/site-card";
-import { Divider, EmptyState } from "@/components/ui-parts";
+import { Divider, EmptyState } from "@m1kapp/ui";
 import type { RecentSite } from "@/lib/types";
 
 export function StoreTab({

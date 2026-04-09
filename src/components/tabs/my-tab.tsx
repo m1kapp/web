@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
 import { SiteCard } from "@/components/site-card";
-import { Divider, EmptyState } from "@/components/ui-parts";
+import { Divider, EmptyState } from "@m1kapp/ui";
 import { BoostShop } from "@/components/boost-shop";
 import type { RecentSite } from "@/lib/types";
 

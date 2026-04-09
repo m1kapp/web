@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Show, UserButton } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
-import { Watermark } from "@/components/watermark";
-import { AppShell, TabButton } from "@/components/ui-parts";
+import { Watermark, AppShell, Tab, TabBar } from "@m1kapp/ui";
 import { HomeTab } from "@/components/tabs/home-tab";
 import { StoreTab } from "@/components/tabs/store-tab";
 import { BadgeWorldTab } from "@/components/tabs/badge-world-tab";
@@ -130,20 +129,20 @@ export default function Home() {
         </div>
 
         {/* 하단 탭바 */}
-        <nav className="sticky bottom-0 z-20 border-t border-zinc-200 dark:border-zinc-800 flex bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md">
-          <TabButton active={tab === "home"} onClick={() => setTab("home")} activeColor={bgColor} label="홈"
+        <TabBar>
+          <Tab active={tab === "home"} onClick={() => setTab("home")} activeColor={bgColor} label="홈"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "home" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 12l9-9 9 9" /><path d="M5 10v10a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V10" /></svg>}
           />
-          <TabButton active={tab === "store"} onClick={() => setTab("store")} activeColor={bgColor} label="탐색"
+          <Tab active={tab === "store"} onClick={() => setTab("store")} activeColor={bgColor} label="탐색"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "store" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>}
           />
-          <TabButton active={tab === "badge"} onClick={() => setTab("badge")} activeColor={bgColor} label="배지 월드"
+          <Tab active={tab === "badge"} onClick={() => setTab("badge")} activeColor={bgColor} label="배지 월드"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "badge" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.77 4 4 0 0 1 0 6.76 4 4 0 0 1-4.78 4.77 4 4 0 0 1-6.74 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" /><path d="m9 12 2 2 4-4" /></svg>}
           />
-          <TabButton active={tab === "my"} onClick={() => setTab("my")} activeColor={bgColor} label="나의 도전"
+          <Tab active={tab === "my"} onClick={() => setTab("my")} activeColor={bgColor} label="나의 도전"
             icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "my" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
           />
-        </nav>
+        </TabBar>
       </AppShell>
     </Watermark>
   );
