@@ -58,7 +58,7 @@ export default function Home() {
 
   return (
     <Watermark color={bgColor}>
-      <AppShell className="m-0 **:transition-[color,background-color] **:duration-500">
+      <AppShell className="m-0">
         {/* 헤더 */}
         <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between border-b border-zinc-100 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md rounded-t-2xl">
           {/* 좌측 — m1k 로고 */}
@@ -77,7 +77,7 @@ export default function Home() {
           </div>
 
           {/* 우측 — 테마 색 버튼 */}
-          <div className="relative" ref={colorPickerRef}>
+          <div className="relative flex items-center" ref={colorPickerRef}>
             <button
               onClick={() => setColorPickerOpen(!colorPickerOpen)}
               className="w-6 h-6 rounded-full transition-all hover:scale-110 ring-2 ring-white"
