@@ -20,36 +20,80 @@ function TypewriterHero({ bgColor }: { bgColor: string }) {
   const [wordIndex, setWordIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  const [blink, setBlink] = useState(true);
 
   const currentWord = ROLLING_WORDS[wordIndex];
 
+  // 커서 깜빡임 (타이핑 중엔 멈추고, 대기 중에만 깜빡)
+  const isTyping = !deleting ? charIndex < currentWord.length : charIndex > 0;
+  useEffect(() => {
+    if (isTyping) { setBlink(true); return; }
+    const interval = setInterval(() => setBlink((b) => !b), 530);
+    return () => clearInterval(interval);
+  }, [isTyping]);
+
   useEffect(() => {
     if (!deleting && charIndex < currentWord.length) {
-      // 타이핑 중
-      const timer = setTimeout(() => setCharIndex((c) => c + 1), 80);
+      // 타이핑 — 불규칙 딜레이 (사람처럼)
+      const base = 60;
+      const jitter = Math.random() * 80;
+      // 띄어쓰기 후엔 살짝 멈칫
+      const pause = currentWord[charIndex - 1] === " " ? 30 : 0;
+      const timer = setTimeout(() => setCharIndex((c) => c + 1), base + jitter + pause);
       return () => clearTimeout(timer);
     }
     if (!deleting && charIndex === currentWord.length) {
-      // 타이핑 완료 → 잠시 대기 후 삭제 시작
-      const timer = setTimeout(() => setDeleting(true), 2000);
+      const timer = setTimeout(() => setDeleting(true), 2200);
       return () => clearTimeout(timer);
     }
     if (deleting && charIndex > 0) {
-      // 삭제 중
-      const timer = setTimeout(() => setCharIndex((c) => c - 1), 40);
+      // 삭제 — 빠르고 약간 불규칙
+      const timer = setTimeout(() => setCharIndex((c) => c - 1), 25 + Math.random() * 20);
       return () => clearTimeout(timer);
     }
     if (deleting && charIndex === 0) {
-      // 삭제 완료 → 다음 단어
-      setDeleting(false);
-      setWordIndex((i) => (i + 1) % ROLLING_WORDS.length);
+      const timer = setTimeout(() => {
+        setDeleting(false);
+        setWordIndex((i) => (i + 1) % ROLLING_WORDS.length);
+      }, 400);
+      return () => clearTimeout(timer);
     }
   }, [charIndex, deleting, currentWord]);
 
+  const displayText = currentWord.slice(0, charIndex);
+  const lastChar = displayText[displayText.length - 1];
+  const rest = displayText.slice(0, -1);
+
   return (
     <span style={{ color: bgColor }}>
-      {currentWord.slice(0, charIndex)}
-      <span className="animate-pulse">|</span>
+      {charIndex > 0 && (
+        <>
+          {rest}
+          <span
+            key={`${wordIndex}-${charIndex}`}
+            className="inline-block"
+            style={{
+              animation: !deleting ? "charPop 0.1s ease-out" : undefined,
+            }}
+          >
+            {lastChar}
+          </span>
+        </>
+      )}
+      <span
+        className="inline-block w-0.5 h-[1em] ml-px align-middle rounded-full"
+        style={{
+          backgroundColor: bgColor,
+          opacity: blink ? 1 : 0,
+          transition: "opacity 0.1s",
+        }}
+      />
+      <style>{`
+        @keyframes charPop {
+          0% { opacity: 0; transform: translateY(4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </span>
   );
 }
