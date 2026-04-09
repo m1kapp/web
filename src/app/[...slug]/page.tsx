@@ -91,6 +91,7 @@ async function getSiteData(slug: string) {
     badgeStyle: site.badgeStyle ?? null,
     badgeLabel: site.badgeLabel ?? null,
     badgeEmoji: site.badgeEmoji ?? null,
+    ogImage: site.ogImage ?? null,
     userId: site.userId ?? null,
     todayCount: Number(todayResult.total),
     verified: site.verified,

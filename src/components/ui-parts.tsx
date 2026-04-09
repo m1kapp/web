@@ -1,5 +1,7 @@
 "use client";
 
+import { useAccent } from "@/lib/theme-context";
+
 // ── 섹션 래퍼 ──
 export function Section({
   children,
@@ -70,6 +72,13 @@ export function AnalyticsSection({
   title: string;
   items: { label: string; value: number }[];
 }) {
+  let accent: string;
+  try {
+    const ctx = useAccent();
+    accent = ctx.accent;
+  } catch {
+    accent = "#ec4899";
+  }
   const total = items.reduce((sum, i) => sum + i.value, 0);
   return (
     <div>
@@ -84,9 +93,11 @@ export function AnalyticsSection({
             <div key={item.label} className="flex items-center gap-3">
               <div className="flex-1 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-900 overflow-hidden relative">
                 <div
-                  className="absolute inset-y-0 left-0 rounded-lg bg-rose-100 dark:bg-rose-500/15"
+                  className="absolute inset-y-0 left-0 rounded-lg"
                   style={{
                     width: `${total > 0 ? (item.value / total) * 100 : 0}%`,
+                    backgroundColor: accent,
+                    opacity: 0.15,
                   }}
                 />
                 <span className="relative px-3 text-sm text-zinc-800 dark:text-zinc-200 leading-7 truncate block">
@@ -114,7 +125,7 @@ export function AppShell({
 }) {
   return (
     <div
-      className={`mx-auto max-w-[430px] w-full h-dvh flex flex-col border-x border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-950 shadow-sm ${className}`}
+      className={`mx-auto max-w-[430px] w-full h-dvh flex flex-col bg-white dark:bg-zinc-950 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 ${className}`}
     >
       {children}
     </div>

@@ -20,7 +20,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const DAYS_LABEL = ["", "Mon", "", "Wed", "", "Fri", ""];
 
 export function GrassMap({ daily, createdAt }: GrassMapProps) {
-  const { isDark } = useAccent();
+  const { isDark, accent } = useAccent();
 
   // 사용 가능한 연도 목록
   const availableYears = useMemo(() => {
@@ -164,10 +164,10 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
               : day.isFuture
                 ? isDark ? "rgb(24, 24, 27)" : "rgb(250, 250, 250)"
                 : isFirst
-                  ? "rgb(168, 85, 247)"
-                  : grassColor(day.count, maxCount, isDark);
+                  ? accent
+                  : grassColor(day.count, maxCount, isDark, accent);
             const hasStroke = isFirst;
-            const strokeColor = isFirst ? "rgb(192, 132, 252)" : "none";
+            const strokeColor = isFirst ? accent : "none";
 
             return (
               <rect
@@ -203,28 +203,33 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
           <div
             key={i}
             className="w-3 h-3 rounded-xs"
-            style={{ backgroundColor: ratio === 0 ? (isDark ? "rgb(39, 39, 42)" : "rgb(244, 244, 245)") : grassColor(Math.ceil(ratio * 10), 10, isDark) }}
+            style={{ backgroundColor: ratio === 0 ? (isDark ? "rgb(39, 39, 42)" : "rgb(244, 244, 245)") : grassColor(Math.ceil(ratio * 10), 10, isDark, accent) }}
           />
         ))}
         <span>More</span>
-        <div className="ml-2 w-3 h-3 rounded-xs" style={{ backgroundColor: "rgb(168, 85, 247)" }} />
+        <div className="ml-2 w-3 h-3 rounded-xs" style={{ backgroundColor: accent, opacity: 0.6 }} />
         <span>1st</span>
       </div>
     </div>
   );
 }
 
-function grassColor(count: number, max: number, isDark: boolean): string {
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+function grassColor(count: number, max: number, isDark: boolean, accent: string): string {
   if (count === 0) return isDark ? "rgb(39, 39, 42)" : "rgb(244, 244, 245)";
   const ratio = count / max;
+  const [r, g, b] = hexToRgb(accent);
+
   if (isDark) {
-    if (ratio > 0.75) return "rgb(225, 29, 72)";    // rose-600
-    if (ratio > 0.5) return "rgb(190, 18, 60)";     // rose-700
-    if (ratio > 0.25) return "rgb(136, 19, 55)";    // rose-800
-    return "rgb(76, 5, 25)";                         // rose-950
+    const opacities = [0.25, 0.4, 0.6, 0.9];
+    const o = ratio > 0.75 ? opacities[3] : ratio > 0.5 ? opacities[2] : ratio > 0.25 ? opacities[1] : opacities[0];
+    return `rgba(${r}, ${g}, ${b}, ${o})`;
   }
-  if (ratio > 0.75) return "rgb(225, 29, 72)";      // rose-600
-  if (ratio > 0.5) return "rgb(251, 113, 133)";     // rose-400
-  if (ratio > 0.25) return "rgb(253, 164, 175)";    // rose-300
-  return "rgb(254, 205, 211)";                       // rose-200
+  const mixes = [0.8, 0.6, 0.4, 0.15];
+  const m = ratio > 0.75 ? mixes[3] : ratio > 0.5 ? mixes[2] : ratio > 0.25 ? mixes[1] : mixes[0];
+  return `rgb(${Math.round(r + (255 - r) * m)}, ${Math.round(g + (255 - g) * m)}, ${Math.round(b + (255 - b) * m)})`;
 }

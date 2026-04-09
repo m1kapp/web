@@ -16,41 +16,69 @@ const ROLLING_WORDS = [
   "어제 배포한 그 앱",
 ];
 
-function RollingHero({ bgColor }: { bgColor: string }) {
-  const [index, setIndex] = useState(0);
-  const [fade, setFade] = useState(true);
+function TypewriterHero({ bgColor }: { bgColor: string }) {
+  const [wordIndex, setWordIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [deleting, setDeleting] = useState(false);
+
+  const currentWord = ROLLING_WORDS[wordIndex];
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setFade(false);
-      setTimeout(() => {
-        setIndex((i) => (i + 1) % ROLLING_WORDS.length);
-        setFade(true);
-      }, 300);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    if (!deleting && charIndex < currentWord.length) {
+      // 타이핑 중
+      const timer = setTimeout(() => setCharIndex((c) => c + 1), 80);
+      return () => clearTimeout(timer);
+    }
+    if (!deleting && charIndex === currentWord.length) {
+      // 타이핑 완료 → 잠시 대기 후 삭제 시작
+      const timer = setTimeout(() => setDeleting(true), 2000);
+      return () => clearTimeout(timer);
+    }
+    if (deleting && charIndex > 0) {
+      // 삭제 중
+      const timer = setTimeout(() => setCharIndex((c) => c - 1), 40);
+      return () => clearTimeout(timer);
+    }
+    if (deleting && charIndex === 0) {
+      // 삭제 완료 → 다음 단어
+      setDeleting(false);
+      setWordIndex((i) => (i + 1) % ROLLING_WORDS.length);
+    }
+  }, [charIndex, deleting, currentWord]);
 
   return (
-    <div className="mb-4">
-      <h1 className="text-2xl font-black tracking-tight text-zinc-900 dark:text-white leading-snug">
-        <span>그{" "}</span>
-        <span
-          className="inline-block transition-all duration-300"
-          style={{
-            color: bgColor,
-            opacity: fade ? 1 : 0,
-            transform: fade ? "translateY(0)" : "translateY(-8px)",
-          }}
-        >
-          {ROLLING_WORDS[index]}
-        </span>
-        ,
-        <br />
-        아직 살아있나요?
-      </h1>
-    </div>
+    <span style={{ color: bgColor }}>
+      {currentWord.slice(0, charIndex)}
+      <span className="animate-pulse">|</span>
+    </span>
   );
+}
+
+function AnimatedCounter({ target }: { target: number }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (target <= 0) return;
+    const duration = 1500;
+    const steps = 30;
+    const stepTime = duration / steps;
+    let current = 0;
+    const increment = target / steps;
+
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, stepTime);
+
+    return () => clearInterval(timer);
+  }, [target]);
+
+  return <span>{count.toLocaleString()}</span>;
 }
 
 export function HomeTab({
@@ -62,74 +90,67 @@ export function HomeTab({
   recentSites: RecentSite[];
   onStart: () => void;
 }) {
+  const totalVisitors = recentSites.reduce((sum, s) => sum + Number(s.total), 0);
+
   return (
     <>
-      {/* 히어로 */}
-      <div className="px-4 pt-8 pb-6 text-center">
-        <RollingHero bgColor={bgColor} />
+      {/* m1k 뱃지 — 최상단 */}
+      <div className="flex justify-center pt-5 pb-1">
+        <div
+          className="inline-flex items-center rounded-md overflow-hidden text-[11px] font-semibold"
+          style={{ fontFamily: "Verdana, Geneva, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
+        >
+          <span className="px-1.75 py-0.75 bg-zinc-600 text-white leading-tight">m1k</span>
+          <span className="px-1.75 py-0.75 text-white tabular-nums leading-tight" style={{ backgroundColor: bgColor }}>
+            <AnimatedCounter target={totalVisitors} />
+          </span>
+        </div>
+      </div>
 
-        <p className="text-zinc-500 text-sm leading-relaxed mb-6">
-          뱃지 하나 달면 달라져요.{"\n"}
-          누군가 찾아왔다는 숫자 하나가,{"\n"}
-          포기 대신 한 번 더 손보게 만들어요.
+      {/* 히어로 */}
+      <div className="px-4 pt-6 pb-8 text-center">
+        <h1 className="text-5xl font-black tracking-tighter mb-1" style={{ color: bgColor }}>
+          m1k
+        </h1>
+        <p className="text-xs text-zinc-400 mb-6">
+          make 1k, m1k !
         </p>
 
-        {/* 3스텝 온보딩 */}
-        <div className="flex gap-3 mb-6">
-          {[
-            { step: "1", title: "사이트 등록", desc: "내 서비스 URL" },
-            { step: "2", title: "배지 달기", desc: "코드 한 줄 복붙" },
-            { step: "3", title: "함께 성장", desc: "응원하고 응원받고" },
-          ].map((s) => (
-            <div key={s.step} className="flex-1 rounded-xl bg-zinc-50 py-3 px-2">
-              <div
-                className="w-6 h-6 rounded-full mx-auto mb-1.5 flex items-center justify-center text-[10px] font-bold text-white"
-                style={{ backgroundColor: bgColor }}
-              >
-                {s.step}
-              </div>
-              <p className="text-[11px] font-semibold text-zinc-700">{s.title}</p>
-              <p className="text-[9px] text-zinc-400">{s.desc}</p>
-            </div>
-          ))}
+        {/* 타이핑 + 슬로건 */}
+        <div className="mb-6">
+          <p className="text-lg text-zinc-400 dark:text-zinc-500 min-h-7 mb-4">
+            <TypewriterHero bgColor={bgColor} />
+          </p>
+          <p className="text-zinc-400 dark:text-zinc-500 text-base font-medium mb-1">
+            그럼에도 불구하고,
+          </p>
+          <p className="text-3xl font-black tracking-tight leading-snug" style={{ color: bgColor }}>
+            1K를 만들어보는 경험.
+          </p>
         </div>
 
+        {/* 시작하기 */}
         <button
           onClick={onStart}
-          className="w-full h-12 rounded-xl font-bold text-sm text-white transition-all active:scale-[0.98]"
+          className="w-full h-12 rounded-xl font-bold text-sm text-white transition-all active:scale-[0.98] mb-3"
           style={{ backgroundColor: bgColor }}
         >
           시작하기
         </button>
-      </div>
 
-      {/* 부스트 안내 */}
-      <div className="px-4 pb-2">
-        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-900 p-4 space-y-2.5">
-          <p className="text-sm font-bold text-zinc-800 dark:text-white">🚀 부스트가 뭐예요?</p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-            m1k의 뱃지에 표시되는 숫자, 알고 계시죠?{"\n"}
-            부스트를 보내면 <span className="font-semibold text-zinc-700 dark:text-zinc-300">그 숫자가 올라갑니다.</span>
-          </p>
-          <div className="rounded-lg bg-white dark:bg-zinc-800 p-3 text-xs text-zinc-500 space-y-1">
-            <p>내 블로그 뱃지에 <span className="font-bold text-zinc-800 dark:text-zinc-200">1,247</span>이라고 써 있다면</p>
-            <p>실제 방문자 1,100명 + 🚀 부스트 147개</p>
-            <p>뱃지에는 <span className="font-bold text-zinc-800 dark:text-zinc-200">1,247</span>로 함께 표시돼요</p>
-          </div>
-          <div className="space-y-1 text-[11px] text-zinc-400">
-            <p>🙋 내 사이트를 더 있어보이게</p>
-            <p>🎁 친구 블로그에 응원으로 선물</p>
-            <p>🏃 1K 달성 목표를 앞당기기</p>
-          </div>
-          <p className="text-[11px] font-semibold" style={{ color: bgColor }}>
-            가입하면 🚀 100 부스트를 바로 드려요.
-          </p>
+        {/* 3스텝 — 한 줄로 간결하게 */}
+        <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-400">
+          <span>사이트 등록</span>
+          <span className="text-zinc-200">→</span>
+          <span>뱃지 달기</span>
+          <span className="text-zinc-200">→</span>
+          <span>함께 성장</span>
         </div>
       </div>
 
       {/* 최근 등록 */}
       {recentSites.length > 0 && (
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-2">
           <Divider />
           <SectionHeader>최근 등록</SectionHeader>
           <div className="space-y-2">
@@ -148,6 +169,78 @@ export function HomeTab({
           </div>
         </div>
       )}
+
+      {/* FAQ */}
+      <div className="px-4 pb-8">
+        <Divider />
+        <SectionHeader>자주 묻는 질문</SectionHeader>
+        <FAQSection bgColor={bgColor} />
+      </div>
     </>
+  );
+}
+
+const FAQ_ITEMS = [
+  {
+    q: "m1k가 뭐예요?",
+    a: "make 1k — 내가 만든 서비스의 첫 1,000명 방문자를 만들어보자는 뜻이에요. 사이트에 뱃지를 달면 방문자를 자동으로 세어주고, 1K를 시작으로 10K, 100K, 1M까지 함께 성장해나가요.",
+  },
+  {
+    q: "🚀 부스트가 뭐예요?",
+    a: "부스트를 보내면 뱃지 카운터 숫자가 올라가요. 실제 방문자와 합산되어 표시됩니다. 내 사이트에 쓸 수도, 친구 사이트에 응원으로 보낼 수도 있어요. 가입하면 100 부스트를 바로 드려요!",
+  },
+  {
+    q: "누구를 위한 서비스인가요?",
+    a: "바이브코딩으로 만든 서비스, 주말 토이 프로젝트, 해커톤 앱 — 만들고 방치되는 사이드 프로젝트를 가꿔나가고 싶은 모든 메이커를 위한 서비스예요.",
+  },
+  {
+    q: "어떤 사이트든 등록할 수 있나요?",
+    a: "실제로 접속 가능한 도메인이면 돼요. 뱃지를 사이트에 심으면 자동으로 소유권이 인증되고, 탐색 목록에 노출돼요.",
+  },
+  {
+    q: "무료인가요?",
+    a: "네! 사이트 등록, 뱃지, 대시보드, 분석 모두 무료예요. 부스트도 가입 시 100개 무료 지급. 추가 부스트만 유료입니다.",
+  },
+];
+
+function FAQSection({ bgColor }: { bgColor: string }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  return (
+    <div className="space-y-1.5">
+      {FAQ_ITEMS.map((item, i) => {
+        const isOpen = openIndex === i;
+        return (
+          <div key={i} className="rounded-xl bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
+            <button
+              onClick={() => setOpenIndex(isOpen ? null : i)}
+              className="w-full flex items-center justify-between px-4 py-3 text-left"
+            >
+              <span className="text-sm font-semibold text-zinc-800 dark:text-white">{item.q}</span>
+              <svg
+                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                className={`text-zinc-400 shrink-0 ml-2 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            <div
+              className="grid"
+              style={{
+                gridTemplateRows: isOpen ? "1fr" : "0fr",
+                transition: "grid-template-rows 300ms ease-in-out",
+              }}
+            >
+              <div className="overflow-hidden">
+                <p className="px-4 pb-3 text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                  {item.a}
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

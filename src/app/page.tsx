@@ -48,33 +48,36 @@ export default function Home() {
       <AppShell className="bg-white dark:bg-zinc-950 **:transition-[color,background-color] **:duration-500">
         {/* 헤더 */}
         <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between border-b border-zinc-100 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md">
-          <span className="text-2xl font-black tracking-tighter" style={{ color: bgColor }}>
-            m1k
-          </span>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              {BG_COLORS.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setBgColor(c)}
-                  className="w-4 h-4 rounded-full transition-all hover:scale-125"
-                  style={{
-                    backgroundColor: c,
-                    boxShadow: bgColor === c ? `0 0 0 1.5px white, 0 0 0 3px ${c}` : "none",
-                    border: bgColor !== c ? "1px solid rgba(0,0,0,0.06)" : "none",
-                  }}
-                />
-              ))}
-            </div>
+          {/* 좌측 — 로그인 */}
+          <div className="w-8">
             <Show when="signed-in">
               <UserButton appearance={{ elements: { avatarBox: "w-7 h-7" } }} />
             </Show>
             <Show when="signed-out">
               <GoogleLoginButton
-                className="text-[11px] font-semibold px-3 py-1 rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 transition-colors flex items-center gap-1.5"
+                className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 transition-colors"
               />
             </Show>
           </div>
+
+          {/* 중앙 — 색 필터 */}
+          <div className="flex items-center gap-1.5">
+            {BG_COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setBgColor(c)}
+                className="w-5 h-5 rounded-full transition-all hover:scale-125"
+                style={{
+                  backgroundColor: c,
+                  boxShadow: bgColor === c ? `0 0 0 2px white, 0 0 0 3.5px ${c}` : "none",
+                  border: bgColor !== c ? "1px solid rgba(0,0,0,0.06)" : "none",
+                }}
+              />
+            ))}
+          </div>
+
+          {/* 우측 — 여백 맞춤 */}
+          <div className="w-8" />
         </header>
 
         {/* 탭 콘텐츠 */}

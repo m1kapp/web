@@ -34,6 +34,7 @@ interface SiteData {
   badgeStyle: string | null;
   badgeLabel: string | null;
   badgeEmoji: string | null;
+  ogImage: string | null;
   userId: string | null;
   todayCount: number;
   verified: boolean;
@@ -678,11 +679,16 @@ function SiteHero({ data }: { data: SiteData }) {
       <div className="flex items-center gap-3 mb-5">
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-          style={{ backgroundColor: data.color || accent }}
+          style={{ backgroundColor: data.ogImage ? undefined : (data.color || accent) }}
         >
-          <span className="text-sm font-black text-white/80">
-            {displayName.slice(0, 2)}
-          </span>
+          {data.ogImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={data.ogImage} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-sm font-black text-white/80">
+              {displayName.slice(0, 2)}
+            </span>
+          )}
         </div>
         <div className="min-w-0 flex-1">
           <h1 className="text-lg font-bold text-zinc-900 truncate">
