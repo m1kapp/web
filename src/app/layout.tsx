@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const pretendard = localFont({
+  src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
+  variable: "--font-pretendard",
+  display: "swap",
+  weight: "45 920",
 });
 
 const geistMono = Geist_Mono({
@@ -27,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${pretendard.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>
@@ -36,7 +39,7 @@ export default function RootLayout({
           href="https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css"
         />
       </head>
-      <body className="min-h-full" style={{ fontFamily: `${geistSans.style.fontFamily}, "Tossface", sans-serif` }}>
+      <body className="min-h-full" style={{ fontFamily: `var(--font-pretendard), "Tossface", -apple-system, sans-serif` }}>
         <ClerkProvider
           appearance={{
             layout: {

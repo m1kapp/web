@@ -125,7 +125,7 @@ export function AppShell({
 }) {
   return (
     <div
-      className={`mx-auto max-w-[430px] w-full h-dvh flex flex-col bg-white dark:bg-zinc-950 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 ${className}`}
+      className={`w-full h-full flex flex-col bg-white dark:bg-zinc-950 shadow-2xl ring-1 ring-black/5 dark:ring-white/10 rounded-2xl overflow-hidden ${className}`}
     >
       {children}
     </div>

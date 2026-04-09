@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Show, UserButton } from "@clerk/nextjs";
 import { useUser } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
@@ -20,7 +20,21 @@ export default function Home() {
   const [recentSites, setRecentSites] = useState<RecentSite[]>([]);
   const [mySites, setMySites] = useState<RecentSite[]>([]);
   const [bgColor, setBgColor] = useState("#0f172a");
+  const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<"home" | "store" | "badge" | "my">("home");
+
+  // 바깥 클릭 시 컬러 피커 닫기
+  useEffect(() => {
+    if (!colorPickerOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setColorPickerOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [colorPickerOpen]);
   const { isSignedIn } = useUser();
 
   useEffect(() => {
@@ -45,39 +59,49 @@ export default function Home() {
 
   return (
     <Watermark color={bgColor}>
-      <AppShell className="bg-white dark:bg-zinc-950 **:transition-[color,background-color] **:duration-500">
+      <AppShell className="m-0 **:transition-[color,background-color] **:duration-500">
         {/* 헤더 */}
-        <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between border-b border-zinc-100 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md">
-          {/* 좌측 — 로그인 */}
-          <div className="w-8">
+        <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between border-b border-zinc-100 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md rounded-t-2xl">
+          {/* 좌측 — m1k 로고 */}
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-black tracking-tighter" style={{ color: bgColor }}>
+              m1k
+            </span>
             <Show when="signed-in">
-              <UserButton appearance={{ elements: { avatarBox: "w-7 h-7" } }} />
+              <UserButton appearance={{ elements: { avatarBox: "w-6 h-6" } }} />
             </Show>
             <Show when="signed-out">
               <GoogleLoginButton
-                className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-zinc-200 text-zinc-500 hover:bg-zinc-50 transition-colors"
+                className="text-[10px] font-semibold px-2 py-0.5 rounded-md border border-zinc-200 text-zinc-400 hover:bg-zinc-50 transition-colors"
               />
             </Show>
           </div>
 
-          {/* 중앙 — 색 필터 */}
-          <div className="flex items-center gap-1.5">
-            {BG_COLORS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setBgColor(c)}
-                className="w-5 h-5 rounded-full transition-all hover:scale-125"
-                style={{
-                  backgroundColor: c,
-                  boxShadow: bgColor === c ? `0 0 0 2px white, 0 0 0 3.5px ${c}` : "none",
-                  border: bgColor !== c ? "1px solid rgba(0,0,0,0.06)" : "none",
-                }}
-              />
-            ))}
+          {/* 우측 — 테마 색 버튼 */}
+          <div className="relative" ref={colorPickerRef}>
+            <button
+              onClick={() => setColorPickerOpen(!colorPickerOpen)}
+              className="w-6 h-6 rounded-full transition-all hover:scale-110 ring-2 ring-white"
+              style={{ backgroundColor: bgColor }}
+            />
+            {/* 컬러 피커 드롭다운 */}
+            {colorPickerOpen && (
+              <div className="absolute right-0 top-full mt-2 p-2 rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-black/10 flex gap-1.5 z-50">
+                {BG_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => { setBgColor(c); setColorPickerOpen(false); }}
+                    className="w-7 h-7 rounded-full transition-all hover:scale-110"
+                    style={{
+                      backgroundColor: c,
+                      boxShadow: bgColor === c ? `0 0 0 2px white, 0 0 0 3.5px ${c}` : "none",
+                      border: bgColor !== c ? "1px solid rgba(0,0,0,0.06)" : "none",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
-
-          {/* 우측 — 여백 맞춤 */}
-          <div className="w-8" />
         </header>
 
         {/* 탭 콘텐츠 */}

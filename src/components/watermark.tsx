@@ -24,7 +24,7 @@ export function Watermark({ children, color }: { children: React.ReactNode; colo
 
   return (
     <div
-      className="min-h-dvh w-full relative overflow-hidden"
+      className="h-dvh w-full relative overflow-hidden"
       style={{ backgroundColor: accent, transition: "background-color 0.5s ease" }}
     >
       {/* 워터마크 — CSS background-repeat로 무한 타일링 */}
@@ -39,7 +39,7 @@ export function Watermark({ children, color }: { children: React.ReactNode; colo
       />
 
       {/* 콘텐츠 */}
-      <div className="relative z-10">
+      <div className="relative z-10 h-full flex items-center justify-center p-3 mx-auto max-w-107.5">
         {children}
       </div>
     </div>

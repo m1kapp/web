@@ -125,6 +125,7 @@ const GOAL_REWARDS = [
 export function BadgeWorldTab({ bgColor }: { bgColor: string }) {
   const fire = useConfetti();
   const [showRewards, setShowRewards] = useState(false);
+  const totalRewardItems = GOAL_REWARDS.reduce((s, g) => s + 1 + g.rewards.length, 0);
 
   return (
     <div className="px-4 py-5">
@@ -135,49 +136,25 @@ export function BadgeWorldTab({ bgColor }: { bgColor: string }) {
 
       {/* 달성 보상 미리보기 */}
       <div className="mb-6">
-        <button
-          onClick={() => {
-            fire();
-            setShowRewards(!showRewards);
-          }}
-          className="w-full rounded-2xl p-5 text-center text-white transition-all active:scale-[0.98] relative overflow-hidden"
-          style={{
-            background: `linear-gradient(135deg, ${bgColor}, ${bgColor}dd)`,
-          }}
-        >
-          <div className="relative z-10">
-            <span className="text-3xl block mb-2">🚀</span>
-            <p className="text-base font-black mb-1">달성하면 뭐가 열릴까?</p>
-            <p className="text-[11px] opacity-80">눌러서 미리 체험해보세요</p>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite]" style={{ animationName: "shimmer" }} />
-        </button>
-
-        {showRewards && (
-          <div className="mt-3 space-y-4">
-            {GOAL_REWARDS.map((goal) => (
-              <div key={goal.tier}>
-                <p className="text-xs font-bold mb-2" style={{ color: goal.color }}>
-                  {goal.tier} 달성 보상
-                </p>
-                <div className="space-y-1.5">
-                  {goal.rewards.map((r) => (
-                    <div
-                      key={r.title}
-                      className="flex items-center gap-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-3"
-                    >
-                      <span className="text-2xl">{r.icon}</span>
-                      <div>
-                        <p className="text-sm font-semibold text-zinc-900 dark:text-white">{r.title}</p>
-                        <p className="text-[10px] text-zinc-400">{r.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {!showRewards ? (
+          <button
+            onClick={() => {
+              fire();
+              setShowRewards(true);
+            }}
+            className="w-full rounded-2xl p-5 text-center text-white transition-all active:scale-[0.98] relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${bgColor}, ${bgColor}dd)`,
+            }}
+          >
+            <div className="relative z-10">
+              <span className="text-3xl block mb-2">🚀</span>
+              <p className="text-base font-black mb-1">달성하면 뭐가 열릴까?</p>
+              <p className="text-[11px] opacity-80">눌러서 미리 체험해보세요</p>
+            </div>
+            <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent animate-[shimmer_2s_infinite]" style={{ animationName: "shimmer" }} />
+          </button>
+        ) : null}
       </div>
 
       {/* 배지 갤러리 */}
@@ -212,6 +189,120 @@ export function BadgeWorldTab({ bgColor }: { bgColor: string }) {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* 보상 풀스크린 오버레이 */}
+      {showRewards && (
+        <RewardsOverlay bgColor={bgColor} onClose={() => setShowRewards(false)} />
+      )}
+    </div>
+  );
+}
+
+function RewardsOverlay({ bgColor, onClose }: { bgColor: string; onClose: () => void }) {
+  // 로켓 위치: 맨 아래에서 시작 → 위로 올라감
+  // 총 애니메이션 시간 계산
+  const rocketDuration = GOAL_REWARDS.length * 0.8 + 0.5;
+
+  let itemIndex = 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* 배경 */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `linear-gradient(180deg, ${bgColor}ee 0%, ${bgColor} 100%)`,
+          animation: "overlayFadeIn 0.3s ease-out",
+        }}
+        onClick={onClose}
+      />
+
+      <style>{`
+        @keyframes overlayFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes rocketFly {
+          0% { bottom: 0; }
+          100% { bottom: calc(100% - 60px); }
+        }
+        @keyframes tierReveal {
+          0% { transform: scale(0.8) translateY(20px); opacity: 0; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        @keyframes rewardFadeIn {
+          0% { transform: translateX(-10px); opacity: 0; }
+          100% { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
+
+      {/* 로켓 — 아래에서 위로 */}
+      <div
+        className="absolute left-1/2 -translate-x-1/2 text-3xl z-10 pointer-events-none"
+        style={{
+          animation: `rocketFly ${rocketDuration}s ease-out forwards`,
+          bottom: 0,
+        }}
+      >
+        🚀
+      </div>
+
+      {/* 닫기 — 우상단 고정 */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white text-base transition-colors"
+      >
+        ✕
+      </button>
+
+      {/* 콘텐츠 — 아래 정렬, 1K부터 위로 쌓임 */}
+      <div className="relative z-10 w-full max-w-sm px-6 mx-auto h-full flex flex-col justify-end overflow-y-auto">
+        <div className="space-y-6 pb-8 pt-16">
+          {/* 마무리 — 맨 위 */}
+          <div
+            className="text-center"
+            style={{ animation: `tierReveal 0.5s ease-out ${rocketDuration}s both` }}
+          >
+            <p className="text-white/40 text-xs">make 1k, m1k !</p>
+          </div>
+
+          {/* 1M → 100K → 10K → 1K 순서 (위에서 아래로 배치, 아래부터 등장) */}
+          {[...GOAL_REWARDS].reverse().map((goal, gi) => {
+            const reverseIndex = GOAL_REWARDS.length - 1 - gi;
+            const tierDelay = reverseIndex * 0.8 + 0.3;
+            const tierSize = gi === 0 ? "text-3xl" : gi === 1 ? "text-2xl" : gi === 2 ? "text-xl" : "text-lg";
+
+            return (
+              <div
+                key={goal.tier}
+                style={{ animation: `tierReveal 0.5s ease-out ${tierDelay}s both` }}
+              >
+                <p className={`${tierSize} font-black text-white text-center mb-3`}>
+                  {goal.tier}
+                </p>
+                <div className="space-y-2">
+                  {goal.rewards.map((r, ri) => {
+                    const delay = tierDelay + (ri + 1) * 0.15;
+                    return (
+                      <div
+                        key={r.title}
+                        className="flex items-center gap-3 rounded-xl bg-white/10 backdrop-blur-sm p-3"
+                        style={{ animation: `rewardFadeIn 0.4s ease-out ${delay}s both` }}
+                      >
+                        <span className="text-2xl">{r.icon}</span>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{r.title}</p>
+                          <p className="text-[10px] text-white/50">{r.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
