@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* tabular-nums가 Pretendard에서 올바르게 동작하도록 */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
