@@ -1,39 +1,21 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Show, UserButton } from "@clerk/nextjs";
-import { useUser } from "@clerk/nextjs";
+import { useState, useEffect } from "react";
+import { Show, UserButton, useUser } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
-import { Watermark, AppShell, Tab, TabBar } from "@m1kapp/ui";
+import { Watermark, AppShell, AppShellHeader, AppShellContent, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/ui";
 import { HomeTab } from "@/components/tabs/home-tab";
 import { StoreTab } from "@/components/tabs/store-tab";
 import { BadgeWorldTab } from "@/components/tabs/badge-world-tab";
 import { MyTab } from "@/components/tabs/my-tab";
 import type { RecentSite } from "@/lib/types";
 
-const BG_COLORS = [
-  "#ec4899", "#a855f7", "#3b82f6", "#22c55e", "#f97316", "#ef4444", "#0f172a", "#18181b",
-];
-
 export default function Home() {
   const [recentSites, setRecentSites] = useState<RecentSite[]>([]);
   const [mySites, setMySites] = useState<RecentSite[]>([]);
   const [bgColor, setBgColor] = useState("#0f172a");
-  const [colorPickerOpen, setColorPickerOpen] = useState(false);
-  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const [themeOpen, setThemeOpen] = useState(false);
   const [tab, setTab] = useState<"home" | "store" | "badge" | "my">("home");
-
-  // 바깥 클릭 시 컬러 피커 닫기
-  useEffect(() => {
-    if (!colorPickerOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
-        setColorPickerOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [colorPickerOpen]);
   const { isSignedIn } = useUser();
 
   useEffect(() => {
@@ -43,12 +25,6 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (tab === "my" && isSignedIn) {
-      fetchMySites();
-    }
-  }, [tab, isSignedIn]);
-
   function fetchMySites() {
     fetch("/api/sites/mine")
       .then((res) => res.json())
@@ -56,12 +32,17 @@ export default function Home() {
       .catch(() => {});
   }
 
+  useEffect(() => {
+    if (tab === "my" && isSignedIn) {
+      fetchMySites();
+    }
+  }, [tab, isSignedIn]);
+
   return (
+    <>
     <Watermark color={bgColor}>
       <AppShell className="m-0">
-        {/* 헤더 */}
-        <header className="sticky top-0 z-20 px-4 py-3 flex items-center justify-between border-b border-zinc-100 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md rounded-t-2xl">
-          {/* 좌측 — m1k 로고 */}
+        <AppShellHeader>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-black tracking-tighter" style={{ color: bgColor }}>
               m1k
@@ -75,36 +56,10 @@ export default function Home() {
               />
             </Show>
           </div>
+          <ThemeButton color={bgColor} onClick={() => setThemeOpen(true)} />
+        </AppShellHeader>
 
-          {/* 우측 — 테마 색 버튼 */}
-          <div className="relative flex items-center" ref={colorPickerRef}>
-            <button
-              onClick={() => setColorPickerOpen(!colorPickerOpen)}
-              className="w-6 h-6 rounded-full transition-all hover:scale-110 ring-2 ring-white"
-              style={{ backgroundColor: bgColor }}
-            />
-            {/* 컬러 피커 드롭다운 */}
-            {colorPickerOpen && (
-              <div className="absolute right-0 top-full mt-2 p-2 rounded-xl bg-white dark:bg-zinc-900 shadow-xl ring-1 ring-black/10 flex gap-1.5 z-50">
-                {BG_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => { setBgColor(c); setColorPickerOpen(false); }}
-                    className="w-7 h-7 rounded-full transition-all hover:scale-110"
-                    style={{
-                      backgroundColor: c,
-                      boxShadow: bgColor === c ? `0 0 0 2px white, 0 0 0 3.5px ${c}` : "none",
-                      border: bgColor !== c ? "1px solid rgba(0,0,0,0.06)" : "none",
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </header>
-
-        {/* 탭 콘텐츠 */}
-        <div className="flex-1 overflow-y-auto">
+        <AppShellContent>
           {tab === "home" ? (
             <HomeTab bgColor={bgColor} recentSites={recentSites} onStart={() => setTab("my")} />
           ) : tab === "store" ? (
@@ -126,7 +81,7 @@ export default function Home() {
           ) : (
             <MyTab sites={mySites} isSignedIn={!!isSignedIn} bgColor={bgColor} onRegistered={fetchMySites} />
           )}
-        </div>
+        </AppShellContent>
 
         {/* 하단 탭바 */}
         <TabBar>
@@ -145,5 +100,12 @@ export default function Home() {
         </TabBar>
       </AppShell>
     </Watermark>
+    <ThemeDialog
+      open={themeOpen}
+      onClose={() => setThemeOpen(false)}
+      current={bgColor}
+      onSelect={setBgColor}
+    />
+    </>
   );
 }
