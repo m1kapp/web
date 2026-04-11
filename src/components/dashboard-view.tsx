@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { GrassMap } from "./grass-map";
 import { BadgeConfigurator } from "./badge-configurator";
 import { Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/ui";
-import { AccentProvider, useAccent } from "@/lib/theme-context";
+import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
 import { AnalyticsSection } from "./ui-parts";
 import { countryFlag, deviceIcon, extractDomain } from "@/lib/format";
 import { ShareButton } from "./share-button";
@@ -76,7 +76,7 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
   }, [data.slug]);
 
   return (
-    <AccentProvider>
+    <AccentProvider initialAccent={(data.color as AccentHex) ?? undefined}>
       <Watermark>
         <AppShell>
           {/* 헤더 — 뒤로가기 + 사이트 바로가기 */}
@@ -86,11 +86,6 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
           <div className="flex-1 overflow-y-auto">
             {/* 사이트 히어로 */}
             <SiteHero data={data} />
-
-            {/* 미인증 안내 */}
-            {!data.verified && (
-              <PendingBanner slug={data.slug} host={host} />
-            )}
 
             {/* 통계 칩 */}
             <Section className="flex gap-3 pt-5">
@@ -150,6 +145,14 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
 
             {!data.parentId && <Divider />}
 
+            {/* 미인증 안내 — 배지 설정 바로 위 */}
+            {!data.verified && (
+              <>
+                <PendingBanner slug={data.slug} host={host} />
+                <Divider />
+              </>
+            )}
+
             {/* 배지 설정 */}
             <Section className="pb-4">
               <BadgeConfigurator
@@ -188,8 +191,8 @@ function DashboardHeader({
   const { accent } = useAccent();
 
   return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md">
-      <div className="flex items-center justify-between px-4 py-3">
+    <header className="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md h-14 shrink-0">
+      <div className="flex items-center justify-between px-4 h-full">
         {/* 뒤로 + 로고 */}
         <div className="flex items-center gap-2">
           <a
@@ -457,22 +460,20 @@ function PendingBanner({ slug, host }: { slug: string; host: string }) {
           아래 코드를 내 사이트에 붙여넣으면 인증이 완료되고,
           탐색 목록에 노출돼요.
         </p>
-        <div className="relative">
-          <pre className="bg-zinc-100 dark:bg-zinc-900 rounded-lg p-3 text-[11px] text-zinc-700 dark:text-zinc-300 overflow-x-auto">
-            {snippet}
-          </pre>
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(snippet);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
-            className="absolute top-2 right-2 px-2 py-1 rounded-md text-[10px] font-semibold text-white transition-colors"
-            style={{ backgroundColor: copied ? "#22c55e" : accent }}
-          >
-            {copied ? "복사됨!" : "복사"}
-          </button>
-        </div>
+        <pre className="bg-zinc-100 dark:bg-zinc-900 rounded-lg p-3 pr-4 text-[11px] text-zinc-700 dark:text-zinc-300 overflow-x-auto whitespace-pre-wrap break-all">
+          {snippet}
+        </pre>
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(snippet);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+          className="w-full py-2 rounded-lg text-[11px] font-semibold text-white transition-colors"
+          style={{ backgroundColor: copied ? "#22c55e" : accent }}
+        >
+          {copied ? "복사됨!" : "복사"}
+        </button>
         <p className="text-[10px] text-zinc-400">
           방문자가 뱃지를 로드하면 자동으로 인증 완료됩니다
         </p>
@@ -673,7 +674,7 @@ function SiteHero({ data }: { data: SiteData }) {
       <div className="flex items-center gap-3 mb-5">
         <div
           className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-          style={{ backgroundColor: data.ogImage ? undefined : (data.color || accent) }}
+          style={{ backgroundColor: data.ogImage ? undefined : accent }}
         >
           {data.ogImage ? (
             // eslint-disable-next-line @next/next/no-img-element

@@ -98,61 +98,31 @@ function TypewriterHero({ bgColor }: { bgColor: string }) {
   );
 }
 
-function AnimatedCounter({ target }: { target: number }) {
-  const [count, setCount] = useState(0);
-
-  useEffect(() => {
-    if (target <= 0) return;
-    const duration = 1500;
-    const steps = 30;
-    const stepTime = duration / steps;
-    let current = 0;
-    const increment = target / steps;
-
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(current));
-      }
-    }, stepTime);
-
-    return () => clearInterval(timer);
-  }, [target]);
-
-  return <span>{count.toLocaleString()}</span>;
-}
 
 export function HomeTab({
   bgColor,
   recentSites,
+  selfSlug,
   onStart,
 }: {
   bgColor: string;
   recentSites: RecentSite[];
+  selfSlug: string | null;
   onStart: () => void;
 }) {
-  const totalVisitors = recentSites.reduce((sum, s) => sum + Number(s.total), 0);
 
   return (
     <>
-      {/* m1k 뱃지 — 최상단 */}
-      <div className="flex justify-center pt-5 pb-1">
-        <div
-          className="inline-flex items-center rounded-md overflow-hidden text-[11px] font-semibold"
-          style={{ fontFamily: "Verdana, Geneva, sans-serif", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }}
-        >
-          <span className="px-1.75 py-0.75 bg-zinc-600 text-white leading-tight">m1k</span>
-          <span className="px-1.75 py-0.75 text-white tabular-nums leading-tight" style={{ backgroundColor: bgColor }}>
-            <AnimatedCounter target={totalVisitors} />
-          </span>
-        </div>
-      </div>
-
       {/* 히어로 */}
       <div className="px-4 pt-6 pb-8 text-center">
+        {selfSlug && (
+          <div className="flex justify-center mb-3">
+            <a href={`/${selfSlug}`} target="_blank" rel="noopener noreferrer">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/badge/${selfSlug}.svg?style=cyworld&color=${bgColor.replace("#", "")}`} alt="m1k visitor count" height={20} />
+            </a>
+          </div>
+        )}
         <h1 className="text-5xl font-black tracking-tighter mb-1" style={{ color: bgColor }}>
           m1k
         </h1>
@@ -218,7 +188,7 @@ export function HomeTab({
       <div className="px-4 pb-8">
         <Divider />
         <SectionHeader>자주 묻는 질문</SectionHeader>
-        <FAQSection bgColor={bgColor} />
+        <FAQSection />
       </div>
     </>
   );
@@ -247,7 +217,7 @@ const FAQ_ITEMS = [
   },
 ];
 
-function FAQSection({ bgColor }: { bgColor: string }) {
+function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (

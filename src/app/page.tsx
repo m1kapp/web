@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Show, UserButton, useUser } from "@clerk/nextjs";
-import { GoogleLoginButton } from "@/components/google-login-button";
 import { Watermark, AppShell, AppShellHeader, AppShellContent, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/ui";
 import { HomeTab } from "@/components/tabs/home-tab";
 import { StoreTab } from "@/components/tabs/store-tab";
@@ -13,6 +12,9 @@ import type { RecentSite } from "@/lib/types";
 export default function Home() {
   const [recentSites, setRecentSites] = useState<RecentSite[]>([]);
   const [mySites, setMySites] = useState<RecentSite[]>([]);
+  const [selfSlug] = useState<string | null>(() =>
+    typeof document !== "undefined" ? document.body.dataset.selfSlug || null : null
+  );
   const [bgColor, setBgColor] = useState("#0f172a");
   const [themeOpen, setThemeOpen] = useState(false);
   const [tab, setTab] = useState<"home" | "store" | "badge" | "my">("home");
@@ -50,18 +52,13 @@ export default function Home() {
             <Show when="signed-in">
               <UserButton appearance={{ elements: { avatarBox: "w-6 h-6" } }} />
             </Show>
-            <Show when="signed-out">
-              <GoogleLoginButton
-                className="text-[10px] font-semibold px-2 py-0.5 rounded-md border border-zinc-200 text-zinc-400 hover:bg-zinc-50 transition-colors"
-              />
-            </Show>
           </div>
           <ThemeButton color={bgColor} onClick={() => setThemeOpen(true)} />
         </AppShellHeader>
 
         <AppShellContent>
           {tab === "home" ? (
-            <HomeTab bgColor={bgColor} recentSites={recentSites} onStart={() => setTab("my")} />
+            <HomeTab bgColor={bgColor} recentSites={recentSites} selfSlug={selfSlug} onStart={() => setTab("my")} />
           ) : tab === "store" ? (
             <StoreTab
               sites={recentSites}

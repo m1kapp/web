@@ -38,14 +38,21 @@ function hexToLuminance(hex: string): number {
   return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
 }
 
-export function AccentProvider({ children }: { children: React.ReactNode }) {
-  const [accent, setAccent] = useState<AccentHex>("#ec4899");
+export function AccentProvider({ initialAccent, children }: { initialAccent?: AccentHex; children: React.ReactNode }) {
+  const [accent, setAccent] = useState<AccentHex>(initialAccent ?? "#ec4899");
   const accentRgb = ACCENT_COLORS[accent]?.light ?? "236, 72, 153";
-  const isDark = false;
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== "undefined"
+      ? document.documentElement.classList.contains("dark")
+      : false
+  );
 
-  // 항상 라이트 모드
   useEffect(() => {
-    document.documentElement.classList.remove("dark");
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
   }, []);
 
   return (

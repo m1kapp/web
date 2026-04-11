@@ -13,14 +13,34 @@ interface GrassMapProps {
   createdAt?: string | null;
 }
 
+function formatTooltipDate(dateStr: string): string {
+  const [, m, d] = dateStr.split("-");
+  return `${parseInt(m)}월 ${parseInt(d)}일`;
+}
+
+function toLocalDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 const CELL_SIZE = 13;
 const GAP = 3;
 const STEP = CELL_SIZE + GAP;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const DAYS_LABEL = ["", "Mon", "", "Wed", "", "Fri", ""];
 
+interface TooltipState {
+  x: number;
+  y: number;
+  date: string;
+  count: number;
+  isFirst: boolean;
+  isToday: boolean;
+  isFuture: boolean;
+}
+
 export function GrassMap({ daily, createdAt }: GrassMapProps) {
   const { isDark, accent } = useAccent();
+  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   // 사용 가능한 연도 목록
   const availableYears = useMemo(() => {
@@ -52,7 +72,7 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
 
   // 선택 연도의 1/1 ~ 12/31 (항상 전체 연도 표시)
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = toLocalDateStr(today);
   const yearStart = new Date(selectedYear, 0, 1);
   const yearEnd = new Date(selectedYear, 11, 31);
 
@@ -68,7 +88,7 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
     const date = new Date(start);
     date.setDate(date.getDate() + i);
     if (date > yearEnd) break;
-    const key = date.toISOString().split("T")[0];
+    const key = toLocalDateStr(date);
     const col = Math.floor(i / 7);
     const row = i % 7;
     const isOutOfRange = date < yearStart;
@@ -123,8 +143,13 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
       </div>
 
       {/* 히트맵 */}
-      <div className="overflow-x-auto">
-        <svg width={svgWidth} height={svgHeight} className="block mx-auto">
+      <div className="overflow-x-auto relative">
+        <svg
+          width={svgWidth}
+          height={svgHeight}
+          className="block mx-auto"
+          onMouseLeave={() => setTooltip(null)}
+        >
           {/* 월 라벨 */}
           {monthLabels.map((m, i) => (
             <text
@@ -169,31 +194,65 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
             const hasStroke = isFirst;
             const strokeColor = isFirst ? accent : "none";
 
+            const cx = leftPad + day.col * STEP;
+            const cy = topPad + day.row * STEP;
+
             return (
               <rect
                 key={day.date}
-                x={leftPad + day.col * STEP}
-                y={topPad + day.row * STEP}
+                x={cx}
+                y={cy}
                 width={CELL_SIZE}
                 height={CELL_SIZE}
                 rx={3}
                 fill={cellFill}
                 stroke={strokeColor}
                 strokeWidth={hasStroke ? 1.5 : 0}
-              >
-                <title>
-                  {isFirst
-                    ? `${day.date}: ${day.count}명 (첫 방문일!)`
-                    : isToday
-                      ? `${day.date}: ${day.count}명 (오늘)`
-                      : day.isFuture
-                        ? day.date
-                        : `${day.date}: ${day.count}명`}
-                </title>
-              </rect>
+                style={{ cursor: day.isOutOfRange ? "default" : "pointer" }}
+                onMouseEnter={(e) => {
+                  if (day.isOutOfRange) return;
+                  const svg = e.currentTarget.ownerSVGElement!;
+                  const rect = svg.getBoundingClientRect();
+                  const parentRect = svg.parentElement!.getBoundingClientRect();
+                  setTooltip({
+                    x: cx + rect.left - parentRect.left + CELL_SIZE / 2,
+                    y: cy + rect.top - parentRect.top,
+                    date: day.date,
+                    count: day.count,
+                    isFirst,
+                    isToday,
+                    isFuture: day.isFuture,
+                  });
+                }}
+              />
             );
           })}
         </svg>
+
+        {/* 커스텀 툴팁 */}
+        {tooltip && (
+          <div
+            className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-full"
+            style={{ left: tooltip.x, top: tooltip.y - 6 }}
+          >
+            <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[11px] rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap">
+              <span className="font-medium">{formatTooltipDate(tooltip.date)}</span>
+              {!tooltip.isFuture && (
+                <span className="ml-1.5 tabular-nums">
+                  {tooltip.count > 0 ? `${tooltip.count.toLocaleString()}명` : "방문 없음"}
+                </span>
+              )}
+              {tooltip.isFirst && (
+                <span className="ml-1.5 text-[10px] opacity-70">🌱 첫 방문</span>
+              )}
+              {tooltip.isToday && !tooltip.isFirst && (
+                <span className="ml-1.5 text-[10px] opacity-70">오늘</span>
+              )}
+            </div>
+            {/* 말풍선 꼬리 */}
+            <div className="mx-auto w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-zinc-900 dark:border-t-zinc-100" />
+          </div>
+        )}
       </div>
 
       {/* 범례 */}

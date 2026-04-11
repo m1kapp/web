@@ -12,7 +12,7 @@ export function generateBadge(
   todayCount: number = 0
 ): string {
   const style = options.style || "flat";
-  if (style === "cyworld") return cyworldBadge(count, todayCount, options);
+  if (style === "cyworld") return cyworldBadge(count, todayCount, goal, options);
   return modernBadge(count, options);
 }
 
@@ -87,23 +87,45 @@ function modernBadge(count: number, options: BadgeOptions): string {
 }
 
 // ── 싸이월드 배지 ──
-function cyworldBadge(total: number, today: number, options: BadgeOptions): string {
+function cyworldBadge(total: number, today: number, goal: number, options: BadgeOptions): string {
   const accent = options.color || "#cc0000";
+  const label = options.label || "";
   const todayStr = today.toLocaleString();
   const totalStr = total.toLocaleString();
   const tvw = textWidth(todayStr);
-  const tlw = textWidth(totalStr);
-  const w = Math.ceil(44 + tvw + 16 + 46 + tlw + 4);
-  const h = 20;
+
+  // 라벨 영역 (9px 기준 스케일)
+  const labelW = label ? Math.ceil(textWidth(label) * 9 / 11) + 14 : 0;
+  const ox = 6 + labelW; // TODAY 시작 x
+
+  const w = Math.ceil(labelW + 44 + tvw + 16 + 46 + textWidth(totalStr) + 4);
+  const h = 22;
+  const barH = 2;
+  const ty = 17; // 텍스트 베이스라인
+
+  // 프로그레스 바
+  const progress = goal > 0 ? Math.min(total / goal, 1) : 0;
+  const barFill = progress > 0 ? Math.max(Math.round(progress * w), 3) : 0;
+
+  const labelSvg = label
+    ? `<text x="6" y="${ty}" font-size="9" fill="#bbb">${label}</text><text x="${6 + Math.ceil(textWidth(label) * 9 / 11) + 3}" y="${ty}" font-size="9" fill="#ddd">·</text>`
+    : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" role="img">
-  <rect width="${w}" height="${h}" rx="3" fill="#fff" stroke="#e5e5e5" stroke-width="0.5"/>
+  <clipPath id="r"><rect width="${w}" height="${h}" rx="3"/></clipPath>
+  <g clip-path="url(#r)">
+    <rect width="${w}" height="${h}" fill="#fff"/>
+    <rect width="${w}" height="${barH}" fill="#f0f0f0"/>
+    ${barFill > 0 ? `<rect width="${barFill}" height="${barH}" fill="${accent}" opacity="0.65"/>` : ""}
+  </g>
+  <rect width="${w}" height="${h}" rx="3" fill="none" stroke="#e5e5e5" stroke-width="0.5"/>
   <g font-family="Verdana,Tahoma,sans-serif" text-rendering="geometricPrecision">
-    <text x="6" y="14" font-size="9" fill="#999" letter-spacing="0.5">TODAY</text>
-    <text x="48" y="14" font-size="9" font-weight="bold" fill="${accent}">${todayStr}</text>
-    <text x="${54 + tvw}" y="14" font-size="9" fill="#ddd">|</text>
-    <text x="${64 + tvw}" y="14" font-size="9" fill="#999" letter-spacing="0.5">TOTAL</text>
-    <text x="${108 + tvw}" y="14" font-size="9" font-weight="bold" fill="#555">${totalStr}</text>
+    ${labelSvg}
+    <text x="${ox}" y="${ty}" font-size="9" fill="#999" letter-spacing="0.5">TODAY</text>
+    <text x="${ox + 42}" y="${ty}" font-size="9" font-weight="bold" fill="${accent}">${todayStr}</text>
+    <text x="${ox + 48 + tvw}" y="${ty}" font-size="9" fill="#ddd">|</text>
+    <text x="${ox + 58 + tvw}" y="${ty}" font-size="9" fill="#999" letter-spacing="0.5">TOTAL</text>
+    <text x="${ox + 102 + tvw}" y="${ty}" font-size="9" font-weight="bold" fill="#555">${totalStr}</text>
   </g>
 </svg>`;
 }
