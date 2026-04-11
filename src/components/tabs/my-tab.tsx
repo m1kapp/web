@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
 import { SiteCard } from "@/components/site-card";
 import { Divider, EmptyState } from "@m1kapp/ui";
@@ -99,6 +99,7 @@ export function MyTab({
   onRegistered: () => void;
 }) {
   const { user } = useUser();
+  const { signOut } = useClerk();
 
   if (!isSignedIn) {
     return (
@@ -139,7 +140,8 @@ export function MyTab({
   return (
     <div className="px-4 py-5">
       {/* 프로필 */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-6 justify-between">
+        <div className="flex items-center gap-3">
         {user?.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.imageUrl} alt="" className="w-12 h-12 rounded-full" />
@@ -164,6 +166,13 @@ export function MyTab({
             )}
           </p>
         </div>
+        </div>
+        <button
+          onClick={() => signOut()}
+          className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors px-2 py-1"
+        >
+          로그아웃
+        </button>
       </div>
 
       <RegisterForm bgColor={bgColor} onRegistered={onRegistered} />

@@ -29,6 +29,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme');if(t==='light'){document.documentElement.classList.remove('dark')}else{document.documentElement.classList.add('dark')}})()` }} />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css"
