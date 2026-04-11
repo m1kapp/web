@@ -113,16 +113,18 @@ export function HomeTab({
 
   return (
     <>
+      {/* 싸이월드 방문자 카운터 — 최상단 얇은 바 */}
+      {selfSlug && (
+        <div className="w-full flex justify-center py-2 border-b border-zinc-100 dark:border-zinc-800">
+          <a href={`/${selfSlug}`} target="_blank" rel="noopener noreferrer">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/badge/${selfSlug}.svg?style=cyworld&color=${bgColor.replace("#", "")}`} alt="m1k visitor count" height={20} />
+          </a>
+        </div>
+      )}
+
       {/* 히어로 */}
       <div className="px-4 pt-6 pb-8 text-center">
-        {selfSlug && (
-          <div className="flex justify-center mb-3">
-            <a href={`/${selfSlug}`} target="_blank" rel="noopener noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`/badge/${selfSlug}.svg?style=cyworld&color=${bgColor.replace("#", "")}`} alt="m1k visitor count" height={20} />
-            </a>
-          </div>
-        )}
         <h1 className="text-5xl font-black tracking-tighter mb-1" style={{ color: bgColor }}>
           m1k
         </h1>
