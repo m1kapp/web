@@ -22,7 +22,7 @@ function RegisterForm({
   const router = useRouter();
 
   function isValidDomain(str: string): boolean {
-    return /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+([/][^\s]*)?$/.test(str);
+    return /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9-]{1,})*\.[a-zA-Z]{2,}([/][^\s]*)?$/.test(str);
   }
 
   async function handleSubmit(e: React.FormEvent) {
