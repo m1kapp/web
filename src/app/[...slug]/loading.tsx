@@ -3,7 +3,7 @@ import { Watermark, AppShell, AppShellHeader, AppShellContent, Section, Divider 
 
 export default async function Loading() {
   const cookieStore = await cookies();
-  const isDark = (cookieStore.get("theme")?.value ?? "dark") !== "light";
+  const isDark = (cookieStore.get("theme")?.value ?? "light") !== "light";
 
   const weeks = 20;
   const days = 7;
