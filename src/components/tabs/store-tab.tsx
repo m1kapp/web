@@ -138,6 +138,7 @@ export function StoreTab({
             <SiteCard
               key={site.slug}
               slug={site.slug}
+              url={site.url}
               title={site.title}
               ogTitle={site.ogTitle}
               ogDescription={site.ogDescription}

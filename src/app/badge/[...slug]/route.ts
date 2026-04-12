@@ -4,6 +4,7 @@ import { sites, hits, hitLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte } from "drizzle-orm";
 import { generateBadge } from "@/lib/badge";
 import { getCurrentGoal } from "@/lib/achievements";
+import { findSiteBySlug } from "@/lib/site-service";
 import { createHash } from "crypto";
 
 export const runtime = "nodejs";
@@ -21,9 +22,7 @@ export async function GET(
   }
 
   // 사이트 조회 (short code 기반)
-  let site = await db.query.sites.findFirst({
-    where: eq(sites.slug, slug),
-  });
+  let site = await findSiteBySlug(slug);
 
   if (!site) {
     return new Response("Not found", { status: 404 });
@@ -124,7 +123,12 @@ export async function GET(
   };
 
   // type 파라미터: total(기본), today, weekly, monthly
-  const badgeType = (urlObj.searchParams.get("type") || "total") as keyof typeof counts;
+  const VALID_BADGE_TYPES = ["total", "today", "weekly", "monthly"] as const;
+  type BadgeType = typeof VALID_BADGE_TYPES[number];
+  const rawType = urlObj.searchParams.get("type") ?? "total";
+  const badgeType: BadgeType = (VALID_BADGE_TYPES as readonly string[]).includes(rawType)
+    ? rawType as BadgeType
+    : "total";
   const displayCount = counts[badgeType] ?? counts.total;
 
   // 라벨 자동 설정

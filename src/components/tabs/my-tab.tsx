@@ -185,10 +185,13 @@ export function MyTab({
             <SiteCard
               key={site.slug}
               slug={site.slug}
+              url={site.url}
               title={site.title}
               ogTitle={site.ogTitle}
               ogDescription={site.ogDescription}
               ogImage={site.ogImage}
+              color={site.color}
+              owner={site.owner}
             />
           ))}
         </div>

@@ -82,6 +82,7 @@ export function BadgeConfigurator({
   // 프리뷰용 (항상 현재 선택값 명시)
   const previewParams = new URLSearchParams();
   previewParams.set("style", style);
+  previewParams.set("view", "true");
   if (label !== "m1k") previewParams.set("label", label);
   if (color !== "#ec4899") previewParams.set("color", color.replace("#", ""));
   const previewQs = `?${previewParams.toString()}`;
@@ -108,8 +109,8 @@ export function BadgeConfigurator({
       </div>
 
       {/* 스타일 · 색상 · 라벨 */}
-      {isOwner ? (
-        <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 space-y-3">
+      <div className={isOwner ? "rounded-xl border border-zinc-200 dark:border-zinc-700 p-4 space-y-3" : "space-y-3"}>
+        {isOwner && (
           <div className="flex items-center justify-between">
             <p className="text-[11px] text-zinc-400">스타일 · 색상 · 라벨</p>
             {saved ? (
@@ -129,112 +130,54 @@ export function BadgeConfigurator({
               </button>
             )}
           </div>
+        )}
 
-          {/* 스타일 */}
-          <div className="grid grid-cols-4 gap-2">
-            {STYLES.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setStyle(s.value)}
-                className={`rounded-lg py-2 text-[11px] font-medium transition-colors ${
-                  style === s.value
-                    ? "text-white"
-                    : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                }`}
-                style={
-                  style === s.value ? { backgroundColor: accent } : undefined
-                }
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-
-          {/* 라벨 */}
-          <input
-            type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="라벨"
-            className="w-full rounded-lg bg-zinc-100 dark:bg-zinc-900 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2"
-            style={
-              { "--tw-ring-color": "var(--accent-light)" } as React.CSSProperties
-            }
-          />
-
-          {/* 컬러 */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {COLORS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setColor(c.value)}
-                className="w-8 h-8 rounded-full transition-all hover:scale-110"
-                style={{
-                  backgroundColor: c.value,
-                  boxShadow:
-                    color === c.value
-                      ? `0 0 0 2px var(--color-background, white), 0 0 0 4px ${c.value}`
-                      : "none",
-                }}
-                title={c.label}
-              />
-            ))}
-          </div>
+        {/* 스타일 */}
+        <div className="grid grid-cols-4 gap-2">
+          {STYLES.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => setStyle(s.value)}
+              className={`rounded-lg py-2 text-[11px] font-medium transition-colors ${
+                style === s.value
+                  ? "text-white"
+                  : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
+              }`}
+              style={style === s.value ? { backgroundColor: accent } : undefined}
+            >
+              {s.label}
+            </button>
+          ))}
         </div>
-      ) : (
-        <div className="space-y-3">
-          {/* 스타일 */}
-          <div className="grid grid-cols-4 gap-2">
-            {STYLES.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => setStyle(s.value)}
-                className={`rounded-lg py-2 text-[11px] font-medium transition-colors ${
-                  style === s.value
-                    ? "text-white"
-                    : "bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800"
-                }`}
-                style={
-                  style === s.value ? { backgroundColor: accent } : undefined
-                }
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
 
-          {/* 라벨 */}
-          <input
-            type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="라벨"
-            className="w-full rounded-lg bg-zinc-100 dark:bg-zinc-900 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2"
-            style={
-              { "--tw-ring-color": "var(--accent-light)" } as React.CSSProperties
-            }
-          />
+        {/* 라벨 */}
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="라벨"
+          className="w-full rounded-lg bg-zinc-100 dark:bg-zinc-900 px-3 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2"
+          style={{ "--tw-ring-color": "var(--accent-light)" } as React.CSSProperties}
+        />
 
-          {/* 컬러 */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {COLORS.map((c) => (
-              <button
-                key={c.value}
-                onClick={() => setColor(c.value)}
-                className="w-8 h-8 rounded-full transition-all hover:scale-110"
-                style={{
-                  backgroundColor: c.value,
-                  boxShadow:
-                    color === c.value
-                      ? `0 0 0 2px var(--color-background, white), 0 0 0 4px ${c.value}`
-                      : "none",
-                }}
-                title={c.label}
-              />
-            ))}
-          </div>
+        {/* 컬러 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {COLORS.map((c) => (
+            <button
+              key={c.value}
+              onClick={() => setColor(c.value)}
+              className="w-8 h-8 rounded-full transition-all hover:scale-110"
+              style={{
+                backgroundColor: c.value,
+                boxShadow: color === c.value
+                  ? `0 0 0 2px var(--color-background, white), 0 0 0 4px ${c.value}`
+                  : "none",
+              }}
+              title={c.label}
+            />
+          ))}
         </div>
-      )}
+      </div>
 
       {/* 코드 */}
       <div className="space-y-2">

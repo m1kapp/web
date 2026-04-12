@@ -77,51 +77,47 @@ export function getCurrentGoal(total: number) {
   return GOAL_TIERS[GOAL_TIERS.length - 1];
 }
 
+const COUNT_BY_TYPE: Record<Achievement["type"], (c: SiteCounts) => number> = {
+  total:  (c) => c.total,
+  weekly: (c) => c.weekly,
+  daily:  (c) => c.daily,
+  streak: (c) => c.streak ?? 0,
+};
+
 function matchAchievement(a: Achievement, counts: SiteCounts): boolean {
-  if (a.type === "total") return counts.total >= a.threshold;
-  if (a.type === "weekly") return counts.weekly >= a.threshold;
-  if (a.type === "daily") return counts.daily >= a.threshold;
-  if (a.type === "streak") return (counts.streak ?? 0) >= a.threshold;
-  return false;
+  return COUNT_BY_TYPE[a.type](counts) >= a.threshold;
 }
 
 export function getUnlockedAchievements(counts: SiteCounts): Achievement[] {
   return ACHIEVEMENTS.filter((a) => matchAchievement(a, counts));
 }
 
+const toDateStr = (d: Date): string => d.toISOString().split("T")[0];
+
 // 오늘부터 과거로 연속 방문일 계산
-export function calcStreak(daily: { date: string; count: number }[]): number {
+// today 파라미터를 주입받아 테스트에서 날짜 고정 가능
+export function calcStreak(
+  daily: { date: string; count: number }[],
+  today: Date = new Date(),
+): number {
   if (daily.length === 0) return 0;
 
   const dates = new Set(daily.filter((d) => d.count > 0).map((d) => d.date));
-  const today = new Date();
-  let streak = 0;
-
-  // 오늘 또는 어제부터 시작 (오늘 아직 방문 없을 수 있으니)
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = toDateStr(today);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  const yesterdayStr = toDateStr(yesterday);
 
-  let startFound = false;
-  if (dates.has(todayStr)) {
-    startFound = true;
-  } else if (dates.has(yesterdayStr)) {
-    startFound = true;
-  }
+  // 오늘 또는 어제부터 시작 (오늘 아직 방문 없을 수 있으니)
+  const startDateStr = dates.has(todayStr) ? todayStr : dates.has(yesterdayStr) ? yesterdayStr : null;
+  if (!startDateStr) return 0;
 
-  if (!startFound) return 0;
-
-  // 오늘부터 역순으로
-  const cursor = new Date(dates.has(todayStr) ? todayStr : yesterdayStr);
-  while (true) {
-    const key = cursor.toISOString().split("T")[0];
-    if (dates.has(key)) {
-      streak++;
-      cursor.setDate(cursor.getDate() - 1);
-    } else {
-      break;
-    }
+  // 시작일부터 역순으로 연속 카운트
+  let streak = 0;
+  const cursor = new Date(startDateStr);
+  while (dates.has(toDateStr(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
   }
 
   return streak;

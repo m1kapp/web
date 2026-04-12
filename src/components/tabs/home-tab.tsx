@@ -27,7 +27,7 @@ function TypewriterHero({ bgColor }: { bgColor: string }) {
   // 커서 깜빡임 (타이핑 중엔 멈추고, 대기 중에만 깜빡)
   const isTyping = !deleting ? charIndex < currentWord.length : charIndex > 0;
   useEffect(() => {
-    if (isTyping) { setBlink(true); return; }
+    if (isTyping) return;
     const interval = setInterval(() => setBlink((b) => !b), 530);
     return () => clearInterval(interval);
   }, [isTyping]);
@@ -84,7 +84,7 @@ function TypewriterHero({ bgColor }: { bgColor: string }) {
         className="inline-block w-0.5 h-[1em] ml-px align-middle rounded-full"
         style={{
           backgroundColor: bgColor,
-          opacity: blink ? 1 : 0,
+          opacity: isTyping || blink ? 1 : 0,
           transition: "opacity 0.1s",
         }}
       />
@@ -110,15 +110,6 @@ export function HomeTab({
   selfSlug: string | null;
   onStart: () => void;
 }) {
-  const [selfStats, setSelfStats] = useState<{ today: number; total: number } | null>(null);
-
-  useEffect(() => {
-    if (!selfSlug) return;
-    fetch(`/api/sites/${selfSlug}`)
-      .then(r => r.json())
-      .then(d => setSelfStats({ today: d.todayCount, total: d.total }))
-      .catch(() => {});
-  }, [selfSlug]);
 
   return (
     <>
@@ -126,23 +117,11 @@ export function HomeTab({
       {selfSlug && (
         <div className="w-full flex justify-center py-2 border-b border-zinc-100 dark:border-zinc-800">
           <a href={`/${selfSlug}`} target="_blank" rel="noopener noreferrer">
-            <div className="inline-flex flex-col items-center gap-1">
-              <span className="text-[11px] font-black tracking-widest text-zinc-400 uppercase">m1k</span>
-              <div
-                className="relative inline-flex items-center gap-3 rounded-sm px-3 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700"
-                style={{ height: 22, fontFamily: "Verdana,Tahoma,sans-serif", fontSize: 9 }}
-              >
-                {selfStats && (
-                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-t-sm overflow-hidden">
-                    <div className="h-full rounded-t-sm" style={{ width: `${Math.min((selfStats.total / 1000) * 100, 100)}%`, backgroundColor: bgColor, opacity: 0.65 }} />
-                  </div>
-                )}
-                <span className="text-zinc-400 tracking-wide">TODAY</span>
-                <strong style={{ color: bgColor }}>{selfStats?.today ?? "—"}</strong>
-                <span className="text-zinc-400 tracking-wide">TOTAL</span>
-                <strong className="text-zinc-600 dark:text-zinc-300">{selfStats?.total ?? "—"}</strong>
-              </div>
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/badge/${selfSlug}.svg`}
+              alt="badge"
+            /> 
           </a>
         </div>
       )}
@@ -198,6 +177,7 @@ export function HomeTab({
               <SiteCard
                 key={site.slug}
                 slug={site.slug}
+                url={site.url}
                 title={site.title}
                 ogTitle={site.ogTitle}
                 ogDescription={site.ogDescription}

@@ -1,3 +1,10 @@
+/** PendingBanner, SubBadges 양쪽에서 공용으로 쓰는 마크다운 스니펫 생성 */
+export function buildBadgeSnippet(host: string, slug: string): string {
+  const badgeUrl = `https://${host}/badge/${slug}.svg`;
+  const dashboardUrl = `https://${host}/${slug}`;
+  return `[![Hits](${badgeUrl})](${dashboardUrl})`;
+}
+
 export interface BadgeOptions {
   label?: string;
   color?: string;
@@ -47,9 +54,17 @@ function textWidth(text: string): number {
   return w;
 }
 
+type ModernStyle = Exclude<BadgeOptions["style"], "cyworld">;
+
+const STYLE_PROPS: Record<NonNullable<ModernStyle>, { h: number; rx: number; shadow: boolean }> = {
+  "flat":        { h: 20, rx: 3,  shadow: true  },
+  "flat-square": { h: 20, rx: 0,  shadow: false },
+  "rounded":     { h: 22, rx: 11, shadow: true  },
+};
+
 // ── 모던 배지 ──
 function modernBadge(count: number, options: BadgeOptions): string {
-  const { label = "m1k", color, labelColor = "#555", style = "flat" } = options;
+  const { label = "m1k", color, labelColor = "#555" } = options;
   const badgeColor = color || "#ec4899";
   const valueText = count.toLocaleString();
 
@@ -57,14 +72,15 @@ function modernBadge(count: number, options: BadgeOptions): string {
   const valueW = Math.max(textWidth(valueText) + 10, 24);
   const totalW = labelW + valueW;
 
-  const h = style === "rounded" ? 22 : 20;
-  const rx = style === "flat-square" ? 0 : style === "rounded" ? 11 : 3;
+  const styleKey: NonNullable<ModernStyle> =
+    options.style === "cyworld" || !options.style ? "flat" : options.style;
+  const { h, rx, shadow: hasShadow } = STYLE_PROPS[styleKey];
   const ty = Math.round(h / 2 + 4);
 
-  const shadow = style !== "flat-square"
+  const shadow = hasShadow
     ? `<linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient>`
     : "";
-  const shadowRect = style !== "flat-square"
+  const shadowRect = hasShadow
     ? `<rect width="${totalW}" height="${h}" fill="url(#s)"/>`
     : "";
 
@@ -94,38 +110,50 @@ function cyworldBadge(total: number, today: number, goal: number, options: Badge
   const totalStr = total.toLocaleString();
   const tvw = textWidth(todayStr);
 
-  // 라벨 영역 (9px 기준 스케일)
-  const labelW = label ? Math.ceil(textWidth(label) * 9 / 11) + 14 : 0;
-  const ox = 6 + labelW; // TODAY 시작 x
+  // 카운트 행 너비: TODAY {today} TOTAL {total}
+  const countsRowW = Math.ceil(44 + tvw + 16 + 46 + textWidth(totalStr) + 4);
+  // 라벨 행 너비
+  const labelRowW = label ? Math.ceil(textWidth(label) * 9 / 11) + 12 : 0;
 
-  const w = Math.ceil(labelW + 44 + tvw + 16 + 46 + textWidth(totalStr) + 4);
-  const h = 22;
+  const w = Math.max(countsRowW, labelRowW) + 12;
+  const h = label ? 34 : 22;
   const barH = 2;
-  const ty = 17; // 텍스트 베이스라인
+
+  // 텍스트 Y 좌표
+  const labelY = 14;
+  const countsY = label ? 28 : 17;
+
+  // 카운트 행 시작 x (중앙 정렬)
+  const cx = Math.round((w - countsRowW) / 2);
+
+  // 컬럼 x 좌표 (TODAY label | TODAY value | divider | TOTAL label | TOTAL value)
+  const colTodayLabel = cx;
+  const colTodayValue = cx + 42;
+  const colDivider    = cx + 48 + tvw;
+  const colTotalLabel = cx + 58 + tvw;
+  const colTotalValue = cx + 102 + tvw;
 
   // 프로그레스 바
   const progress = goal > 0 ? Math.min(total / goal, 1) : 0;
   const barFill = progress > 0 ? Math.max(Math.round(progress * w), 3) : 0;
 
   const labelSvg = label
-    ? `<text x="6" y="${ty}" font-size="9" fill="#bbb">${label}</text><text x="${6 + Math.ceil(textWidth(label) * 9 / 11) + 3}" y="${ty}" font-size="9" fill="#ddd">·</text>`
+    ? `<text x="${w / 2}" y="${labelY}" font-size="9" fill="#bbb" text-anchor="middle" letter-spacing="1">${label}</text>`
     : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" role="img">
   <clipPath id="r"><rect width="${w}" height="${h}" rx="3"/></clipPath>
   <g clip-path="url(#r)">
     <rect width="${w}" height="${h}" fill="#fff"/>
-    <rect width="${w}" height="${barH}" fill="#f0f0f0"/>
-    ${barFill > 0 ? `<rect width="${barFill}" height="${barH}" fill="${accent}" opacity="0.65"/>` : ""}
   </g>
   <rect width="${w}" height="${h}" rx="3" fill="none" stroke="#e5e5e5" stroke-width="0.5"/>
   <g font-family="Verdana,Tahoma,sans-serif" text-rendering="geometricPrecision">
     ${labelSvg}
-    <text x="${ox}" y="${ty}" font-size="9" fill="#999" letter-spacing="0.5">TODAY</text>
-    <text x="${ox + 42}" y="${ty}" font-size="9" font-weight="bold" fill="${accent}">${todayStr}</text>
-    <text x="${ox + 48 + tvw}" y="${ty}" font-size="9" fill="#ddd">|</text>
-    <text x="${ox + 58 + tvw}" y="${ty}" font-size="9" fill="#999" letter-spacing="0.5">TOTAL</text>
-    <text x="${ox + 102 + tvw}" y="${ty}" font-size="9" font-weight="bold" fill="#555">${totalStr}</text>
+    <text x="${colTodayLabel}" y="${countsY}" font-size="9" fill="#999" letter-spacing="0.5">TODAY</text>
+    <text x="${colTodayValue}" y="${countsY}" font-size="9" font-weight="bold" fill="${accent}">${todayStr}</text>
+    <text x="${colDivider}"    y="${countsY}" font-size="9" fill="#ddd">|</text>
+    <text x="${colTotalLabel}" y="${countsY}" font-size="9" fill="#999" letter-spacing="0.5">TOTAL</text>
+    <text x="${colTotalValue}" y="${countsY}" font-size="9" font-weight="bold" fill="#555">${totalStr}</text>
   </g>
 </svg>`;
 }

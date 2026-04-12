@@ -10,7 +10,15 @@ import { AnalyticsSection } from "./ui-parts";
 import { countryFlag, deviceIcon, extractDomain } from "@/lib/format";
 import { ShareButton } from "./share-button";
 import { getUnlockedAchievements, getLockedAchievements, getCurrentGoal, GOAL_TIERS, calcStreak } from "@/lib/achievements";
+import { buildBadgeSnippet } from "@/lib/badge";
+import { useCopy } from "@/lib/use-copy";
 import { useConfetti } from "./confetti";
+
+const POLL_INTERVAL_MS = 30_000;
+const COPY_FEEDBACK_MS = 2_000;
+const BOOST_RESULT_DISMISS_MS = 3_000;
+const BOOST_PRESETS = [10, 50, 100] as const;
+const STREAK_FIRE_THRESHOLD = 7;
 
 interface SiteData {
   slug: string;
@@ -71,7 +79,7 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
           daily: fresh.daily ?? prev.daily,
         }));
       } catch {}
-    }, 30_000);
+    }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [data.slug]);
 
@@ -245,7 +253,7 @@ function SubBadges({ slug, host, isOwner }: { slug: string; host: string; isOwne
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [copied, setCopied] = useState<string | null>(null);
+  const { copied, copy: copySnippet } = useCopy(COPY_FEEDBACK_MS);
 
   useEffect(() => {
     fetch(`/api/sites/sub?parentSlug=${slug}`)
@@ -278,14 +286,6 @@ function SubBadges({ slug, host, isOwner }: { slug: string; host: string; isOwne
     } finally {
       setLoading(false);
     }
-  }
-
-  function copySnippet(subSlug: string) {
-    const badgeUrl = `https://${host}/badge/${subSlug}.svg`;
-    const dashboardUrl = `https://${host}/${subSlug}`;
-    navigator.clipboard.writeText(`[![Hits](${badgeUrl})](${dashboardUrl})`);
-    setCopied(subSlug);
-    setTimeout(() => setCopied(null), 2000);
   }
 
   return (
@@ -364,7 +364,7 @@ function SubBadges({ slug, host, isOwner }: { slug: string; host: string; isOwne
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="미인증" />
                 )}
                 <button
-                  onClick={() => copySnippet(sub.slug)}
+                  onClick={() => copySnippet(buildBadgeSnippet(host, sub.slug), sub.slug)}
                   className="text-[10px] font-semibold px-2 py-1 rounded-md transition-colors text-white"
                   style={{ backgroundColor: copied === sub.slug ? "#22c55e" : accent }}
                 >
@@ -440,10 +440,8 @@ function DeleteSiteButton({ slug }: { slug: string }) {
 
 function PendingBanner({ slug, host }: { slug: string; host: string }) {
   const { accent } = useAccent();
-  const [copied, setCopied] = useState(false);
-  const badgeUrl = `https://${host}/badge/${slug}.svg`;
-  const dashboardUrl = `https://${host}/${slug}`;
-  const snippet = `[![Hits](${badgeUrl})](${dashboardUrl})`;
+  const { copied, copy } = useCopy(COPY_FEEDBACK_MS);
+  const snippet = buildBadgeSnippet(host, slug);
 
   return (
     <Section>
@@ -464,11 +462,7 @@ function PendingBanner({ slug, host }: { slug: string; host: string }) {
           {snippet}
         </pre>
         <button
-          onClick={() => {
-            navigator.clipboard.writeText(snippet);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          }}
+          onClick={() => copy(snippet)}
           className="w-full py-2 rounded-lg text-[11px] font-semibold text-white transition-colors"
           style={{ backgroundColor: copied ? "#22c55e" : accent }}
         >
@@ -488,7 +482,7 @@ function BoostButton({ slug }: { slug: string }) {
   const [amount, setAmount] = useState("10");
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<{ message: string; ok: boolean } | null>(null);
 
   // 잔액 조회
   useEffect(() => {
@@ -514,11 +508,11 @@ function BoostButton({ slug }: { slug: string }) {
       const data = await res.json();
       if (res.ok) {
         setBalance(data.balance);
-        setResult(`🚀 +${data.injected.toLocaleString()} 부스트 완료!`);
+        setResult({ message: `🚀 +${(data.injected as number).toLocaleString()} 부스트 완료!`, ok: true });
         setAmount("10");
-        setTimeout(() => setResult(null), 3000);
+        setTimeout(() => setResult(null), BOOST_RESULT_DISMISS_MS);
       } else {
-        setResult(data.error || "실패");
+        setResult({ message: data.error || "실패", ok: false });
       }
     } finally {
       setLoading(false);
@@ -569,7 +563,7 @@ function BoostButton({ slug }: { slug: string }) {
         </div>
       </div>
       <div className="flex gap-2">
-        {[10, 50, 100].map((v) => (
+        {BOOST_PRESETS.map((v) => (
           <button
             key={v}
             onClick={() => setAmount(String(v))}
@@ -601,8 +595,8 @@ function BoostButton({ slug }: { slug: string }) {
         </button>
       </div>
       {result && (
-        <p className={`text-xs font-semibold text-center ${result.includes("완료") ? "text-green-500" : "text-red-500"}`}>
-          {result}
+        <p className={`text-xs font-semibold text-center ${result.ok ? "text-green-500" : "text-red-500"}`}>
+          {result.message}
         </p>
       )}
       {balance !== null && balance <= 0 && (
@@ -623,7 +617,7 @@ function BoostButton({ slug }: { slug: string }) {
 
 function StreakChip({ daily }: { daily: { date: string; count: number }[] }) {
   const streak = calcStreak(daily);
-  const fire = streak >= 7;
+  const fire = streak >= STREAK_FIRE_THRESHOLD;
   const label = streak > 0 ? `${streak}일 연속` : "스트릭";
 
   return (

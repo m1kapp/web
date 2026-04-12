@@ -4,6 +4,7 @@ import { useState } from "react";
 
 interface SiteCardProps {
   slug: string;
+  url?: string | null;
   title: string | null;
   ogTitle: string | null;
   ogDescription: string | null;
@@ -26,6 +27,7 @@ function slugToColor(slug: string): string {
 
 export function SiteCard({
   slug,
+  url,
   title,
   ogTitle,
   ogDescription,
@@ -93,7 +95,7 @@ export function SiteCard({
           </p>
         ) : (
           <p className="text-[10px] text-zinc-400 truncate">
-            {slug}
+            {url || slug}
           </p>
         )}
       </a>
@@ -101,7 +103,7 @@ export function SiteCard({
       {/* 배지 + 더보기 */}
       <div className="shrink-0 flex items-center gap-1.5">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/badge/${slug}.svg?view=true`} alt="" className="h-5 max-w-28 object-contain" />
+        <img src={`/badge/${slug}.svg?view=true`} alt="" className="max-w-28" />
 
         {actions && (
           <div className="relative">
