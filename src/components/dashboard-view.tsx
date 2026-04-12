@@ -689,6 +689,7 @@ function BoostButton({ slug, siteName, siteDescription, siteOgImage, siteColor }
         setResult({ message: `🚀 +${(data.injected as number).toLocaleString()} 부스트 완료!`, ok: true });
         setAmount("10");
         setTimeout(() => setResult(null), BOOST_RESULT_DISMISS_MS);
+        window.dispatchEvent(new CustomEvent("m1k:boost-completed"));
       } else {
         setResult({ message: data.error || "실패", ok: false });
       }

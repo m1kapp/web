@@ -188,6 +188,12 @@ export function MyTab({
     fetchBoostedSites();
   }, [isSignedIn]);
 
+  useEffect(() => {
+    const handler = () => { fetchBalance(); fetchBoostedSites(); };
+    window.addEventListener("m1k:boost-completed", handler);
+    return () => window.removeEventListener("m1k:boost-completed", handler);
+  }, []);
+
   const refreshBalance = fetchBalance;
 
   const totalHits = sites.reduce((sum, s) => sum + Number(s.total), 0);
