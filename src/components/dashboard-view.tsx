@@ -62,6 +62,7 @@ interface DashboardViewProps {
 
 export function DashboardView({ data: initialData, host, isOwner = false }: DashboardViewProps) {
   const fire = useConfetti();
+  const router = useRouter();
   const [data, setData] = useState(initialData);
   const [tab, setTab] = useState<Tab>("overview");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -112,7 +113,7 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
             {tab === "overview" && (
               <>
                 {/* 사이트 히어로 */}
-                <SiteHero data={data} onMoreBadges={() => window.dispatchEvent(new CustomEvent("m1k:go-tab", { detail: "badge" }))} />
+                <SiteHero data={data} onMoreBadges={() => router.push("/badges")} />
 
                 {/* 통계 칩 — 전체랑 다른 값만 노출 */}
                 <Section className="flex gap-3 pt-5">
