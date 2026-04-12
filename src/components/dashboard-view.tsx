@@ -114,11 +114,22 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
                 {/* 사이트 히어로 */}
                 <SiteHero data={data} />
 
-                {/* 통계 칩 */}
+                {/* 통계 칩 — 사이트 나이에 따라 의미있는 지표만 */}
                 <Section className="flex gap-3 pt-5">
                   <StreakChip daily={data.daily} />
-                  <StatChip label="이번 주" value={data.weekly} />
-                  <StatChip label="이번 달" value={data.monthly} />
+                  {(() => {
+                    const ageDays = data.createdAt
+                      ? Math.floor((Date.now() - new Date(data.createdAt).getTime()) / 86400000)
+                      : 999;
+                    if (ageDays < 7) return <StatChip label="오늘" value={data.todayCount} />;
+                    if (ageDays < 30) return <StatChip label="이번 주" value={data.weekly} />;
+                    return (
+                      <>
+                        <StatChip label="이번 주" value={data.weekly} />
+                        <StatChip label="이번 달" value={data.monthly} />
+                      </>
+                    );
+                  })()}
                   <StatChip label="전체" value={data.total} />
                 </Section>
 
