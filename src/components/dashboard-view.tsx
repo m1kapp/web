@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { GrassMap } from "./grass-map";
+import { GrassMap } from "@m1kapp/ui";
 import { BadgeConfigurator } from "./badge-configurator";
 import { Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/ui";
 import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
 import { AnalyticsSection } from "./ui-parts";
 import { countryFlag, deviceIcon, extractDomain, browserIcon, osIcon, formatHour } from "@/lib/format";
 import { ShareButton } from "./share-button";
+import { BoostHistorySheet, type BoostLog } from "./boost-history-sheet";
+import { SitePreviewCard } from "./site-preview-card";
 import { getUnlockedAchievements, getLockedAchievements, getCurrentGoal, GOAL_TIERS, calcStreak } from "@/lib/achievements";
 import { buildBadgeSnippet } from "@/lib/badge";
 import { useCopy } from "@/lib/use-copy";
@@ -122,14 +124,14 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
 
                 {/* 부스트 */}
                 <Section className="pt-3 pb-6">
-                  <BoostButton slug={data.slug} />
+                  <BoostButton slug={data.slug} siteName={data.ogTitle || data.title || data.slug} siteDescription={data.ogDescription} siteOgImage={data.ogImage} siteColor={data.color} />
                 </Section>
 
                 <Divider />
 
                 {/* 잔디 */}
                 <Section className="pb-6">
-                  <GrassMap daily={data.daily} createdAt={data.createdAt} />
+                  <GrassMapWithAccent daily={data.daily} />
                 </Section>
               </>
             )}
@@ -244,6 +246,11 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
       </Watermark>
     </AccentProvider>
   );
+}
+
+function GrassMapWithAccent({ daily }: { daily: { date: string; count: number }[] }) {
+  const { accent, isDark } = useAccent();
+  return <GrassMap data={daily} accent={accent} isDark={isDark} unit="명" />;
 }
 
 function BottomTabBar({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) => void }) {
@@ -632,13 +639,27 @@ function PendingBanner({ slug, host }: { slug: string; host: string }) {
   );
 }
 
-function BoostButton({ slug }: { slug: string }) {
+function BoostButton({ slug, siteName, siteDescription, siteOgImage, siteColor }: { slug: string; siteName: string; siteDescription?: string | null; siteOgImage?: string | null; siteColor?: string | null }) {
   const { accent } = useAccent();
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState("10");
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ message: string; ok: boolean } | null>(null);
+  const [myTotal, setMyTotal] = useState<number>(0);
+  const [myLogs, setMyLogs] = useState<BoostLog[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+
+  // 내 부스트 이력 조회 (마운트 시 1회)
+  useEffect(() => {
+    fetch(`/api/points/inject?slug=${encodeURIComponent(slug)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        setMyTotal(d.total ?? 0);
+        setMyLogs(d.logs ?? []);
+      })
+      .catch(() => {});
+  }, [slug]);
 
   // 잔액 조회
   useEffect(() => {
@@ -664,6 +685,7 @@ function BoostButton({ slug }: { slug: string }) {
       const data = await res.json();
       if (res.ok) {
         setBalance(data.balance);
+        setMyTotal((prev) => prev + (data.injected as number));
         setResult({ message: `🚀 +${(data.injected as number).toLocaleString()} 부스트 완료!`, ok: true });
         setAmount("10");
         setTimeout(() => setResult(null), BOOST_RESULT_DISMISS_MS);
@@ -677,13 +699,33 @@ function BoostButton({ slug }: { slug: string }) {
 
   if (!open) {
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98]"
-        style={{ backgroundColor: accent }}
-      >
-        🚀 부스트 보내기
-      </button>
+      <>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setOpen(true)}
+            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98]"
+            style={{ backgroundColor: accent }}
+          >
+            🚀 부스트 보내기
+          </button>
+          {myTotal > 0 && (
+            <button
+              onClick={() => setShowHistory(true)}
+              className="px-3 py-2.5 rounded-xl text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors whitespace-nowrap"
+            >
+              나의 응원 🚀{myTotal.toLocaleString()}
+            </button>
+          )}
+        </div>
+
+        <BoostHistorySheet
+          open={showHistory}
+          onClose={() => setShowHistory(false)}
+          site={{ slug, name: siteName, description: siteDescription, ogImage: siteOgImage, color: siteColor }}
+          total={myTotal}
+          logs={myLogs}
+        />
+      </>
     );
   }
 
@@ -797,7 +839,6 @@ function formatGoalNumber(n: number): string {
 function SiteHero({ data }: { data: SiteData }) {
   const { accent } = useAccent();
   const displayName = data.ogTitle || data.title || data.slug;
-  const displayUrl = extractDomain(data.url) || data.slug;
   const description = data.ogDescription;
   const streak = calcStreak(data.daily);
   const counts = { total: data.total, weekly: data.weekly, daily: data.todayCount, streak };
@@ -823,35 +864,17 @@ function SiteHero({ data }: { data: SiteData }) {
   return (
     <Section className="pt-6 pb-2">
       {/* 사이트 정보 */}
-      <div className="flex items-center gap-3 mb-5">
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
-          style={{ backgroundColor: data.ogImage ? undefined : accent }}
-        >
-          {data.ogImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={data.ogImage} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-sm font-black text-white/80">
-              {displayName.slice(0, 2)}
-            </span>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 truncate cursor-default">
-            {displayName}
-          </h1>
-          <p className="text-xs text-zinc-400 truncate cursor-default">
-            {displayUrl}
-          </p>
-          {description && (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5 cursor-default">
-              {description}
-            </p>
-          )}
-        </div>
-        {/* 공유 */}
-        <ShareButton slug={data.slug} title={displayName} />
+      <div className="mb-5">
+        <SitePreviewCard
+          slug={data.slug}
+          name={displayName}
+          ogImage={data.ogImage}
+          color={accent}
+          description={description}
+          thumbnailSize="lg"
+          variant="bare"
+          right={<ShareButton slug={data.slug} title={displayName} />}
+        />
       </div>
 
       {/* 달성 뱃지 */}

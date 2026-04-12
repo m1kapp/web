@@ -64,7 +64,7 @@ export default async function RootLayout({
           href="https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css"
         />
       </head>
-      <body className="min-h-full" style={{ fontFamily: fontFamily.pretendard }} data-self-slug={self?.slug ?? ""}>
+      <body className="min-h-full h-dvh" style={{ fontFamily: fontFamily.pretendard }} data-self-slug={self?.slug ?? ""}>
         <ClerkProvider
           appearance={{
             layout: {
