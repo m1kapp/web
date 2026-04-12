@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
+import { GitHubLoginButton } from "@/components/github-login-button";
 import { SiteCard } from "@/components/site-card";
 import { Divider, EmptyState } from "@m1kapp/ui";
 import { BoostShop } from "@/components/boost-shop";
@@ -100,6 +101,23 @@ export function MyTab({
 }) {
   const { user } = useUser();
   const { signOut } = useClerk();
+  const [pointBalance, setPointBalance] = useState<number | null>(null);
+
+  const fetchBalance = () => {
+    fetch("/api/points")
+      .then((r) => r.json())
+      .then((d) => setPointBalance(d.balance ?? null))
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    fetchBalance();
+  }, [isSignedIn]);
+
+  const refreshBalance = fetchBalance;
+
+  const totalHits = sites.reduce((sum, s) => sum + Number(s.total), 0);
 
   if (!isSignedIn) {
     return (
@@ -112,30 +130,18 @@ export function MyTab({
         </div>
         <p className="text-sm font-medium text-zinc-600 mb-1">나의 도전을 시작해보세요</p>
         <p className="text-xs text-zinc-400 mb-5">로그인하면 사이트를 등록하고 관리할 수 있어요</p>
-        <GoogleLoginButton
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
-          style={{ backgroundColor: bgColor }}
-        />
+        <div className="flex flex-col gap-2 w-full">
+          <GoogleLoginButton
+            className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
+            style={{ backgroundColor: bgColor }}
+          />
+          <GitHubLoginButton
+            className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
+          />
+        </div>
       </div>
     );
   }
-
-  const totalHits = sites.reduce((sum, s) => sum + Number(s.total), 0);
-  const [pointBalance, setPointBalance] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch("/api/points")
-      .then((r) => r.json())
-      .then((d) => setPointBalance(d.balance ?? null))
-      .catch(() => {});
-  }, []);
-
-  const refreshBalance = () => {
-    fetch("/api/points")
-      .then((r) => r.json())
-      .then((d) => setPointBalance(d.balance ?? null))
-      .catch(() => {});
-  };
 
   return (
     <div className="px-4 py-5">

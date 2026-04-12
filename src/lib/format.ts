@@ -19,3 +19,32 @@ export function extractDomain(url: string | null): string {
     return url;
   }
 }
+
+export function browserIcon(browser: string | null): string {
+  if (!browser) return "🌐";
+  const b = browser.toLowerCase();
+  if (b.includes("chrome")) return "🟡";
+  if (b.includes("safari")) return "🔵";
+  if (b.includes("firefox")) return "🦊";
+  if (b.includes("edge")) return "🌀";
+  if (b.includes("samsung")) return "📱";
+  return "🌐";
+}
+
+export function osIcon(os: string | null): string {
+  if (!os) return "💻";
+  const o = os.toLowerCase();
+  if (o.includes("ios") || o.includes("iphone") || o.includes("ipad")) return "🍎";
+  if (o.includes("mac")) return "🍎";
+  if (o.includes("android")) return "🤖";
+  if (o.includes("windows")) return "🪟";
+  if (o.includes("linux")) return "🐧";
+  return "💻";
+}
+
+export function formatHour(hour: number): string {
+  if (hour === 0) return "자정";
+  if (hour < 12) return `오전 ${hour}시`;
+  if (hour === 12) return "정오";
+  return `오후 ${hour - 12}시`;
+}

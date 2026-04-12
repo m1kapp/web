@@ -7,7 +7,7 @@ import { BadgeConfigurator } from "./badge-configurator";
 import { Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/ui";
 import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
 import { AnalyticsSection } from "./ui-parts";
-import { countryFlag, deviceIcon, extractDomain } from "@/lib/format";
+import { countryFlag, deviceIcon, extractDomain, browserIcon, osIcon, formatHour } from "@/lib/format";
 import { ShareButton } from "./share-button";
 import { getUnlockedAchievements, getLockedAchievements, getCurrentGoal, GOAL_TIERS, calcStreak } from "@/lib/achievements";
 import { buildBadgeSnippet } from "@/lib/badge";
@@ -33,11 +33,17 @@ interface SiteData {
   countries: { country: string | null; count: number }[];
   devices: { device: string | null; count: number }[];
   referers: { referer: string | null; count: number }[];
+  browsers: { browser: string | null; count: number }[];
+  os: { os: string | null; count: number }[];
+  cities: { city: string | null; count: number }[];
+  hourly: { hour: number; count: number }[];
   createdAt: string | null;
   color: string | null;
   badgeStyle: string | null;
   badgeLabel: string | null;
   badgeEmoji: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
   ogImage: string | null;
   userId: string | null;
   todayCount: number;
@@ -138,6 +144,13 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
                   }))}
                 />
                 <AnalyticsSection
+                  title="도시"
+                  items={data.cities.map((c) => ({
+                    label: `📍 ${c.city || "알 수 없음"}`,
+                    value: Number(c.count),
+                  }))}
+                />
+                <AnalyticsSection
                   title="디바이스"
                   items={data.devices.map((d) => ({
                     label: `${deviceIcon(d.device)} ${d.device}`,
@@ -145,10 +158,31 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
                   }))}
                 />
                 <AnalyticsSection
+                  title="브라우저"
+                  items={data.browsers.map((b) => ({
+                    label: `${browserIcon(b.browser)} ${b.browser || "알 수 없음"}`,
+                    value: Number(b.count),
+                  }))}
+                />
+                <AnalyticsSection
+                  title="운영체제"
+                  items={data.os.map((o) => ({
+                    label: `${osIcon(o.os)} ${o.os || "알 수 없음"}`,
+                    value: Number(o.count),
+                  }))}
+                />
+                <AnalyticsSection
                   title="유입 경로"
                   items={data.referers.map((r) => ({
                     label: extractDomain(r.referer),
                     value: Number(r.count),
+                  }))}
+                />
+                <AnalyticsSection
+                  title="활성 시간대"
+                  items={data.hourly.map((h) => ({
+                    label: `🕐 ${formatHour(h.hour)}`,
+                    value: Number(h.count),
                   }))}
                 />
               </Section>
@@ -316,7 +350,7 @@ function DashboardHeader({
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >
-            <span className="truncate max-w-32">{url.replace(/^https?:\/\//, "")}</span>
+            <span className="truncate max-w-32">{extractDomain(url)}</span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
               <polyline points="15 3 21 3 21 9" />
@@ -762,7 +796,9 @@ function formatGoalNumber(n: number): string {
 
 function SiteHero({ data }: { data: SiteData }) {
   const { accent } = useAccent();
-  const displayName = data.title || data.slug;
+  const displayName = data.ogTitle || data.title || data.slug;
+  const displayUrl = extractDomain(data.url) || data.slug;
+  const description = data.ogDescription;
   const streak = calcStreak(data.daily);
   const counts = { total: data.total, weekly: data.weekly, daily: data.todayCount, streak };
   const unlocked = getUnlockedAchievements(counts);
@@ -802,12 +838,17 @@ function SiteHero({ data }: { data: SiteData }) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-bold text-zinc-900 truncate">
+          <h1 className="text-lg font-bold text-zinc-900 dark:text-zinc-100 truncate cursor-default">
             {displayName}
           </h1>
-          <p className="text-xs text-zinc-400 truncate">
-            {data.url?.replace(/^https?:\/\//, "") || data.slug}
+          <p className="text-xs text-zinc-400 truncate cursor-default">
+            {displayUrl}
           </p>
+          {description && (
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5 cursor-default">
+              {description}
+            </p>
+          )}
         </div>
         {/* 공유 */}
         <ShareButton slug={data.slug} title={displayName} />

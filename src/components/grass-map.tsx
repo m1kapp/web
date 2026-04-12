@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useAccent } from "@/lib/theme-context";
 
 interface DailyData {
@@ -41,6 +41,7 @@ interface TooltipState {
 export function GrassMap({ daily, createdAt }: GrassMapProps) {
   const { isDark, accent } = useAccent();
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
 
   // 사용 가능한 연도 목록
   const availableYears = useMemo(() => {
@@ -117,7 +118,7 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
   const svgHeight = topPad + 7 * STEP;
 
   return (
-    <div className="space-y-4">
+    <div ref={outerRef} className="relative space-y-4">
       {/* 상단: 연도 필터 + 첫 방문일 */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-1.5">
@@ -143,7 +144,7 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
       </div>
 
       {/* 히트맵 */}
-      <div className="overflow-x-auto relative">
+      <div className="overflow-x-auto">
         <svg
           width={svgWidth}
           height={svgHeight}
@@ -212,11 +213,11 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
                 onMouseEnter={(e) => {
                   if (day.isOutOfRange) return;
                   const svg = e.currentTarget.ownerSVGElement!;
-                  const rect = svg.getBoundingClientRect();
-                  const parentRect = svg.parentElement!.getBoundingClientRect();
+                  const svgRect = svg.getBoundingClientRect();
+                  const outerRect = outerRef.current!.getBoundingClientRect();
                   setTooltip({
-                    x: cx + rect.left - parentRect.left + CELL_SIZE / 2,
-                    y: cy + rect.top - parentRect.top,
+                    x: cx + svgRect.left - outerRect.left + CELL_SIZE / 2,
+                    y: cy + svgRect.top - outerRect.top,
                     date: day.date,
                     count: day.count,
                     isFirst,
@@ -229,31 +230,32 @@ export function GrassMap({ daily, createdAt }: GrassMapProps) {
           })}
         </svg>
 
-        {/* 커스텀 툴팁 */}
-        {tooltip && (
-          <div
-            className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-full"
-            style={{ left: tooltip.x, top: tooltip.y - 6 }}
-          >
-            <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[11px] rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap">
-              <span className="font-medium">{formatTooltipDate(tooltip.date)}</span>
-              {!tooltip.isFuture && (
-                <span className="ml-1.5 tabular-nums">
-                  {tooltip.count > 0 ? `${tooltip.count.toLocaleString()}명` : "방문 없음"}
-                </span>
-              )}
-              {tooltip.isFirst && (
-                <span className="ml-1.5 text-[10px] opacity-70">🌱 첫 방문</span>
-              )}
-              {tooltip.isToday && !tooltip.isFirst && (
-                <span className="ml-1.5 text-[10px] opacity-70">오늘</span>
-              )}
-            </div>
-            {/* 말풍선 꼬리 */}
-            <div className="mx-auto w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-zinc-900 dark:border-t-zinc-100" />
-          </div>
-        )}
       </div>
+
+      {/* 커스텀 툴팁 — overflow-x-auto 바깥에 렌더링해야 클리핑 안 됨 */}
+      {tooltip && (
+        <div
+          className="pointer-events-none absolute z-30 -translate-x-1/2 -translate-y-full"
+          style={{ left: tooltip.x, top: tooltip.y - 6 }}
+        >
+          <div className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[11px] rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap">
+            <span className="font-medium">{formatTooltipDate(tooltip.date)}</span>
+            {!tooltip.isFuture && (
+              <span className="ml-1.5 tabular-nums">
+                {tooltip.count > 0 ? `${tooltip.count.toLocaleString()}명` : "방문 없음"}
+              </span>
+            )}
+            {tooltip.isFirst && (
+              <span className="ml-1.5 text-[10px] opacity-70">🌱 첫 방문</span>
+            )}
+            {tooltip.isToday && !tooltip.isFirst && (
+              <span className="ml-1.5 text-[10px] opacity-70">오늘</span>
+            )}
+          </div>
+          {/* 말풍선 꼬리 */}
+          <div className="mx-auto w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-zinc-900 dark:border-t-zinc-100" />
+        </div>
+      )}
 
       {/* 범례 */}
       <div className="flex items-center justify-end gap-1.5 text-[10px] text-zinc-400 dark:text-zinc-500">
