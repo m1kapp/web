@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
-import { fontFamily, ThemeScript } from "@m1kapp/ui";
+import { fontFamily, THEME_SCRIPT } from "@m1kapp/ui";
 import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -21,6 +21,19 @@ export const metadata: Metadata = {
   description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230f172a'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='system-ui,sans-serif' font-size='14' font-weight='900' fill='white'>m1k</text></svg>",
+  },
+  openGraph: {
+    title: "m1k — 방문자 1,000명을 향한 첫걸음",
+    description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
+    url: "https://m1k.app",
+    siteName: "m1k",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "m1k — 방문자 1,000명을 향한 첫걸음",
+    description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
   },
 };
 
@@ -45,7 +58,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <ThemeScript />
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css"

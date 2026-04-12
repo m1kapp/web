@@ -12,9 +12,11 @@ import type { RecentSite } from "@/lib/types";
 export default function Home() {
   const [recentSites, setRecentSites] = useState<RecentSite[]>([]);
   const [mySites, setMySites] = useState<RecentSite[]>([]);
-  const [selfSlug] = useState<string | null>(() =>
-    typeof document !== "undefined" ? document.body.dataset.selfSlug || null : null
-  );
+  const [selfSlug, setSelfSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelfSlug(document.body.dataset.selfSlug || null);
+  }, []);
   const [bgColor, setBgColor] = useState("#0f172a");
   const [themeOpen, setThemeOpen] = useState(false);
   const [tab, setTab] = useState<"home" | "store" | "badge" | "my">("home");

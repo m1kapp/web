@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "권한이 없습니다" }, { status: 403 });
   }
 
-  const og = await scrapeOg(slug);
+  const rawUrl = (site.url || slug).replace(/^https?:\/\//, "");
+  const og = await scrapeOg(rawUrl);
 
   if (og.title || og.image) {
     await db

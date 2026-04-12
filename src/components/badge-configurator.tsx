@@ -72,11 +72,14 @@ export function BadgeConfigurator({
     setSavedConfig({ color, style, label });
   }, [slug, color, style, label]);
 
-  // 임베드 코드용 (기본값은 생략)
+  // 임베드 코드용: 저장된 상태면 파라미터 불필요 (서버가 DB 설정 자동 적용)
+  // 미저장 변경이 있을 때만 파라미터로 명시
   const params = new URLSearchParams();
-  if (label !== "m1k") params.set("label", label);
-  if (color !== "#ec4899") params.set("color", color.replace("#", ""));
-  if (style !== "flat") params.set("style", style);
+  if (!saved) {
+    if (label !== "m1k") params.set("label", label);
+    if (color !== "#ec4899") params.set("color", color.replace("#", ""));
+    if (style !== "flat") params.set("style", style);
+  }
   const qs = params.toString() ? `?${params.toString()}` : "";
 
   // 프리뷰용 (항상 현재 선택값 명시)

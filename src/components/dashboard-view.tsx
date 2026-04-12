@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { GrassMap } from "./grass-map";
 import { BadgeConfigurator } from "./badge-configurator";
@@ -19,6 +19,8 @@ const COPY_FEEDBACK_MS = 2_000;
 const BOOST_RESULT_DISMISS_MS = 3_000;
 const BOOST_PRESETS = [10, 50, 100] as const;
 const STREAK_FIRE_THRESHOLD = 7;
+
+type Tab = "overview" | "analytics" | "settings";
 
 interface SiteData {
   slug: string;
@@ -53,6 +55,8 @@ interface DashboardViewProps {
 export function DashboardView({ data: initialData, host, isOwner = false }: DashboardViewProps) {
   const fire = useConfetti();
   const [data, setData] = useState(initialData);
+  const [tab, setTab] = useState<Tab>("overview");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // 목표 달성 시 confetti (1K, 10K, 100K, 1M)
   useEffect(() => {
@@ -83,6 +87,11 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
     return () => clearInterval(interval);
   }, [data.slug]);
 
+  function switchTab(next: Tab) {
+    setTab(next);
+    scrollRef.current?.scrollTo({ top: 0 });
+  }
+
   return (
     <AccentProvider initialAccent={(data.color as AccentHex) ?? undefined}>
       <Watermark>
@@ -90,100 +99,183 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
           {/* 헤더 — 뒤로가기 + 사이트 바로가기 */}
           <DashboardHeader url={data.url} title={data.title} slug={data.slug} />
 
-          {/* 원페이저 스크롤 */}
-          <div className="flex-1 overflow-y-auto">
-            {/* 사이트 히어로 */}
-            <SiteHero data={data} />
-
-            {/* 통계 칩 */}
-            <Section className="flex gap-3 pt-5">
-              <StreakChip daily={data.daily} />
-              <StatChip label="이번 주" value={data.weekly} />
-              <StatChip label="이번 달" value={data.monthly} />
-              <StatChip label="전체" value={data.total} />
-            </Section>
-
-            {/* 부스트 */}
-            <Section className="pt-3">
-              <BoostButton slug={data.slug} />
-            </Section>
-
-            <Divider />
-
-            {/* 잔디 */}
-            <Section>
-              <GrassMap daily={data.daily} createdAt={data.createdAt} />
-            </Section>
-
-            <Divider />
-
-            {/* 분석 */}
-            <Section className="space-y-5">
-              <AnalyticsSection
-                title="국가"
-                items={data.countries.map((c) => ({
-                  label: `${countryFlag(c.country)} ${c.country || "알 수 없음"}`,
-                  value: Number(c.count),
-                }))}
-              />
-              <AnalyticsSection
-                title="디바이스"
-                items={data.devices.map((d) => ({
-                  label: `${deviceIcon(d.device)} ${d.device}`,
-                  value: Number(d.count),
-                }))}
-              />
-              <AnalyticsSection
-                title="유입 경로"
-                items={data.referers.map((r) => ({
-                  label: extractDomain(r.referer),
-                  value: Number(r.count),
-                }))}
-              />
-            </Section>
-
-            <Divider />
-
-            {/* 하위 뱃지 */}
-            {!data.parentId && (
-              <Section className="pb-1">
-                <SubBadges slug={data.slug} host={host} isOwner={isOwner} />
-              </Section>
-            )}
-
-            {!data.parentId && <Divider />}
-
-            {/* 미인증 안내 — 배지 설정 바로 위 */}
-            {!data.verified && (
+          {/* 탭 콘텐츠 */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto">
+            {tab === "overview" && (
               <>
-                <PendingBanner slug={data.slug} host={host} />
+                {/* 사이트 히어로 */}
+                <SiteHero data={data} />
+
+                {/* 통계 칩 */}
+                <Section className="flex gap-3 pt-5">
+                  <StreakChip daily={data.daily} />
+                  <StatChip label="이번 주" value={data.weekly} />
+                  <StatChip label="이번 달" value={data.monthly} />
+                  <StatChip label="전체" value={data.total} />
+                </Section>
+
+                {/* 부스트 */}
+                <Section className="pt-3 pb-6">
+                  <BoostButton slug={data.slug} />
+                </Section>
+
                 <Divider />
+
+                {/* 잔디 */}
+                <Section className="pb-6">
+                  <GrassMap daily={data.daily} createdAt={data.createdAt} />
+                </Section>
               </>
             )}
 
-            {/* 배지 설정 */}
-            <Section className="pb-4">
-              <BadgeConfigurator
-                slug={data.slug}
-                host={host}
-                initialColor={data.color || undefined}
-                initialStyle={data.badgeStyle || undefined}
-                initialLabel={data.badgeLabel || undefined}
-                counts={{ total: data.total, weekly: data.weekly, daily: data.todayCount }}
-                isOwner={isOwner}
-              />
-            </Section>
-
-            {/* 사이트 삭제 */}
-            {isOwner && (
-              <Section className="pb-12">
-                <DeleteSiteButton slug={data.slug} />
+            {tab === "analytics" && (
+              <Section className="space-y-5 py-5 pb-6">
+                <AnalyticsSection
+                  title="국가"
+                  items={data.countries.map((c) => ({
+                    label: `${countryFlag(c.country)} ${c.country || "알 수 없음"}`,
+                    value: Number(c.count),
+                  }))}
+                />
+                <AnalyticsSection
+                  title="디바이스"
+                  items={data.devices.map((d) => ({
+                    label: `${deviceIcon(d.device)} ${d.device}`,
+                    value: Number(d.count),
+                  }))}
+                />
+                <AnalyticsSection
+                  title="유입 경로"
+                  items={data.referers.map((r) => ({
+                    label: extractDomain(r.referer),
+                    value: Number(r.count),
+                  }))}
+                />
               </Section>
             )}
+
+            {tab === "settings" && (
+              <>
+                {/* 하위 뱃지 */}
+                {!data.parentId && (
+                  <>
+                    <Section className="pb-1 pt-5">
+                      <SubBadges slug={data.slug} host={host} isOwner={isOwner} />
+                    </Section>
+                    <Divider />
+                  </>
+                )}
+
+                {/* 미인증 안내 */}
+                {!data.verified && (
+                  <>
+                    <PendingBanner slug={data.slug} host={host} />
+                    <Divider />
+                  </>
+                )}
+
+                {/* 배지 설정 */}
+                <Section className="pb-4">
+                  <BadgeConfigurator
+                    slug={data.slug}
+                    host={host}
+                    initialColor={data.color || undefined}
+                    initialStyle={data.badgeStyle || undefined}
+                    initialLabel={data.badgeLabel || undefined}
+                    counts={{ total: data.total, weekly: data.weekly, daily: data.todayCount }}
+                    isOwner={isOwner}
+                  />
+                </Section>
+
+                {/* OG 정보 새로고침 */}
+                {isOwner && (
+                  <Section className="pb-2">
+                    <RefreshOgButton slug={data.slug} />
+                  </Section>
+                )}
+
+                {/* 사이트 삭제 */}
+                {isOwner && (
+                  <Section className="pb-6">
+                    <DeleteSiteButton slug={data.slug} />
+                  </Section>
+                )}
+              </>
+            )}
           </div>
+
+          {/* 하단 탭바 */}
+          <BottomTabBar tab={tab} onTabChange={switchTab} />
         </AppShell>
       </Watermark>
     </AccentProvider>
+  );
+}
+
+function BottomTabBar({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) => void }) {
+  const { accent } = useAccent();
+
+  const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
+    {
+      id: "overview",
+      label: "개요",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+        </svg>
+      ),
+    },
+    {
+      id: "analytics",
+      label: "분석",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10" />
+          <line x1="12" y1="20" x2="12" y2="4" />
+          <line x1="6" y1="20" x2="6" y2="14" />
+        </svg>
+      ),
+    },
+    {
+      id: "settings",
+      label: "설정",
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        </svg>
+      ),
+    },
+  ];
+
+  return (
+    <nav className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md">
+      <div className="flex">
+        {tabs.map((t) => {
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => onTabChange(t.id)}
+              className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors"
+              style={{ color: active ? accent : undefined }}
+            >
+              <span className={active ? "" : "text-zinc-400 dark:text-zinc-600"}>
+                {t.icon}
+              </span>
+              <span
+                className={`text-[10px] font-semibold ${active ? "" : "text-zinc-400 dark:text-zinc-600"}`}
+              >
+                {t.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 }
 
@@ -380,6 +472,36 @@ function SubBadges({ slug, host, isOwner }: { slug: string; host: string; isOwne
         </p>
       ) : null}
     </div>
+  );
+}
+
+function RefreshOgButton({ slug }: { slug: string }) {
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
+
+  async function handleRefresh() {
+    setLoading(true);
+    try {
+      await fetch("/api/sites/refresh-og", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug }),
+      });
+      setDone(true);
+      setTimeout(() => setDone(false), 3000);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <button
+      onClick={handleRefresh}
+      disabled={loading}
+      className="w-full text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2 disabled:opacity-50"
+    >
+      {loading ? "새로고침 중..." : done ? "✓ OG 정보 업데이트됨" : "OG 정보 새로고침"}
+    </button>
   );
 }
 
