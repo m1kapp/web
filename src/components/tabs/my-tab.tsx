@@ -8,7 +8,20 @@ import { GitHubLoginButton } from "@/components/github-login-button";
 import { SiteCard } from "@/components/site-card";
 import { Divider, EmptyState } from "@m1kapp/ui";
 import { BoostShop } from "@/components/boost-shop";
+import { BoostHistorySheet, type BoostLog } from "@/components/boost-history-sheet";
+import { SitePreviewCard } from "@/components/site-preview-card";
 import type { RecentSite } from "@/lib/types";
+
+type BoostedSite = {
+  slug: string;
+  title: string | null;
+  url: string | null;
+  color: string | null;
+  ogTitle: string | null;
+  ogDescription: string | null;
+  ogImage: string | null;
+  totalBoosted: number;
+};
 
 function RegisterForm({
   bgColor,
@@ -88,6 +101,55 @@ function RegisterForm({
   );
 }
 
+function BoostedSiteCard({ site }: { site: BoostedSite }) {
+  const [showSheet, setShowSheet] = useState(false);
+  const [logs, setLogs] = useState<BoostLog[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+  const name = site.ogTitle || site.title || site.url || site.slug;
+
+  function openSheet() {
+    setShowSheet(true);
+    if (logs.length === 0) {
+      setLoadingLogs(true);
+      fetch(`/api/points/inject?slug=${encodeURIComponent(site.slug)}`)
+        .then((r) => r.json())
+        .then((d) => setLogs(d.logs ?? []))
+        .catch(() => {})
+        .finally(() => setLoadingLogs(false));
+    }
+  }
+
+  const chip = (
+    <button
+      onClick={(e) => { e.stopPropagation(); openSheet(); }}
+      className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
+    >
+      나의 응원 🚀{Number(site.totalBoosted).toLocaleString()}
+    </button>
+  );
+
+  return (
+    <>
+      <SitePreviewCard
+        slug={site.slug}
+        name={name ?? site.slug}
+        ogImage={site.ogImage}
+        color={site.color}
+        right={chip}
+        onClick={() => window.location.href = `/${site.slug}`}
+      />
+      <BoostHistorySheet
+        open={showSheet}
+        onClose={() => setShowSheet(false)}
+        site={{ slug: site.slug, name: name ?? site.slug, ogImage: site.ogImage, color: site.color, description: site.ogDescription }}
+        total={Number(site.totalBoosted)}
+        logs={logs}
+        loading={loadingLogs}
+      />
+    </>
+  );
+}
+
 export function MyTab({
   sites,
   isSignedIn,
@@ -102,6 +164,9 @@ export function MyTab({
   const { user } = useUser();
   const { signOut } = useClerk();
   const [pointBalance, setPointBalance] = useState<number | null>(null);
+  const [showBoostShop, setShowBoostShop] = useState(false);
+  const [boostedSites, setBoostedSites] = useState<BoostedSite[]>([]);
+  const [activeSection, setActiveSection] = useState<"mine" | "others">("mine");
 
   const fetchBalance = () => {
     fetch("/api/points")
@@ -110,9 +175,17 @@ export function MyTab({
       .catch(() => {});
   };
 
+  const fetchBoostedSites = () => {
+    fetch("/api/points/boosted-sites")
+      .then((r) => r.json())
+      .then((d) => setBoostedSites(d.sites ?? []))
+      .catch(() => {});
+  };
+
   useEffect(() => {
     if (!isSignedIn) return;
     fetchBalance();
+    fetchBoostedSites();
   }, [isSignedIn]);
 
   const refreshBalance = fetchBalance;
@@ -146,32 +219,40 @@ export function MyTab({
   return (
     <div className="px-4 py-5">
       {/* 프로필 */}
-      <div className="flex items-center gap-3 mb-6 justify-between">
+      <div className="flex items-center gap-3 mb-5 justify-between">
         <div className="flex items-center gap-3">
-        {user?.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.imageUrl} alt="" className="w-12 h-12 rounded-full" />
-        ) : (
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: bgColor }}
-          >
-            <span className="text-lg font-black text-white">
-              {(user?.firstName || "?").slice(0, 1)}
-            </span>
+          {user?.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.imageUrl} alt="" className="w-12 h-12 rounded-full" />
+          ) : (
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: bgColor }}
+            >
+              <span className="text-lg font-black text-white">
+                {(user?.firstName || "?").slice(0, 1)}
+              </span>
+            </div>
+          )}
+          <div>
+            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+              {user?.firstName || user?.username || "나"}
+            </h2>
+            <p className="text-xs text-zinc-400">
+              {sites.length}개 사이트 · 총 {totalHits.toLocaleString()}명 방문
+              {pointBalance !== null && (
+                <span className="ml-1.5 inline-flex items-center gap-1.5">
+                  · 🚀 <span className="font-semibold text-zinc-600 dark:text-zinc-300">{pointBalance.toLocaleString()}</span>
+                  <button
+                    onClick={() => setShowBoostShop(true)}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-[9px] font-bold leading-none border border-zinc-200 dark:border-zinc-700"
+                  >
+                    충전
+                  </button>
+                </span>
+              )}
+            </p>
           </div>
-        )}
-        <div>
-          <h2 className="text-lg font-bold text-zinc-900">
-            {user?.firstName || user?.username || "나"}의 도전
-          </h2>
-          <p className="text-xs text-zinc-400">
-            {sites.length}개 사이트 · 총 {totalHits.toLocaleString()}명 방문
-            {pointBalance !== null && (
-              <span className="ml-1.5">· 🚀 <span className="font-semibold text-zinc-600 dark:text-zinc-300">{pointBalance.toLocaleString()}</span></span>
-            )}
-          </p>
-        </div>
         </div>
         <button
           onClick={() => signOut()}
@@ -181,33 +262,93 @@ export function MyTab({
         </button>
       </div>
 
-      <RegisterForm bgColor={bgColor} onRegistered={onRegistered} />
+      {/* 섹션 탭 */}
+      <div className="flex gap-1 mb-5 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+        <button
+          onClick={() => setActiveSection("mine")}
+          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+            activeSection === "mine"
+              ? "bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white shadow-sm"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          나의 도전
+        </button>
+        <button
+          onClick={() => setActiveSection("others")}
+          className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+            activeSection === "others"
+              ? "bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white shadow-sm"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          다른 사람의 도전
+          {boostedSites.length > 0 && (
+            <span className="ml-1 text-[9px] opacity-60">{boostedSites.length}</span>
+          )}
+        </button>
+      </div>
 
-      <Divider />
-
-      {sites.length > 0 ? (
-        <div className="space-y-2">
-          {sites.map((site) => (
-            <SiteCard
-              key={site.slug}
-              slug={site.slug}
-              url={site.url}
-              title={site.title}
-              ogTitle={site.ogTitle}
-              ogDescription={site.ogDescription}
-              ogImage={site.ogImage}
-              color={site.color}
-              owner={site.owner}
-            />
-          ))}
-        </div>
+      {activeSection === "mine" ? (
+        <>
+          <RegisterForm bgColor={bgColor} onRegistered={onRegistered} />
+          <Divider />
+          {sites.length > 0 ? (
+            <div className="space-y-2">
+              {sites.map((site) => (
+                <SiteCard
+                  key={site.slug}
+                  slug={site.slug}
+                  url={site.url}
+                  title={site.title}
+                  ogTitle={site.ogTitle}
+                  ogDescription={site.ogDescription}
+                  ogImage={site.ogImage}
+                  color={site.color}
+                  owner={site.owner}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState message="사이트를 등록하고 1K 도전을 시작해보세요" />
+          )}
+        </>
       ) : (
-        <EmptyState message="사이트를 등록하고 1K 도전을 시작해보세요" />
+        <>
+          {boostedSites.length > 0 ? (
+            <div className="space-y-2">
+              {boostedSites.map((site) => (
+                <BoostedSiteCard key={site.slug} site={site} />
+              ))}
+            </div>
+          ) : (
+            <EmptyState message="부스트를 보낸 사이트가 여기에 표시돼요" />
+          )}
+        </>
       )}
 
-      <Divider />
-
-      <BoostShop onPurchased={refreshBalance} />
+      {showBoostShop && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setShowBoostShop(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-white dark:bg-zinc-950 rounded-t-2xl p-5 pb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-bold text-zinc-900 dark:text-white">부스트 충전</span>
+              <button
+                onClick={() => setShowBoostShop(false)}
+                className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs"
+              >
+                ✕
+              </button>
+            </div>
+            <BoostShop onPurchased={() => { refreshBalance(); setShowBoostShop(false); }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

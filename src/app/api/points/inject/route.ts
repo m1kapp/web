@@ -1,8 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { points, pointLogs, sites, hits } from "@/lib/db/schema";
-import { eq, sql, and } from "drizzle-orm";
+import { eq, sql, and, desc } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
+
+// 내가 이 사이트에 보낸 부스트 이력 조회
+export async function GET(request: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+
+  const slug = request.nextUrl.searchParams.get("slug");
+  if (!slug) return NextResponse.json({ error: "slug가 필요합니다" }, { status: 400 });
+
+  const site = await db.query.sites.findFirst({ where: eq(sites.slug, slug) });
+  if (!site) return NextResponse.json({ total: 0, logs: [] });
+
+  const logs = await db.query.pointLogs.findMany({
+    where: and(
+      eq(pointLogs.userId, userId),
+      eq(pointLogs.type, "inject"),
+      eq(pointLogs.targetSiteId, site.id)
+    ),
+    orderBy: desc(pointLogs.createdAt),
+    limit: 20,
+  });
+
+  const total = logs.reduce((sum, l) => sum + Math.abs(l.amount), 0);
+
+  return NextResponse.json({
+    total,
+    logs: logs.map((l) => ({ amount: Math.abs(l.amount), createdAt: l.createdAt })),
+  });
+}
 
 // 부스트 보내기 (내 사이트든 남의 사이트든)
 export async function POST(request: NextRequest) {
