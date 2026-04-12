@@ -17,6 +17,7 @@ export const sites = pgTable("sites", {
   ogImage: text("og_image"),
   verified: boolean("verified").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  reached1000At: timestamp("reached_1000_at", { withTimezone: true }),
 });
 
 export const hits = pgTable(

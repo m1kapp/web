@@ -92,6 +92,16 @@ export async function POST(request: NextRequest) {
     memo: site.userId === userId ? "🚀 내 사이트에 부스트" : `🚀 ${site.title || site.slug}에 부스트`,
   });
 
+  // 1000 최초 돌파 기록
+  if (!site.reached1000At) {
+    const [[totalRow]] = await Promise.all([
+      db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
+    ]);
+    if (Number(totalRow.v) >= 1000) {
+      await db.update(sites).set({ reached1000At: new Date() }).where(eq(sites.id, site.id));
+    }
+  }
+
   const updated = await db.query.points.findFirst({
     where: eq(points.userId, userId),
   });

@@ -139,6 +139,11 @@ export async function GET(
     monthly: urlObj.searchParams.get("label") || "monthly",
   };
 
+  // 1000 최초 돌파 기록
+  if (counts.total >= 1000 && !site.reached1000At) {
+    await db.update(sites).set({ reached1000At: new Date() }).where(eq(sites.id, site.id));
+  }
+
   const currentGoal = getCurrentGoal(counts.total);
   const svg = generateBadge(displayCount, currentGoal.goal, {
     label: typeLabels[badgeType] || "m1k",

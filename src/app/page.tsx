@@ -21,6 +21,14 @@ export default function Home() {
   const [themeOpen, setThemeOpen] = useState(false);
   const [tab, setTab] = useState<"home" | "store" | "badge" | "my">("home");
   const { isSignedIn, user } = useUser();
+  const [sponsor, setSponsor] = useState<{ slug: string; name: string; is1k: boolean } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/sponsor")
+      .then((r) => r.json())
+      .then((d) => d && setSponsor(d))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     fetch("/api/sites/recent")
@@ -44,7 +52,7 @@ export default function Home() {
 
   return (
     <>
-    <Watermark color={bgColor}>
+    <Watermark color={bgColor} sponsor={sponsor ? { name: sponsor.is1k ? `🎉 ${sponsor.name}` : sponsor.name, url: `/${sponsor.slug}` } : undefined}>
       <AppShell className="m-0">
         <AppShellHeader>
           <div className="flex items-center gap-2">
