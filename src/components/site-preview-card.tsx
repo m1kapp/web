@@ -63,9 +63,9 @@ export function SitePreviewCard({ slug, name, ogImage, color, description, right
 
   if (onClick) {
     return (
-      <button onClick={onClick} className={`${base} w-full text-left hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors`}>
+      <div onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && onClick()} className={`${base} w-full cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors`}>
         {content}
-      </button>
+      </div>
     );
   }
 
