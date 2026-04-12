@@ -112,24 +112,20 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
             {tab === "overview" && (
               <>
                 {/* 사이트 히어로 */}
-                <SiteHero data={data} />
+                <SiteHero data={data} onMoreBadges={() => window.dispatchEvent(new CustomEvent("m1k:go-tab", { detail: "badge" }))} />
 
-                {/* 통계 칩 — 사이트 나이에 따라 의미있는 지표만 */}
+                {/* 통계 칩 — 전체랑 다른 값만 노출 */}
                 <Section className="flex gap-3 pt-5">
                   <StreakChip daily={data.daily} />
-                  {(() => {
-                    const ageDays = data.createdAt
-                      ? Math.floor((Date.now() - new Date(data.createdAt).getTime()) / 86400000)
-                      : 999;
-                    if (ageDays < 7) return <StatChip label="오늘" value={data.todayCount} />;
-                    if (ageDays < 30) return <StatChip label="이번 주" value={data.weekly} />;
-                    return (
-                      <>
-                        <StatChip label="이번 주" value={data.weekly} />
-                        <StatChip label="이번 달" value={data.monthly} />
-                      </>
-                    );
-                  })()}
+                  {data.todayCount !== data.total && data.todayCount !== data.weekly && (
+                    <StatChip label="오늘" value={data.todayCount} />
+                  )}
+                  {data.weekly !== data.total && (
+                    <StatChip label="이번 주" value={data.weekly} />
+                  )}
+                  {data.monthly !== data.total && data.monthly !== data.weekly && (
+                    <StatChip label="이번 달" value={data.monthly} />
+                  )}
                   <StatChip label="전체" value={data.total} />
                 </Section>
 
@@ -848,14 +844,13 @@ function formatGoalNumber(n: number): string {
   return n.toString();
 }
 
-function SiteHero({ data }: { data: SiteData }) {
+function SiteHero({ data, onMoreBadges }: { data: SiteData; onMoreBadges?: () => void }) {
   const { accent } = useAccent();
   const displayName = data.ogTitle || data.title || data.slug;
   const description = data.ogDescription;
   const streak = calcStreak(data.daily);
   const counts = { total: data.total, weekly: data.weekly, daily: data.todayCount, streak };
   const unlocked = getUnlockedAchievements(counts);
-  const locked = getLockedAchievements(counts);
 
   // 동적 목표
   const currentGoal = getCurrentGoal(data.total);
@@ -890,36 +885,30 @@ function SiteHero({ data }: { data: SiteData }) {
       </div>
 
       {/* 달성 뱃지 */}
-      <div className="flex flex-wrap gap-1 mb-4">
-        {unlocked.map((a) => (
-          <span
-            key={a.name}
-            className="text-base group relative cursor-default"
-            title={a.name}
-          >
-            {a.icon}
-            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
-              <div className="bg-zinc-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap">
-                {a.name} — {a.condition}
-              </div>
-            </div>
-          </span>
-        ))}
-        {locked.map((a) => (
-          <span
-            key={a.name}
-            className="text-base opacity-15 grayscale group relative cursor-default"
-            title={a.condition}
-          >
-            {a.icon}
-            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
-              <div className="bg-zinc-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap">
-                {a.name} — {a.condition}
-              </div>
-            </div>
-          </span>
-        ))}
-      </div>
+      {unlocked.length > 0 && (
+        <div className="flex items-center gap-1 mb-4">
+          <div className="flex flex-wrap gap-1 flex-1">
+            {unlocked.map((a) => (
+              <span key={a.name} className="text-base group relative cursor-default" title={a.name}>
+                {a.icon}
+                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
+                  <div className="bg-zinc-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap">
+                    {a.name} — {a.condition}
+                  </div>
+                </div>
+              </span>
+            ))}
+          </div>
+          {onMoreBadges && (
+            <button
+              onClick={onMoreBadges}
+              className="shrink-0 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors px-1.5 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              더보기 →
+            </button>
+          )}
+        </div>
+      )}
 
       {/* 숫자 + 게이지바 */}
       <div className="space-y-2">

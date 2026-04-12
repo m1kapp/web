@@ -45,6 +45,12 @@ export default function Home() {
   }
 
   useEffect(() => {
+    const handler = (e: Event) => setTab((e as CustomEvent).detail);
+    window.addEventListener("m1k:go-tab", handler);
+    return () => window.removeEventListener("m1k:go-tab", handler);
+  }, []);
+
+  useEffect(() => {
     if (tab === "my" && isSignedIn) {
       fetchMySites();
     }
