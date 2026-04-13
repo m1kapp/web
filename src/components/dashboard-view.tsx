@@ -9,6 +9,8 @@ import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
 import { AnalyticsSection } from "./ui-parts";
 import { countryFlag, deviceIcon, extractDomain, browserIcon, osIcon, formatHour } from "@/lib/format";
 import { ShareButton } from "./share-button";
+import { GoogleLoginButton } from "./google-login-button";
+import { GitHubLoginButton } from "./github-login-button";
 import { BoostHistorySheet, type BoostLog } from "./boost-history-sheet";
 import { SitePreviewCard } from "./site-preview-card";
 import { getUnlockedAchievements, getLockedAchievements, getCurrentGoal, GOAL_TIERS, calcStreak } from "@/lib/achievements";
@@ -103,7 +105,9 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
 
   return (
     <AccentProvider initialAccent={(data.color as AccentHex) ?? undefined}>
-      <Watermark>
+      <Watermark
+        sponsor={data.url ? { name: data.title ?? data.slug, url: data.url } : undefined}
+      >
         <AppShell>
           {/* 헤더 — 뒤로가기 + 사이트 바로가기 */}
           <DashboardHeader url={data.url} title={data.title} slug={data.slug} />
@@ -155,10 +159,11 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
                 />
                 <AnalyticsSection
                   title="도시"
-                  items={data.cities.map((c) => ({
-                    label: `📍 ${c.city || "알 수 없음"}`,
-                    value: Number(c.count),
-                  }))}
+                  items={data.cities.map((c) => {
+                    let city = c.city || "알 수 없음";
+                    try { city = decodeURIComponent(city); } catch {}
+                    return { label: `📍 ${city}`, value: Number(c.count) };
+                  })}
                 />
                 <AnalyticsSection
                   title="디바이스"
@@ -184,7 +189,7 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
                 <AnalyticsSection
                   title="유입 경로"
                   items={data.referers.map((r) => ({
-                    label: extractDomain(r.referer),
+                    label: r.referer || "직접 접속",
                     value: Number(r.count),
                   }))}
                 />
@@ -200,49 +205,51 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
 
             {tab === "settings" && (
               <>
-                {/* 하위 뱃지 */}
-                {!data.parentId && (
+                {isOwner ? (
                   <>
-                    <Section className="pb-1 pt-5">
-                      <SubBadges slug={data.slug} host={host} isOwner={isOwner} />
+                    {/* 하위 뱃지 */}
+                    {!data.parentId && (
+                      <>
+                        <Section className="pb-1 pt-5">
+                          <SubBadges slug={data.slug} host={host} isOwner={isOwner} />
+                        </Section>
+                        <Divider />
+                      </>
+                    )}
+
+                    {/* 미인증 안내 */}
+                    {!data.verified && (
+                      <>
+                        <PendingBanner slug={data.slug} host={host} />
+                        <Divider />
+                      </>
+                    )}
+
+                    {/* 배지 설정 */}
+                    <Section className="pb-4">
+                      <BadgeConfigurator
+                        slug={data.slug}
+                        host={host}
+                        initialColor={data.color || undefined}
+                        initialStyle={data.badgeStyle || undefined}
+                        initialLabel={data.badgeLabel || undefined}
+                        counts={{ total: data.total, weekly: data.weekly, daily: data.todayCount }}
+                        isOwner={isOwner}
+                      />
                     </Section>
-                    <Divider />
+
+                    {/* OG 정보 새로고침 */}
+                    <Section className="pb-2">
+                      <RefreshOgButton slug={data.slug} />
+                    </Section>
+
+                    {/* 사이트 삭제 */}
+                    <Section className="pb-6">
+                      <DeleteSiteButton slug={data.slug} />
+                    </Section>
                   </>
-                )}
-
-                {/* 미인증 안내 */}
-                {!data.verified && (
-                  <>
-                    <PendingBanner slug={data.slug} host={host} />
-                    <Divider />
-                  </>
-                )}
-
-                {/* 배지 설정 */}
-                <Section className="pb-4">
-                  <BadgeConfigurator
-                    slug={data.slug}
-                    host={host}
-                    initialColor={data.color || undefined}
-                    initialStyle={data.badgeStyle || undefined}
-                    initialLabel={data.badgeLabel || undefined}
-                    counts={{ total: data.total, weekly: data.weekly, daily: data.todayCount }}
-                    isOwner={isOwner}
-                  />
-                </Section>
-
-                {/* OG 정보 새로고침 */}
-                {isOwner && (
-                  <Section className="pb-2">
-                    <RefreshOgButton slug={data.slug} />
-                  </Section>
-                )}
-
-                {/* 사이트 삭제 */}
-                {isOwner && (
-                  <Section className="pb-6">
-                    <DeleteSiteButton slug={data.slug} />
-                  </Section>
+                ) : (
+                  <SettingsLoginPrompt />
                 )}
               </>
             )}
@@ -357,16 +364,16 @@ function DashboardHeader({
           </a>
         </div>
 
-        {/* 사이트 바로가기 */}
+        {/* 사이트 보러가기 */}
         {url && (
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            className="flex items-center gap-1.5 text-xs font-medium border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-full"
           >
-            <span className="truncate max-w-32">{extractDomain(url)}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <span>사이트 보러가기</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
               <polyline points="15 3 21 3 21 9" />
               <line x1="10" y1="14" x2="21" y2="3" />
@@ -642,6 +649,34 @@ function PendingBanner({ slug, host }: { slug: string; host: string }) {
         <p className="text-[10px] text-zinc-400">
           방문자가 뱃지를 로드하면 자동으로 인증 완료됩니다
         </p>
+      </div>
+    </Section>
+  );
+}
+
+function SettingsLoginPrompt() {
+  const { accent } = useAccent();
+
+  return (
+    <Section className="py-16">
+      <div className="flex flex-col items-center justify-center px-4">
+        <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300 dark:text-zinc-600">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+        </div>
+        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">내 사이트만 설정할 수 있어요</p>
+        <p className="text-xs text-zinc-400 mb-5">로그인하고 사이트를 등록하면 배지와 설정을 관리할 수 있어요</p>
+        <div className="flex flex-col gap-2 w-full max-w-xs">
+          <GoogleLoginButton
+            className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
+            style={{ backgroundColor: accent }}
+          />
+          <GitHubLoginButton
+            className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
+          />
+        </div>
       </div>
     </Section>
   );
