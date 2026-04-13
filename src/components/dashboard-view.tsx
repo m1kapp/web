@@ -188,10 +188,24 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
                 />
                 <AnalyticsSection
                   title="유입 경로"
-                  items={data.referers.map((r) => ({
-                    label: r.referer || "직접 접속",
-                    value: Number(r.count),
-                  }))}
+                  items={(() => {
+                    const origin = `https://${host}`;
+                    const grouped = new Map<string, { label: string; value: number; href?: string }>();
+                    for (const r of data.referers) {
+                      if (!r.referer) {
+                        const prev = grouped.get("직접 접속");
+                        grouped.set("직접 접속", { label: "직접 접속", value: (prev?.value ?? 0) + Number(r.count) });
+                      } else if (r.referer.startsWith(origin)) {
+                        const path = r.referer.slice(origin.length) || "/";
+                        const prev = grouped.get(path);
+                        grouped.set(path, { label: path, value: (prev?.value ?? 0) + Number(r.count), href: r.referer });
+                      } else {
+                        const prev = grouped.get("기타");
+                        grouped.set("기타", { label: "기타", value: (prev?.value ?? 0) + Number(r.count) });
+                      }
+                    }
+                    return [...grouped.values()].sort((a, b) => b.value - a.value);
+                  })()}
                 />
                 <AnalyticsSection
                   title="활성 시간대"
