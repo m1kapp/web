@@ -327,6 +327,7 @@ export function MyTab({
                   color={site.color}
                   owner={site.owner}
                   hideOwner
+                  total={site.total}
                 />
               ))}
             </div>

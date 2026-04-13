@@ -4,6 +4,11 @@ import { useState } from "react";
 import { slugToColor } from "@/lib/site-color";
 import { SiteThumbnail } from "./site-preview-card";
 
+function compactNumber(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "")}k`;
+  return String(n);
+}
+
 interface SiteCardProps {
   slug: string;
   url?: string | null;
@@ -18,6 +23,8 @@ interface SiteCardProps {
   rightSlot?: React.ReactNode;
   /** 소유자 아바타 오버레이 숨김 */
   hideOwner?: boolean;
+  /** 총 방문수 — 넘기면 배지 SVG 대신 숫자 표시 */
+  total?: number;
 }
 
 export function SiteCard({
@@ -32,6 +39,7 @@ export function SiteCard({
   actions,
   rightSlot,
   hideOwner,
+  total,
 }: SiteCardProps) {
   const displayName = ogTitle || title || slug;
   const color = colorProp || slugToColor(slug);
@@ -74,8 +82,20 @@ export function SiteCard({
         <div className="shrink-0">{rightSlot}</div>
       ) : (
         <div className="shrink-0 flex items-center gap-1.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={`/badge/${slug}.svg?view=true`} alt="" className="max-w-28" />
+          {total != null ? (
+            <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-500">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                <circle cx="10" cy="7" r="4" />
+              </svg>
+              <span className="text-lg font-black tabular-nums">
+                {compactNumber(Number(total))}
+              </span>
+            </div>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={`/badge/${slug}.svg?view=true`} alt="" className="max-w-28" />
+          )}
           {actions && (
             <div className="relative">
               <button

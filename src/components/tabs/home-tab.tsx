@@ -184,6 +184,7 @@ export function HomeTab({
                 ogImage={site.ogImage}
                 color={site.color}
                 owner={site.owner}
+                total={Number(site.total)}
               />
             ))}
           </div>
