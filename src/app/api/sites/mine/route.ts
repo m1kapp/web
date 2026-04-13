@@ -21,11 +21,13 @@ export async function GET() {
         ogDescription: sites.ogDescription,
         ogImage: sites.ogImage,
         color: sites.color,
-        total: sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id}), 0)`,
+        total: sql<number>`coalesce(sum(${hits.count}), 0)`,
         createdAt: sites.createdAt,
       })
       .from(sites)
+      .leftJoin(hits, eq(hits.siteId, sites.id))
       .where(eq(sites.userId, userId))
+      .groupBy(sites.id)
       .orderBy(desc(sites.createdAt)),
     clerkClient(),
   ]);
