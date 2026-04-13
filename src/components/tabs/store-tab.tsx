@@ -6,18 +6,16 @@ import { Divider, EmptyState } from "@m1kapp/ui";
 import type { RecentSite } from "@/lib/types";
 
 export function StoreTab({
-  sites: initialSites,
   onRefreshItem,
   bgColor,
 }: {
-  sites: RecentSite[];
   onRefreshItem: (slug: string) => Promise<void>;
   bgColor: string;
 }) {
   const [refreshingSlug, setRefreshingSlug] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<"recent" | "popular" | "name">("recent");
-  const [filteredSites, setFilteredSites] = useState<RecentSite[]>(initialSites);
+  const [filteredSites, setFilteredSites] = useState<RecentSite[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [ranking, setRanking] = useState<RecentSite[]>([]);
 
@@ -44,12 +42,6 @@ export function StoreTab({
 
     return () => clearTimeout(timeout);
   }, [searchQuery, sort]);
-
-  useEffect(() => {
-    if (!searchQuery && sort === "recent") setFilteredSites(initialSites);
-  }, [initialSites, searchQuery, sort]);
-
-  const sites = filteredSites;
 
   return (
     <div className="px-4 py-5">
@@ -132,9 +124,15 @@ export function StoreTab({
         {searching && <span className="text-xs text-zinc-300 self-center ml-auto">검색 중...</span>}
       </div>
 
-      {sites.length > 0 ? (
+      {filteredSites === null ? (
+        <div className="space-y-3 animate-pulse">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+          ))}
+        </div>
+      ) : filteredSites.length > 0 ? (
         <div className="space-y-3">
-          {sites.map((site) => (
+          {filteredSites.map((site) => (
             <SiteCard
               key={site.slug}
               slug={site.slug}
@@ -175,6 +173,7 @@ export function StoreTab({
       ) : (
         <EmptyState message="아직 등록된 사이트가 없어요" />
       )}
+
     </div>
   );
 }

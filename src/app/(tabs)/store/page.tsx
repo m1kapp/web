@@ -2,8 +2,6 @@
 
 import { StoreTab } from "@/components/tabs/store-tab";
 import { useAppTheme } from "../theme-context";
-import type { RecentSite } from "@/lib/types";
-
 export default function StorePage() {
   const { bgColor } = useAppTheme();
 
@@ -17,7 +15,6 @@ export default function StorePage() {
 
   return (
     <StoreTab
-      sites={[] as RecentSite[]}
       bgColor={bgColor}
       onRefreshItem={handleRefreshItem}
     />
