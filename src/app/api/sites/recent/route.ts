@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
 
   const todayStr = todayKST();
 
-  const totalSub = sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id}), 0)`;
-  const todaySub = sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id} and ${hits.date} = ${todayStr}), 0)`;
-  const boostedSub = sql<number>`coalesce((select sum(abs(${pointLogs.amount})) from ${pointLogs} where ${pointLogs.targetSiteId} = ${sites.id} and ${pointLogs.type} = 'inject'), 0)`;
+  const totalExpr = sql<number>`coalesce(sum(${hits.count}), 0)`;
+  const todayExpr = sql<number>`coalesce(sum(case when ${hits.date} = ${todayStr} then ${hits.count} else 0 end), 0)`;
+  const boostedExpr = sql<number>`coalesce((select sum(abs(${pointLogs.amount})) from ${pointLogs} where ${pointLogs.targetSiteId} = ${sites.id} and ${pointLogs.type} = 'inject'), 0)`;
 
   const whereCondition = q
     ? and(
@@ -37,20 +37,22 @@ export async function GET(request: NextRequest) {
       ogImage: sites.ogImage,
       color: sites.color,
       userId: sites.userId,
-      total: totalSub,
-      today: todaySub,
-      boosted: boostedSub,
+      total: totalExpr,
+      today: todayExpr,
+      boosted: boostedExpr,
       createdAt: sites.createdAt,
     })
     .from(sites)
-    .where(whereCondition);
+    .leftJoin(hits, eq(hits.siteId, sites.id))
+    .where(whereCondition)
+    .groupBy(sites.id);
 
   if (sort === "today") {
-    query = query.orderBy(desc(todaySub), desc(totalSub)) as typeof query;
+    query = query.orderBy(desc(todayExpr), desc(totalExpr)) as typeof query;
   } else if (sort === "boosted") {
-    query = query.orderBy(desc(boostedSub), desc(totalSub)) as typeof query;
+    query = query.orderBy(desc(boostedExpr), desc(totalExpr)) as typeof query;
   } else {
-    query = query.orderBy(desc(totalSub)) as typeof query;
+    query = query.orderBy(desc(totalExpr)) as typeof query;
   }
 
   const result = await query.limit(30);
