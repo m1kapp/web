@@ -13,13 +13,17 @@ function TabsShell({ children }: { children: React.ReactNode }) {
   const { bgColor, setBgColor } = useAppTheme();
   const [themeOpen, setThemeOpen] = useState(false);
   const [sponsor, setSponsor] = useState<{ slug: string; name: string; is1k: boolean } | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     fetch("/api/sponsor").then(r => r.json()).then(d => d && setSponsor(d)).catch(() => {});
   }, []);
 
   useEffect(() => {
+    // Cache the scroll container ref once on mount
+    if (!scrollRef.current) {
+      scrollRef.current = document.querySelector<HTMLElement>(".tab-scroll");
+    }
     scrollRef.current?.scrollTo({ top: 0 });
   }, [pathname]);
 
@@ -42,10 +46,8 @@ function TabsShell({ children }: { children: React.ReactNode }) {
             <ThemeButton color={bgColor} onClick={() => setThemeOpen(true)} />
           </AppShellHeader>
 
-          <AppShellContent>
-            <div ref={scrollRef} className="h-full overflow-y-auto">
-              {children}
-            </div>
+          <AppShellContent className="tab-scroll">
+            {children}
           </AppShellContent>
 
           <TabBar>
