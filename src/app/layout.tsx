@@ -19,8 +19,10 @@ const pretendard = localFont({
 export const metadata: Metadata = {
   title: "m1k — 방문자 1,000명을 향한 첫걸음",
   description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
+  manifest: "/manifest.json",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230f172a'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='system-ui,sans-serif' font-size='14' font-weight='900' fill='white'>m1k</text></svg>",
+    apple: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%230f172a'/><text x='50%25' y='50%25' dominant-baseline='central' text-anchor='middle' font-family='system-ui,sans-serif' font-size='72' font-weight='900' fill='white'>m1k</text></svg>",
   },
   openGraph: {
     title: "m1k — 방문자 1,000명을 향한 첫걸음",
