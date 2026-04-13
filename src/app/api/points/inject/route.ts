@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { points, pointLogs, sites, hits } from "@/lib/db/schema";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
+import { todayKST } from "@/lib/format";
 
 // 내가 이 사이트에 보낸 부스트 이력 조회
 export async function GET(request: NextRequest) {
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "사이트를 찾을 수 없습니다" }, { status: 404 });
   }
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayKST();
 
   // 트랜잭션: 잔액 차감 + hits 추가 + 로그
   await db.update(points).set({

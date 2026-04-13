@@ -4,6 +4,7 @@ import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte, desc } from "drizzle-orm";
 import { DashboardView } from "@/components/dashboard-view";
 import { auth } from "@clerk/nextjs/server";
+import { todayKST } from "@/lib/format";
 
 interface Props {
   params: Promise<{ slug: string[] }>;
@@ -19,7 +20,7 @@ async function getSiteData(slug: string) {
   weekAgo.setDate(weekAgo.getDate() - 7);
   const monthAgo = new Date();
   monthAgo.setDate(monthAgo.getDate() - 30);
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayKST();
 
   const [
     [totalResult],
@@ -37,9 +38,9 @@ async function getSiteData(slug: string) {
     [boostResult],
   ] = await Promise.all([
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, weekAgo.toISOString().split("T")[0]))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(weekAgo)))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, monthAgo.toISOString().split("T")[0]))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(monthAgo)))),
     db.select({ date: hits.date, count: hits.count }).from(hits).where(eq(hits.siteId, site.id)).orderBy(hits.date),
     db.select({ country: hitLogs.country, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.country).orderBy(desc(sql`count(*)`)).limit(5),
     db.select({ device: hitLogs.device, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.device).orderBy(desc(sql`count(*)`)),

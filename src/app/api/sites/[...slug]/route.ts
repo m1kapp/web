@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sites, hits, hitLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte, desc } from "drizzle-orm";
+import { todayKST } from "@/lib/format";
 
 export async function GET(
   _request: NextRequest,
@@ -20,7 +21,7 @@ export async function GET(
 
   // 총 방문수 + 기간별
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = todayKST(now);
   const weekAgo = new Date(now);
   weekAgo.setDate(weekAgo.getDate() - 7);
   const monthAgo = new Date(now);
@@ -29,8 +30,8 @@ export async function GET(
   const [[totalResult], [todayResult], [weeklyResult], [monthlyResult]] = await Promise.all([
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, weekAgo.toISOString().split("T")[0]))),
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, monthAgo.toISOString().split("T")[0]))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(weekAgo)))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(monthAgo)))),
   ]);
 
   // 최근 90일 일별 데이터 (잔디용)
@@ -43,7 +44,7 @@ export async function GET(
     .where(
       and(
         eq(hits.siteId, site.id),
-        gte(hits.date, ninetyDaysAgo.toISOString().split("T")[0])
+        gte(hits.date, todayKST(ninetyDaysAgo))
       )
     )
     .orderBy(hits.date);

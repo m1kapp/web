@@ -6,6 +6,7 @@ import { generateBadge } from "@/lib/badge";
 import { getCurrentGoal } from "@/lib/achievements";
 import { findSiteBySlug } from "@/lib/site-service";
 import { createHash } from "crypto";
+import { todayKST } from "@/lib/format";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,7 @@ export async function GET(
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       request.headers.get("x-real-ip") ||
       "unknown";
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayKST();
     const salt = process.env.IP_HASH_SALT || "m1k-default-salt";
     const ipHash = createHash("sha256")
       .update(`${ip}:${site.id}:${today}:${salt}`)
@@ -101,7 +102,7 @@ export async function GET(
 
   // 기간별 방문수 조회
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = todayKST(now);
 
   const weekAgo = new Date(now);
   weekAgo.setDate(weekAgo.getDate() - 7);
@@ -111,8 +112,8 @@ export async function GET(
   const [[totalR], [todayR], [weeklyR], [monthlyR]] = await Promise.all([
     db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
     db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
-    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, weekAgo.toISOString().split("T")[0]))),
-    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, monthAgo.toISOString().split("T")[0]))),
+    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(weekAgo)))),
+    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(monthAgo)))),
   ]);
 
   const counts = {

@@ -3,13 +3,14 @@ import { db } from "@/lib/db";
 import { sites, hits, pointLogs } from "@/lib/db/schema";
 import { sql, desc, asc, ilike, or, eq, and, gte } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
+import { todayKST } from "@/lib/format";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q")?.trim() || "";
   const sort = url.searchParams.get("sort") || "total";
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = todayKST();
 
   const totalSub = sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id}), 0)`;
   const todaySub = sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id} and ${hits.date} = ${todayStr}), 0)`;

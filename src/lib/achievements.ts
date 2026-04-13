@@ -92,7 +92,8 @@ export function getUnlockedAchievements(counts: SiteCounts): Achievement[] {
   return ACHIEVEMENTS.filter((a) => matchAchievement(a, counts));
 }
 
-const toDateStr = (d: Date): string => d.toISOString().split("T")[0];
+const toDateStr = (d: Date): string =>
+  new Date(d.getTime() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
 
 // 오늘부터 과거로 연속 방문일 계산
 // today 파라미터를 주입받아 테스트에서 날짜 고정 가능
