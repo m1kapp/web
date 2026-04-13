@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sites, hits } from "@/lib/db/schema";
-import { sql, desc, asc, ilike, or, eq, and } from "drizzle-orm";
+import { sites, hits, pointLogs } from "@/lib/db/schema";
+import { sql, desc, asc, ilike, or, eq, and, gte } from "drizzle-orm";
 import { clerkClient } from "@clerk/nextjs/server";
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q")?.trim() || "";
-  const sort = url.searchParams.get("sort") || "recent";
+  const sort = url.searchParams.get("sort") || "total";
 
-  const totalSubquery = sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id}), 0)`;
+  const todayStr = new Date().toISOString().split("T")[0];
+
+  const totalSub = sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id}), 0)`;
+  const todaySub = sql<number>`coalesce((select sum(${hits.count}) from ${hits} where ${hits.siteId} = ${sites.id} and ${hits.date} = ${todayStr}), 0)`;
+  const boostedSub = sql<number>`coalesce((select sum(abs(${pointLogs.amount})) from ${pointLogs} where ${pointLogs.targetSiteId} = ${sites.id} and ${pointLogs.type} = 'inject'), 0)`;
 
   const whereCondition = q
     ? and(
@@ -32,18 +36,20 @@ export async function GET(request: NextRequest) {
       ogImage: sites.ogImage,
       color: sites.color,
       userId: sites.userId,
-      total: totalSubquery,
+      total: totalSub,
+      today: todaySub,
+      boosted: boostedSub,
       createdAt: sites.createdAt,
     })
     .from(sites)
     .where(whereCondition);
 
-  if (sort === "popular") {
-    query = query.orderBy(desc(totalSubquery)) as typeof query;
-  } else if (sort === "name") {
-    query = query.orderBy(asc(sites.title)) as typeof query;
+  if (sort === "today") {
+    query = query.orderBy(desc(todaySub), desc(totalSub)) as typeof query;
+  } else if (sort === "boosted") {
+    query = query.orderBy(desc(boostedSub), desc(totalSub)) as typeof query;
   } else {
-    query = query.orderBy(desc(sites.createdAt)) as typeof query;
+    query = query.orderBy(desc(totalSub)) as typeof query;
   }
 
   const result = await query.limit(30);

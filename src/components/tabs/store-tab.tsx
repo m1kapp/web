@@ -2,8 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { SiteCard } from "@/components/site-card";
-import { Divider, EmptyState } from "@m1kapp/ui";
+import { EmptyState } from "@m1kapp/ui";
 import type { RecentSite } from "@/lib/types";
+
+type Sort = "total" | "today" | "boosted";
+
+const SORTS: { value: Sort; label: string }[] = [
+  { value: "total", label: "총 방문순" },
+  { value: "today", label: "오늘 방문순" },
+  { value: "boosted", label: "부스트순" },
+];
+
+function formatCount(n: number | undefined) {
+  return (n ?? 0).toLocaleString();
+}
 
 export function StoreTab({
   onRefreshItem,
@@ -14,28 +26,20 @@ export function StoreTab({
 }) {
   const [refreshingSlug, setRefreshingSlug] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sort, setSort] = useState<"recent" | "popular" | "name">("recent");
-  const [filteredSites, setFilteredSites] = useState<RecentSite[] | null>(null);
+  const [sort, setSort] = useState<Sort>("total");
+  const [sites, setSites] = useState<RecentSite[] | null>(null);
   const [searching, setSearching] = useState(false);
-  const [ranking, setRanking] = useState<RecentSite[]>([]);
-
-  useEffect(() => {
-    fetch("/api/sites/recent?sort=popular")
-      .then((res) => res.json())
-      .then((data) => Array.isArray(data) ? setRanking(data.slice(0, 5)) : setRanking([]))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchQuery) params.set("q", searchQuery);
-    if (sort !== "recent") params.set("sort", sort);
+    params.set("sort", sort);
 
     const timeout = setTimeout(async () => {
       setSearching(true);
       try {
         const res = await fetch(`/api/sites/recent?${params}`);
-        setFilteredSites(await res.json());
+        setSites(await res.json());
       } catch {}
       setSearching(false);
     }, searchQuery ? 300 : 0);
@@ -43,53 +47,18 @@ export function StoreTab({
     return () => clearTimeout(timeout);
   }, [searchQuery, sort]);
 
+  function statLabel(site: RecentSite) {
+    if (sort === "today") return `TODAY ${formatCount(site.today)}`;
+    if (sort === "boosted") return `BOOST ${formatCount(site.boosted)}`;
+    return `${formatCount(site.total)} / 1K`;
+  }
+
   return (
     <div className="px-4 py-5">
       <div className="mb-4">
         <h2 className="text-lg font-bold text-zinc-900 dark:text-white">탐색</h2>
         <p className="text-xs text-zinc-400 dark:text-zinc-500">등록된 사이트를 둘러보세요</p>
       </div>
-
-      {/* 1K 레이스 랭킹 */}
-      {ranking.length > 0 && !searchQuery && (
-        <div className="mb-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: bgColor }}>
-            1K 레이스
-          </h3>
-          <div className="space-y-1.5">
-            {ranking.map((site, i) => {
-              const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`;
-              const progress = Math.min(Number(site.total) / 1000, 1);
-              return (
-                <a
-                  key={site.slug}
-                  href={`/${site.slug}`}
-                  className="flex items-center gap-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-3 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  <span className="text-base w-6 text-center shrink-0">{medal}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-white truncate">
-                      {site.ogTitle || site.title || site.slug}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div className="flex-1 h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${Math.max(progress * 100, 1)}%`, backgroundColor: bgColor }}
-                        />
-                      </div>
-                      <span className="text-[10px] tabular-nums font-semibold text-zinc-500 shrink-0">
-                        {Number(site.total).toLocaleString()} / 1K
-                      </span>
-                    </div>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-          <Divider />
-        </div>
-      )}
 
       {/* 검색 */}
       <div className="mb-3">
@@ -104,11 +73,7 @@ export function StoreTab({
 
       {/* 정렬 */}
       <div className="flex gap-1.5 mb-4">
-        {([
-          { value: "recent", label: "최신순" },
-          { value: "popular", label: "인기순" },
-          { value: "name", label: "이름순" },
-        ] as const).map((s) => (
+        {SORTS.map((s) => (
           <button
             key={s.value}
             onClick={() => setSort(s.value)}
@@ -124,15 +89,16 @@ export function StoreTab({
         {searching && <span className="text-xs text-zinc-300 self-center ml-auto">검색 중...</span>}
       </div>
 
-      {filteredSites === null ? (
+      {/* 목록 */}
+      {sites === null ? (
         <div className="space-y-3 animate-pulse">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
           ))}
         </div>
-      ) : filteredSites.length > 0 ? (
-        <div className="space-y-3">
-          {filteredSites.map((site) => (
+      ) : sites.length > 0 ? (
+        <div className="space-y-2">
+          {sites.map((site, i) => (
             <SiteCard
               key={site.slug}
               slug={site.slug}
@@ -143,6 +109,13 @@ export function StoreTab({
               ogImage={site.ogImage}
               color={site.color}
               owner={site.owner}
+              rightSlot={
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] tabular-nums font-semibold text-zinc-400">
+                    {statLabel(site)}
+                  </span>
+                </div>
+              }
               actions={
                 <button
                   onClick={async (e) => {
@@ -173,7 +146,6 @@ export function StoreTab({
       ) : (
         <EmptyState message="아직 등록된 사이트가 없어요" />
       )}
-
     </div>
   );
 }

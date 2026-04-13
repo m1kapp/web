@@ -3,6 +3,8 @@ export interface RecentSite {
   title: string | null;
   url: string | null;
   total: number;
+  today?: number;
+  boosted?: number;
   ogTitle: string | null;
   ogDescription: string | null;
   ogImage: string | null;
