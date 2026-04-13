@@ -19,12 +19,12 @@ export function CyworldBadge({ label, today, total, accent }: CyworldBadgeProps)
       style={BADGE_FONT}
     >
       {label && (
-        <span className="font-black tracking-widest text-zinc-400 uppercase">{label}</span>
+        <span className="font-black tracking-tight text-zinc-400 uppercase">{label}</span>
       )}
       <div className="inline-flex items-center gap-2">
-        <span className="text-zinc-400 tracking-wide">TODAY</span>
+        <span className="text-zinc-400 tracking-tighter">TODAY</span>
         <strong style={{ color: accent }}>{today ?? "—"}</strong>
-        <span className="text-zinc-400 tracking-wide">TOTAL</span>
+        <span className="text-zinc-400 tracking-tighter">TOTAL</span>
         <strong className="text-zinc-600 dark:text-zinc-300">{total ?? "—"}</strong>
       </div>
     </div>
