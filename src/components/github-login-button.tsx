@@ -12,8 +12,9 @@ export function GitHubLoginButton({
   const clerk = useClerk();
 
   async function handleLogin() {
+    if (!clerk.loaded) return;
     const base = window.location.origin;
-    await clerk.client?.signIn.authenticateWithRedirect({
+    await clerk.client!.signIn.authenticateWithRedirect({
       strategy: "oauth_github",
       redirectUrl: `${base}/sso-callback`,
       redirectUrlComplete: "/",

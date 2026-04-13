@@ -12,8 +12,9 @@ export function GoogleLoginButton({
   const clerk = useClerk();
 
   async function handleLogin() {
+    if (!clerk.loaded) return;
     const base = window.location.origin;
-    await clerk.client?.signIn.authenticateWithRedirect({
+    await clerk.client!.signIn.authenticateWithRedirect({
       strategy: "oauth_google",
       redirectUrl: `${base}/sso-callback`,
       redirectUrlComplete: "/",
