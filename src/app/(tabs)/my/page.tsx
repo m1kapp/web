@@ -11,6 +11,13 @@ export default function MyPage() {
   const { isSignedIn, isLoaded } = useUser();
   const [mySites, setMySites] = useState<RecentSite[]>([]);
   const [sitesLoading, setSitesLoading] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded) return;
+    const id = setTimeout(() => setTimedOut(true), 3000);
+    return () => clearTimeout(id);
+  }, [isLoaded]);
 
   function fetchMySites() {
     fetch("/api/sites/mine")
@@ -24,7 +31,7 @@ export default function MyPage() {
     if (isSignedIn) fetchMySites();
   }, [isSignedIn]);
 
-  if (!isLoaded) {
+  if (!isLoaded && !timedOut) {
     return (
       <div className="p-4 space-y-4 animate-pulse">
         <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800" />
