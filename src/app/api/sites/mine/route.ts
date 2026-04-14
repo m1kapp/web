@@ -36,7 +36,7 @@ export async function GET() {
   try {
     const user = await client.users.getUser(userId);
     owner = { name: user.firstName || user.username || "", imageUrl: user.imageUrl };
-  } catch {}
+  } catch (e) { console.error("[mine] clerk user fetch failed:", e); }
 
   return NextResponse.json(mySites.map((s) => ({ ...s, owner })));
 }

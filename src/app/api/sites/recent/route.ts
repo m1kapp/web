@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
           imageUrl: u.imageUrl,
         };
       }
-    } catch {}
+    } catch (e) { console.error("[recent] clerk user fetch failed:", e); }
   }
 
   const enriched = result.map((s) => ({

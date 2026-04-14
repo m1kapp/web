@@ -33,10 +33,11 @@ export function ShareButton({ slug, title }: { slug: string; title: string }) {
   return (
     <div className="relative">
       <button
+        aria-label="공유"
         onClick={() => setShowMenu(!showMenu)}
         className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 transition-colors"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400">
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-400">
           <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
           <polyline points="16 6 12 2 8 6" />
           <line x1="12" y1="2" x2="12" y2="15" />
@@ -45,7 +46,7 @@ export function ShareButton({ slug, title }: { slug: string; title: string }) {
 
       {showMenu && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} />
+          <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)} onKeyDown={(e) => e.key === "Escape" && setShowMenu(false)} />
           <div className="absolute right-0 top-full mt-1 z-20 bg-white rounded-xl shadow-lg border border-zinc-100 py-1 min-w-36 overflow-hidden">
             <button
               onClick={handleCopyLink}

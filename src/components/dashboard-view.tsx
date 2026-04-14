@@ -93,7 +93,7 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
           todayCount: fresh.todayCount ?? prev.todayCount,
           daily: fresh.daily ?? prev.daily,
         }));
-      } catch {}
+      } catch (e) { console.error("[dashboard] poll failed:", e); }
     }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [data.slug]);

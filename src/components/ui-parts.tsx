@@ -11,13 +11,7 @@ export function AnalyticsSection({
   title: string;
   items: { label: string; value: number; href?: string }[];
 }) {
-  let accent: string;
-  try {
-    const ctx = useAccent();
-    accent = ctx.accent;
-  } catch {
-    accent = "#ec4899";
-  }
+  const { accent } = useAccent();
   const total = items.reduce((sum, i) => sum + i.value, 0);
   return (
     <div>

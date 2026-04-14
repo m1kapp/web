@@ -40,7 +40,7 @@ export function StoreTab({
       try {
         const res = await fetch(`/api/sites/recent?${params}`);
         setSites(await res.json());
-      } catch {}
+      } catch (e) { console.error("[store] search fetch failed:", e); }
       setSearching(false);
     }, searchQuery ? 300 : 0);
 

@@ -95,7 +95,7 @@ export async function GET(
             await db.update(sites).set({ verified: true }).where(eq(sites.id, site.id));
             site = { ...site, verified: true };
           }
-        } catch {}
+        } catch (e) { console.error("[badge] verify check failed:", e); }
       }
     }
   }

@@ -82,5 +82,5 @@ async function refreshOg(siteId: number, slug: string) {
         })
         .where(eq(sites.id, siteId));
     }
-  } catch {}
+  } catch (e) { console.error("[sites] OG fetch failed:", e); }
 }

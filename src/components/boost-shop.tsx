@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { getPaddleInstance } from "@paddle/paddle-js";
 import { useAccent } from "@/lib/theme-context";
 
 const BOOST_PLANS = [
@@ -15,24 +16,18 @@ export function BoostShop({ onPurchased }: { onPurchased?: () => void }) {
   const { user } = useUser();
   const [loading, setLoading] = useState<string | null>(null);
 
-  let accent: string;
-  try {
-    const ctx = useAccent();
-    accent = ctx.accent;
-  } catch {
-    accent = "#ec4899";
-  }
+  const { accent } = useAccent();
 
   function handleBuy(plan: typeof BOOST_PLANS[0]) {
-    const Paddle = (window as any).Paddle;
-    if (!Paddle?.Checkout) {
+    const paddle = getPaddleInstance();
+    if (!paddle?.Checkout) {
       alert("결제 시스템을 불러오는 중이에요. 잠시 후 다시 시도해주세요.");
       return;
     }
 
     setLoading(plan.priceId);
 
-    Paddle.Checkout.open({
+    paddle.Checkout.open({
       items: [{ priceId: plan.priceId, quantity: 1 }],
       customer: user?.primaryEmailAddress?.emailAddress
         ? { email: user.primaryEmailAddress.emailAddress }
