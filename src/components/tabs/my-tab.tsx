@@ -226,6 +226,9 @@ export function MyTab({
 
   return (
     <div className="px-4 py-5">
+      {/* 토탈 배지 (SVG 삽입 예정) */}
+      <div className="flex justify-center mb-4 h-[34px]" />
+
       {/* 프로필 */}
       <div className="flex items-center gap-3 mb-5 justify-between">
         <div className="flex items-center gap-3">
