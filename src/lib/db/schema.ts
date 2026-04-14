@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, date, timestamp, uniqueIndex, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, date, timestamp, uniqueIndex, index, boolean } from "drizzle-orm/pg-core";
 
 export const sites = pgTable("sites", {
   id: serial("id").primaryKey(),
@@ -18,7 +18,9 @@ export const sites = pgTable("sites", {
   verified: boolean("verified").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   reached1000At: timestamp("reached_1000_at", { withTimezone: true }),
-});
+}, (table) => [
+  index("idx_sites_user_id").on(table.userId),
+]);
 
 export const hits = pgTable(
   "hits",
@@ -46,7 +48,9 @@ export const hitLogs = pgTable("hit_logs", {
   os: text("os"),
   referer: text("referer"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+}, (table) => [
+  index("idx_hit_logs_site_id").on(table.siteId),
+]);
 
 // 포인트 지갑
 export const points = pgTable("points", {
@@ -66,4 +70,7 @@ export const pointLogs = pgTable("point_logs", {
   targetSiteId: integer("target_site_id"),
   memo: text("memo"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
+}, (table) => [
+  index("idx_point_logs_user_id").on(table.userId),
+  index("idx_point_logs_target_site_id").on(table.targetSiteId),
+]);
