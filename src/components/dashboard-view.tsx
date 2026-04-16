@@ -190,12 +190,7 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
                   title="유입 경로"
                   items={data.referers.map((r) => {
                     if (!r.referer) return { label: "직접 접속", value: Number(r.count) };
-                    try {
-                      const u = new URL(r.referer);
-                      return { label: u.pathname + u.search, value: Number(r.count), href: r.referer };
-                    } catch {
-                      return { label: r.referer, value: Number(r.count), href: r.referer };
-                    }
+                    return { label: r.referer || "/", value: Number(r.count) };
                   })}
                 />
                 <AnalyticsSection

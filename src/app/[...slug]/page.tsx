@@ -47,7 +47,7 @@ const getSiteData = cache(async function getSiteData(slug: string) {
     db.select({ date: hits.date, count: hits.count }).from(hits).where(eq(hits.siteId, site.id)).orderBy(hits.date),
     db.select({ country: hitLogs.country, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.country).orderBy(desc(sql`count(*)`)).limit(5),
     db.select({ device: hitLogs.device, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.device).orderBy(desc(sql`count(*)`)).limit(5),
-    db.select({ referer: hitLogs.referer, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.referer} is not null`)).groupBy(hitLogs.referer).orderBy(desc(sql`count(*)`)).limit(5),
+    db.select({ referer: sql<string>`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.referer} is not null`)).groupBy(sql`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`).orderBy(desc(sql`count(*)`)).limit(5),
     db.select({ browser: hitLogs.browser, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.browser).orderBy(desc(sql`count(*)`)).limit(5),
     db.select({ os: hitLogs.os, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.os).orderBy(desc(sql`count(*)`)).limit(5),
     db.select({ city: hitLogs.city, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.city} is not null`)).groupBy(hitLogs.city).orderBy(desc(sql`count(*)`)).limit(5),

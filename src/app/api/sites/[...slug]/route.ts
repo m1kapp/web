@@ -73,15 +73,15 @@ export async function GET(
     .orderBy(desc(sql`count(*)`))
     .limit(5);
 
-  // 리퍼러 통계 (도메인만)
+  // 리퍼러 통계 (경로만 — 도메인 제거 후 group by)
   const referers = await db
     .select({
-      referer: hitLogs.referer,
+      referer: sql<string>`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`,
       count: sql<number>`count(*)`,
     })
     .from(hitLogs)
     .where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.referer} is not null`))
-    .groupBy(hitLogs.referer)
+    .groupBy(sql`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`)
     .orderBy(desc(sql`count(*)`))
     .limit(10);
 
