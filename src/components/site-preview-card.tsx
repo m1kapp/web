@@ -6,9 +6,8 @@ import { extractDomain } from "@/lib/format";
 
 function faviconUrl(url: string): string {
   const domain = extractDomain(url);
-  // extractDomain returns the raw url string on parse failure
   if (!domain || domain === url) return "";
-  return `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+  return `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${domain}&size=64`;
 }
 
 // ─── 공통 썸네일 ───────────────────────────────────────────────
