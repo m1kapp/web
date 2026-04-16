@@ -133,6 +133,7 @@ function BoostedSiteCard({ site }: { site: BoostedSite }) {
       <SitePreviewCard
         slug={site.slug}
         name={name ?? site.slug}
+        url={site.url}
         ogImage={site.ogImage}
         color={site.color}
         right={chip}

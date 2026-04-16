@@ -78,9 +78,9 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 30초마다 통계 폴링
   useEffect(() => {
     const interval = setInterval(async () => {
+      if (document.hidden) return;
       try {
         const res = await fetch(`/api/sites/${data.slug}`);
         if (!res.ok) return;
@@ -916,6 +916,7 @@ function SiteHero({ data, onMoreBadges }: { data: SiteData; onMoreBadges?: () =>
         <SitePreviewCard
           slug={data.slug}
           name={displayName}
+          url={data.url}
           ogImage={data.ogImage}
           color={accent}
           description={description}

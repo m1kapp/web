@@ -49,7 +49,7 @@ export function SiteCard({
     <div className="flex items-center gap-3 rounded-xl bg-zinc-50 px-3 py-2.5 hover:bg-zinc-100 transition-all active:scale-[0.98] relative">
       {/* 썸네일 + 소유자 아바타 오버레이 */}
       <a href={`/${slug}`} className="shrink-0 relative group">
-        <SiteThumbnail slug={slug} name={displayName} ogImage={ogImage} color={color} />
+        <SiteThumbnail slug={slug} name={displayName} url={url} color={color} />
         {!hideOwner && (owner ? (
           <div className="absolute -bottom-1 -right-1">
             {/* eslint-disable-next-line @next/next/no-img-element */}
