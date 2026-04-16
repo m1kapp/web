@@ -4,6 +4,7 @@ import { points, pointLogs, sites, hits } from "@/lib/db/schema";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { todayKST } from "@/lib/format";
+import { recordMilestoneIfReached } from "@/lib/site-service";
 
 // 내가 이 사이트에 보낸 부스트 이력 조회
 export async function GET(request: NextRequest) {
@@ -52,7 +53,6 @@ export async function POST(request: NextRequest) {
 
   const roundedAmount = Math.floor(amount);
 
-  // 잔액 확인
   const wallet = await db.query.points.findFirst({
     where: eq(points.userId, userId),
   });
@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "부스트가 부족해요" }, { status: 400 });
   }
 
-  // 대상 사이트 확인
   const site = await db.query.sites.findFirst({
     where: eq(sites.slug, slug),
   });
@@ -72,7 +71,6 @@ export async function POST(request: NextRequest) {
 
   const today = todayKST();
 
-  // 트랜잭션: 잔액 차감 + hits 추가 + 로그
   await db.update(points).set({
     balance: sql`${points.balance} - ${roundedAmount}`,
   }).where(eq(points.userId, userId));
@@ -93,14 +91,12 @@ export async function POST(request: NextRequest) {
     memo: site.userId === userId ? "🚀 내 사이트에 부스트" : `🚀 ${site.title || site.slug}에 부스트`,
   });
 
-  // 1000 최초 돌파 기록
   if (!site.reached1000At) {
-    const [[totalRow]] = await Promise.all([
-      db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
-    ]);
-    if (Number(totalRow.v) >= 1000) {
-      await db.update(sites).set({ reached1000At: new Date() }).where(eq(sites.id, site.id));
-    }
+    const [{ v }] = await db
+      .select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` })
+      .from(hits)
+      .where(eq(hits.siteId, site.id));
+    await recordMilestoneIfReached(site, Number(v));
   }
 
   const updated = await db.query.points.findFirst({

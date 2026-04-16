@@ -4,11 +4,14 @@ import { sites, hits, hitLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte } from "drizzle-orm";
 import { generateBadge } from "@/lib/badge";
 import { getCurrentGoal } from "@/lib/achievements";
-import { findSiteBySlug } from "@/lib/site-service";
+import { findSiteBySlug, recordMilestoneIfReached } from "@/lib/site-service";
 import { createHash } from "crypto";
 import { todayKST } from "@/lib/format";
 
 export const runtime = "nodejs";
+
+const VALID_BADGE_TYPES = ["total", "today", "weekly", "monthly"] as const;
+type BadgeType = typeof VALID_BADGE_TYPES[number];
 
 export async function GET(
   request: NextRequest,
@@ -22,7 +25,6 @@ export async function GET(
     return new Response("Missing slug", { status: 400 });
   }
 
-  // 사이트 조회 (short code 기반)
   let site = await findSiteBySlug(slug);
 
   if (!site) {
@@ -34,7 +36,6 @@ export async function GET(
   const viewOnly = urlObj.searchParams.get("view") === "true";
 
   if (!viewOnly) {
-    // IP 해시 생성 (일별 중복 제거)
     const ip =
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       request.headers.get("x-real-ip") ||
@@ -45,7 +46,6 @@ export async function GET(
       .update(`${ip}:${site.id}:${today}:${salt}`)
       .digest("hex");
 
-    // 이미 오늘 방문했는지 확인
     const existing = await db.query.hitLogs.findFirst({
       where: and(
         eq(hitLogs.siteId, site.id),
@@ -100,7 +100,6 @@ export async function GET(
     }
   }
 
-  // 기간별 방문수 조회
   const now = new Date();
   const todayStr = todayKST(now);
 
@@ -123,16 +122,12 @@ export async function GET(
     monthly: Number(monthlyR.v),
   };
 
-  // type 파라미터: total(기본), today, weekly, monthly
-  const VALID_BADGE_TYPES = ["total", "today", "weekly", "monthly"] as const;
-  type BadgeType = typeof VALID_BADGE_TYPES[number];
   const rawType = urlObj.searchParams.get("type") ?? "total";
   const badgeType: BadgeType = (VALID_BADGE_TYPES as readonly string[]).includes(rawType)
     ? rawType as BadgeType
     : "total";
   const displayCount = counts[badgeType] ?? counts.total;
 
-  // 라벨 자동 설정
   const typeLabels: Record<string, string> = {
     total: urlObj.searchParams.get("label") || site.badgeLabel || "m1k",
     today: urlObj.searchParams.get("label") || "today",
@@ -140,10 +135,7 @@ export async function GET(
     monthly: urlObj.searchParams.get("label") || "monthly",
   };
 
-  // 1000 최초 돌파 기록
-  if (counts.total >= 1000 && !site.reached1000At) {
-    await db.update(sites).set({ reached1000At: new Date() }).where(eq(sites.id, site.id));
-  }
+  await recordMilestoneIfReached(site, counts.total);
 
   const currentGoal = getCurrentGoal(counts.total);
   const svg = generateBadge(displayCount, currentGoal.goal, {

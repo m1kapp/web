@@ -1,3 +1,5 @@
+import { todayKST } from "@/lib/format";
+
 export interface Achievement {
   icon: string;
   name: string;
@@ -92,10 +94,6 @@ export function getUnlockedAchievements(counts: SiteCounts): Achievement[] {
   return ACHIEVEMENTS.filter((a) => matchAchievement(a, counts));
 }
 
-const toDateStr = (d: Date): string =>
-  new Date(d.getTime() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
-
-// 오늘부터 과거로 연속 방문일 계산
 // today 파라미터를 주입받아 테스트에서 날짜 고정 가능
 export function calcStreak(
   daily: { date: string; count: number }[],
@@ -104,10 +102,10 @@ export function calcStreak(
   if (daily.length === 0) return 0;
 
   const dates = new Set(daily.filter((d) => d.count > 0).map((d) => d.date));
-  const todayStr = toDateStr(today);
+  const todayStr = todayKST(today);
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = toDateStr(yesterday);
+  const yesterdayStr = todayKST(yesterday);
 
   // 오늘 또는 어제부터 시작 (오늘 아직 방문 없을 수 있으니)
   const startDateStr = dates.has(todayStr) ? todayStr : dates.has(yesterdayStr) ? yesterdayStr : null;
@@ -116,7 +114,7 @@ export function calcStreak(
   // 시작일부터 역순으로 연속 카운트
   let streak = 0;
   const cursor = new Date(startDateStr);
-  while (dates.has(toDateStr(cursor))) {
+  while (dates.has(todayKST(cursor))) {
     streak++;
     cursor.setDate(cursor.getDate() - 1);
   }

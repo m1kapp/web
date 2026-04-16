@@ -67,20 +67,3 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ ...site, slug });
 }
-
-async function refreshOg(siteId: number, slug: string) {
-  try {
-    const og = await scrapeOg(slug);
-    if (og.title || og.image) {
-      await db
-        .update(sites)
-        .set({
-          title: og.title || slug,
-          ogTitle: og.title,
-          ogDescription: og.description,
-          ogImage: og.image,
-        })
-        .where(eq(sites.id, siteId));
-    }
-  } catch (e) { console.error("[sites] OG fetch failed:", e); }
-}

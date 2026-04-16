@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sites } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { sites, hits } from "@/lib/db/schema";
+import { eq, and, sql } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { idToSlug } from "@/lib/utils";
 
-// 하위 뱃지 생성
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
 
@@ -23,7 +22,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "parentSlug과 path가 필요합니다" }, { status: 400 });
   }
 
-  // 부모 사이트 조회
   const parent = await db.query.sites.findFirst({
     where: eq(sites.slug, parentSlug),
   });
@@ -42,7 +40,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "올바른 경로를 입력해주세요" }, { status: 400 });
   }
 
-  // 이미 같은 path로 등록된 하위 뱃지 확인
   const existing = await db.query.sites.findFirst({
     where: and(eq(sites.parentId, parent.id), eq(sites.path, normalizedPath)),
   });
@@ -51,7 +48,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(existing);
   }
 
-  // 하위 뱃지 생성 — 부모의 색상/스타일 상속
   const subUrl = `${parent.url}/${normalizedPath}`;
 
   const [sub] = await db
@@ -91,9 +87,6 @@ export async function GET(request: NextRequest) {
   if (!parent) {
     return NextResponse.json({ error: "사이트를 찾을 수 없습니다" }, { status: 404 });
   }
-
-  const { sql } = await import("drizzle-orm");
-  const { hits } = await import("@/lib/db/schema");
 
   const subs = await db
     .select({

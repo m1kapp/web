@@ -58,3 +58,13 @@ export async function deleteSiteWithCascade(siteId: number): Promise<void> {
   await db.delete(hits).where(eq(hits.siteId, siteId));
   await db.delete(sites).where(eq(sites.id, siteId));
 }
+
+/** total이 1000 이상이고 아직 기록되지 않은 경우 reached_1000_at 기록 */
+export async function recordMilestoneIfReached(
+  site: Pick<Site, "id" | "reached1000At">,
+  total: number,
+): Promise<void> {
+  if (total >= 1000 && !site.reached1000At) {
+    await db.update(sites).set({ reached1000At: new Date() }).where(eq(sites.id, site.id));
+  }
+}

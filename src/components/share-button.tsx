@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { appHost } from "@/lib/utils";
 
 export function ShareButton({ slug, title }: { slug: string; title: string }) {
   const [showMenu, setShowMenu] = useState(false);
   const [copied, setCopied] = useState(false);
-  const host = process.env.NEXT_PUBLIC_HOST || "m1k.app";
-  const url = `https://${host}/${slug}`;
+  const url = `https://${appHost()}/${slug}`;
 
   async function handleCopyLink() {
     await navigator.clipboard.writeText(url);

@@ -70,7 +70,8 @@ export async function GET(
     .from(hitLogs)
     .where(eq(hitLogs.siteId, site.id))
     .groupBy(hitLogs.device)
-    .orderBy(desc(sql`count(*)`));
+    .orderBy(desc(sql`count(*)`))
+    .limit(5);
 
   // 리퍼러 통계 (도메인만)
   const referers = await db
