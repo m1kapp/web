@@ -131,5 +131,5 @@ export default async function DashboardPage({ params }: Props) {
   const { userId } = await auth();
   const isOwner = !!userId && data.userId === userId;
 
-  return <DashboardView data={data} host={appHost()} isOwner={isOwner} />;
+  return <DashboardView data={data} host={appHost()} isOwner={isOwner} isSignedIn={!!userId} />;
 }

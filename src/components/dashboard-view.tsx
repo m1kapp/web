@@ -60,9 +60,10 @@ interface DashboardViewProps {
   data: SiteData;
   host: string;
   isOwner?: boolean;
+  isSignedIn?: boolean;
 }
 
-export function DashboardView({ data: initialData, host, isOwner = false }: DashboardViewProps) {
+export function DashboardView({ data: initialData, host, isOwner = false, isSignedIn = false }: DashboardViewProps) {
   const fire = useConfetti();
   const router = useRouter();
   const [data, setData] = useState(initialData);
@@ -249,7 +250,7 @@ export function DashboardView({ data: initialData, host, isOwner = false }: Dash
                     </Section>
                   </>
                 ) : (
-                  <SettingsLoginPrompt />
+                  <SettingsLoginPrompt isSignedIn={isSignedIn} />
                 )}
               </>
             )}
@@ -654,7 +655,7 @@ function PendingBanner({ slug, host }: { slug: string; host: string }) {
   );
 }
 
-function SettingsLoginPrompt() {
+function SettingsLoginPrompt({ isSignedIn }: { isSignedIn: boolean }) {
   const { accent } = useAccent();
 
   return (
@@ -662,21 +663,46 @@ function SettingsLoginPrompt() {
       <div className="flex flex-col items-center justify-center px-4">
         <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300 dark:text-zinc-600">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
+            {isSignedIn ? (
+              <>
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </>
+            ) : (
+              <>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" />
+              </>
+            )}
           </svg>
         </div>
-        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">내 사이트만 설정할 수 있어요</p>
-        <p className="text-xs text-zinc-400 mb-5">로그인하고 사이트를 등록하면 배지와 설정을 관리할 수 있어요</p>
-        <div className="flex flex-col gap-2 w-full max-w-xs">
-          <GoogleLoginButton
-            className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
-            style={{ backgroundColor: accent }}
-          />
-          <GitHubLoginButton
-            className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
-          />
-        </div>
+        {isSignedIn ? (
+          <>
+            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">이 사이트의 소유자가 아니에요</p>
+            <p className="text-xs text-zinc-400 mb-5">내 사이트를 등록하고 방문자 1,000명에 도전해보세요</p>
+            <a
+              href="/my"
+              className="w-full max-w-xs py-2.5 rounded-xl text-sm font-bold text-white text-center transition-colors"
+              style={{ backgroundColor: accent }}
+            >
+              내 사이트 만들러 가기
+            </a>
+          </>
+        ) : (
+          <>
+            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">내 사이트만 설정할 수 있어요</p>
+            <p className="text-xs text-zinc-400 mb-5">로그인하고 사이트를 등록하면 배지와 설정을 관리할 수 있어요</p>
+            <div className="flex flex-col gap-2 w-full max-w-xs">
+              <GoogleLoginButton
+                className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
+                style={{ backgroundColor: accent }}
+              />
+              <GitHubLoginButton
+                className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
+              />
+            </div>
+          </>
+        )}
       </div>
     </Section>
   );

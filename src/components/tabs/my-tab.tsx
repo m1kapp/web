@@ -5,11 +5,10 @@ import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
 import { GitHubLoginButton } from "@/components/github-login-button";
-import { SiteCard } from "@/components/site-card";
+import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { Divider, EmptyState } from "@m1kapp/ui";
 import { BoostShop } from "@/components/boost-shop";
 import { BoostHistorySheet, type BoostLog } from "@/components/boost-history-sheet";
-import { SitePreviewCard } from "@/components/site-preview-card";
 import type { RecentSite } from "@/lib/types";
 
 type BoostedSite = {
@@ -128,17 +127,21 @@ function BoostedSiteCard({ site }: { site: BoostedSite }) {
     </button>
   );
 
+  const cardSite: RecentSite = {
+    slug: site.slug,
+    title: site.title,
+    url: site.url,
+    ogTitle: site.ogTitle,
+    ogDescription: site.ogDescription,
+    ogImage: site.ogImage,
+    color: site.color,
+    total: 0,
+    owner: null,
+  };
+
   return (
     <>
-      <SitePreviewCard
-        slug={site.slug}
-        name={name ?? site.slug}
-        url={site.url}
-        ogImage={site.ogImage}
-        color={site.color}
-        right={chip}
-        onClick={() => window.location.href = `/${site.slug}`}
-      />
+      <SiteCard site={cardSite} rightSlot={chip} />
       <BoostHistorySheet
         open={showSheet}
         onClose={() => setShowSheet(false)}
@@ -226,10 +229,7 @@ export function MyTab({
   }
 
   return (
-    <div className="px-4 py-5">
-      {/* 토탈 배지 (SVG 삽입 예정) */}
-      <div className="flex justify-center mb-4 h-[34px]" />
-
+    <div className="px-4 pt-2 pb-5">
       {/* 프로필 */}
       <div className="flex items-center gap-3 mb-5 justify-between">
         <div className="flex items-center gap-3">
@@ -306,31 +306,11 @@ export function MyTab({
           <RegisterForm bgColor={bgColor} onRegistered={onRegistered} />
           <Divider />
           {sitesLoading ? (
-            <div className="space-y-2 animate-pulse">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
-                  <div className="w-10 h-10 rounded-lg bg-zinc-200 dark:bg-zinc-800 shrink-0" />
-                  <div className="flex-1 min-w-0 space-y-1.5">
-                    <div className="h-3.5 w-2/3 rounded bg-zinc-200 dark:bg-zinc-800" />
-                    <div className="h-2.5 w-1/2 rounded bg-zinc-100 dark:bg-zinc-800" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            <SiteCardSkeleton count={3} />
           ) : sites.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-0">
               {sites.map((site) => (
-                <SiteCard
-                  key={site.slug}
-                  slug={site.slug}
-                  url={site.url}
-                  title={site.title}
-                  ogTitle={site.ogTitle}
-                  ogDescription={site.ogDescription}
-                  ogImage={site.ogImage}
-                  color={site.color}
-                  total={site.total}
-                />
+                <SiteCard key={site.slug} site={site} />
               ))}
             </div>
           ) : (

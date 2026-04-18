@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { SiteCard } from "@/components/site-card";
+import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { EmptyState } from "@m1kapp/ui";
 import type { RecentSite } from "@/lib/types";
 
@@ -13,18 +13,11 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: "boosted", label: "부스트순" },
 ];
 
-function formatCount(n: number | undefined) {
-  return (n ?? 0).toLocaleString();
-}
-
 export function StoreTab({
-  onRefreshItem,
   bgColor,
 }: {
-  onRefreshItem: (slug: string) => Promise<void>;
   bgColor: string;
 }) {
-  const [refreshingSlug, setRefreshingSlug] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<Sort>("total");
   const [sites, setSites] = useState<RecentSite[] | null>(null);
@@ -46,12 +39,6 @@ export function StoreTab({
 
     return () => clearTimeout(timeout);
   }, [searchQuery, sort]);
-
-  function statLabel(site: RecentSite) {
-    if (sort === "today") return `TODAY ${formatCount(site.today)}`;
-    if (sort === "boosted") return `BOOST ${formatCount(site.boosted)}`;
-    return `${formatCount(site.total)} / 1K`;
-  }
 
   return (
     <div className="px-4 py-5">
@@ -91,55 +78,11 @@ export function StoreTab({
 
       {/* 목록 */}
       {sites === null ? (
-        <div className="space-y-3 animate-pulse">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800" />
-          ))}
-        </div>
+        <SiteCardSkeleton count={4} />
       ) : sites.length > 0 ? (
-        <div className="space-y-2">
-          {sites.map((site, i) => (
-            <SiteCard
-              key={site.slug}
-              slug={site.slug}
-              url={site.url}
-              title={site.title}
-              ogTitle={site.ogTitle}
-              ogDescription={site.ogDescription}
-              ogImage={site.ogImage}
-              color={site.color}
-              rightSlot={
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] tabular-nums font-semibold text-zinc-400">
-                    {statLabel(site)}
-                  </span>
-                </div>
-              }
-              actions={
-                <button
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setRefreshingSlug(site.slug);
-                    await onRefreshItem(site.slug);
-                    setRefreshingSlug(null);
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs text-zinc-600 hover:bg-zinc-50 transition-colors flex items-center gap-2"
-                >
-                  <svg
-                    width="12" height="12" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                    className={refreshingSlug === site.slug ? "animate-spin" : ""}
-                  >
-                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                    <path d="M3 3v5h5" />
-                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                    <path d="M16 16h5v5" />
-                  </svg>
-                  {refreshingSlug === site.slug ? "새로고침 중..." : "OG 새로고침"}
-                </button>
-              }
-            />
+        <div className="space-y-0">
+          {sites.map((site) => (
+            <SiteCard key={site.slug} site={site} />
           ))}
         </div>
       ) : (

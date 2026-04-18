@@ -172,18 +172,7 @@ export function HomeTab({
           <SectionHeader>최근 등록</SectionHeader>
           <div className="space-y-0">
             {recentSites.slice(0, 3).map((site) => (
-              <SiteCard
-                key={site.slug}
-                slug={site.slug}
-                url={site.url}
-                title={site.title}
-                ogTitle={site.ogTitle}
-                ogDescription={site.ogDescription}
-                ogImage={site.ogImage}
-                color={site.color}
-                total={Number(site.total)}
-                today={Number(site.today ?? 0)}
-              />
+              <SiteCard key={site.slug} site={site} />
             ))}
           </div>
         </div>
