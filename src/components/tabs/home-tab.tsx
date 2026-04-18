@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { SiteCard } from "@/components/site-card";
-import { SectionHeader, Divider } from "@m1kapp/ui";
+import { SectionHeader } from "@m1kapp/ui";
 import type { RecentSite } from "@/lib/types";
 
 const ROLLING_WORDS = [
@@ -18,7 +18,7 @@ const ROLLING_WORDS = [
 
 function TypewriterHero({ bgColor }: { bgColor: string }) {
   const [wordIndex, setWordIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(ROLLING_WORDS[0].length);
   const [deleting, setDeleting] = useState(false);
   const [blink, setBlink] = useState(true);
 
@@ -115,13 +115,12 @@ export function HomeTab({
     <>
       {/* 싸이월드 방문자 카운터 — 최상단 얇은 바 */}
       {selfSlug && (
-        <div className="w-full flex justify-center py-2 border-b border-zinc-100 dark:border-zinc-800">
-          <a href={`/${selfSlug}`} target="_blank" rel="noopener noreferrer">
+        <div className="w-full flex justify-center py-2">
+          <a href={`/${selfSlug}`} target="_blank" rel="noopener noreferrer" className="block h-10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`/badge/${selfSlug}.svg`}
-              alt="badge"
-            /> 
+            <img src={`/badge/${selfSlug}.svg`} alt="badge" className="dark:hidden" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/badge/${selfSlug}-dark.svg`} alt="badge" className="hidden dark:block" /> 
           </a>
         </div>
       )}
@@ -140,11 +139,11 @@ export function HomeTab({
           <p className="text-lg text-zinc-400 dark:text-zinc-500 min-h-7 mb-4">
             <TypewriterHero bgColor={bgColor} />
           </p>
-          <p className="text-2xl font-black tracking-tight leading-snug text-zinc-900 dark:text-white">
-            방문자 1,000명
+          <p className="text-xl font-black tracking-tight leading-snug text-zinc-900 dark:text-white">
+            방문자 트래커 손쉽게 달고
           </p>
-          <p className="text-2xl font-black tracking-tight leading-snug" style={{ color: bgColor }}>
-            함께 만들어봐요.
+          <p className="text-xl font-black tracking-tight leading-snug" style={{ color: bgColor }}>
+            1,000명 함께 만들어봐요
           </p>
         </div>
 
@@ -159,20 +158,19 @@ export function HomeTab({
 
         {/* 3스텝 — 한 줄로 간결하게 */}
         <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-400">
-          <span>사이트 등록</span>
+          <span>📝 사이트 등록</span>
           <span className="text-zinc-200">→</span>
-          <span>뱃지 달기</span>
+          <span>🏷️ 트래커 심기</span>
           <span className="text-zinc-200">→</span>
-          <span>함께 성장</span>
+          <span>🚀 함께 성장</span>
         </div>
       </div>
 
       {/* 최근 등록 */}
       {recentSites.length > 0 && (
         <div className="px-4 pb-2">
-          <Divider />
           <SectionHeader>최근 등록</SectionHeader>
-          <div className="space-y-2">
+          <div className="space-y-0">
             {recentSites.slice(0, 3).map((site) => (
               <SiteCard
                 key={site.slug}
@@ -183,8 +181,8 @@ export function HomeTab({
                 ogDescription={site.ogDescription}
                 ogImage={site.ogImage}
                 color={site.color}
-                owner={site.owner}
                 total={Number(site.total)}
+                today={Number(site.today ?? 0)}
               />
             ))}
           </div>
@@ -192,8 +190,7 @@ export function HomeTab({
       )}
 
       {/* FAQ */}
-      <div className="px-4 pb-8">
-        <Divider />
+      <div className="px-4 pt-6 pb-8">
         <SectionHeader>자주 묻는 질문</SectionHeader>
         <FAQSection />
       </div>
@@ -228,11 +225,11 @@ function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <div className="space-y-1.5">
+    <div className=" rounded-xl border border-zinc-200 dark:border-zinc-800 divide-y divide-zinc-200 dark:divide-zinc-800 overflow-hidden">
       {FAQ_ITEMS.map((item, i) => {
         const isOpen = openIndex === i;
         return (
-          <div key={i} className="rounded-xl bg-zinc-50 dark:bg-zinc-900 overflow-hidden">
+          <div key={i}>
             <button
               onClick={() => setOpenIndex(isOpen ? null : i)}
               className="w-full flex items-center justify-between px-4 py-3 text-left"
@@ -265,3 +262,4 @@ function FAQSection() {
     </div>
   );
 }
+

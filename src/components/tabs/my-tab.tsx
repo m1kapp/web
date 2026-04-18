@@ -329,8 +329,6 @@ export function MyTab({
                   ogDescription={site.ogDescription}
                   ogImage={site.ogImage}
                   color={site.color}
-                  owner={site.owner}
-                  hideOwner
                   total={site.total}
                 />
               ))}

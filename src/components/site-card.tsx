@@ -2,12 +2,8 @@
 
 import { useState } from "react";
 import { slugToColor } from "@/lib/site-color";
+import { compactNumber } from "@/lib/format";
 import { SiteThumbnail } from "./site-preview-card";
-
-function compactNumber(n: number): string {
-  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "")}k`;
-  return String(n);
-}
 
 interface SiteCardProps {
   slug: string;
@@ -17,14 +13,13 @@ interface SiteCardProps {
   ogDescription: string | null;
   ogImage: string | null;
   color?: string | null;
-  owner?: { name: string; imageUrl: string } | null;
   actions?: React.ReactNode;
   /** 오른쪽 영역을 커스텀 슬롯으로 교체 (배지 숨김) */
   rightSlot?: React.ReactNode;
-  /** 소유자 아바타 오버레이 숨김 */
-  hideOwner?: boolean;
   /** 총 방문수 — 넘기면 배지 SVG 대신 숫자 표시 */
   total?: number;
+  /** 오늘 방문수 */
+  today?: number;
 }
 
 export function SiteCard({
@@ -35,41 +30,25 @@ export function SiteCard({
   ogDescription,
   ogImage,
   color: colorProp,
-  owner,
   actions,
   rightSlot,
-  hideOwner,
   total,
+  today,
 }: SiteCardProps) {
   const displayName = ogTitle || title || slug;
   const color = colorProp || slugToColor(slug);
   const [showMenu, setShowMenu] = useState(false);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl bg-zinc-50 px-3 py-2.5 hover:bg-zinc-100 transition-all active:scale-[0.98] relative">
+    <div className="flex items-center gap-3 py-1.5 transition-all active:scale-[0.98] relative">
       {/* 썸네일 + 소유자 아바타 오버레이 */}
-      <a href={`/${slug}`} className="shrink-0 relative group">
+      <a href={`/${slug}`} className="shrink-0">
         <SiteThumbnail slug={slug} name={displayName} url={url} color={color} />
-        {!hideOwner && (owner ? (
-          <div className="absolute -bottom-1 -right-1">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={owner.imageUrl} alt="" className="w-4.5 h-4.5 rounded-full border-2 border-white" />
-            <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block">
-              <div className="bg-zinc-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap">
-                {owner.name}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full bg-zinc-300 border-2 border-white flex items-center justify-center">
-            <span className="text-[8px] font-bold text-white">?</span>
-          </div>
-        ))}
       </a>
 
       {/* 정보 */}
       <a href={`/${slug}`} className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-zinc-800 truncate" title={displayName}>
+        <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate" title={displayName}>
           {displayName}
         </p>
         <p className="text-[10px] text-zinc-400 truncate mt-0.5" title={ogDescription || url || slug}>
@@ -83,14 +62,11 @@ export function SiteCard({
       ) : (
         <div className="shrink-0 flex items-center gap-1.5">
           {total != null ? (
-            <div className="flex items-center gap-1 text-zinc-400 dark:text-zinc-500">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                <circle cx="10" cy="7" r="4" />
-              </svg>
-              <span className="text-lg font-black tabular-nums">
-                {compactNumber(Number(total))}
-              </span>
+            <div className="grid grid-cols-[auto_auto] gap-x-1 gap-y-0.5 items-baseline leading-snug">
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-widest">TODAY</span>
+              <span className="text-[10px] font-bold tabular-nums text-zinc-800 text-right dark:text-zinc-100">{compactNumber(Number(today ?? 0))}</span>
+              <span className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-widest">TOTAL</span>
+              <span className="text-[10px] font-bold tabular-nums text-zinc-800 text-right dark:text-zinc-100">{compactNumber(Number(total))}</span>
             </div>
           ) : (
             /* eslint-disable-next-line @next/next/no-img-element */

@@ -1,3 +1,9 @@
+/** 숫자를 간결하게 표시 (1234 → "1.2k") */
+export function compactNumber(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "")}k`;
+  return String(n);
+}
+
 /** 현재 KST(UTC+9) 기준 날짜 문자열 (YYYY-MM-DD) */
 export function todayKST(base: Date = new Date()): string {
   return new Date(base.getTime() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];

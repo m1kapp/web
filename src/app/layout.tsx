@@ -3,16 +3,30 @@ import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
-import { fontFamily, THEME_SCRIPT } from "@m1kapp/ui";
+import { THEME_SCRIPT } from "@m1kapp/ui";
 import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import "./globals.css";
 
+/**
+ * Critical CSS inlined in <head> to prevent FOUC.
+ * Duplicates the essential parts of globals.css that must be
+ * available before the external stylesheet loads:
+ * - Tailwind preflight border reset
+ * - shadcn theme variables (:root / .dark)
+ * - Base body/background styles
+ */
+const CRITICAL_CSS = `
+:root{--background:oklch(1 0 0);--foreground:oklch(0.145 0 0);--border:oklch(0.922 0 0);--ring:oklch(0.708 0 0);--radius:0.625rem;--card:oklch(1 0 0);--muted:oklch(0.97 0 0);--accent:oklch(0.97 0 0)}
+.dark{--background:oklch(0.145 0 0);--foreground:oklch(0.985 0 0);--border:oklch(1 0 0/10%);--ring:oklch(0.556 0 0);--card:oklch(0.205 0 0);--muted:oklch(0.269 0 0);--accent:oklch(0.269 0 0)}
+body{margin:0;background-color:var(--background);color:var(--foreground)}
+`.trim();
+
 const pretendard = localFont({
   src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
   variable: "--font-pretendard",
-  display: "swap",
+  display: "optional",
   weight: "45 920",
 });
 
@@ -58,13 +72,14 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css"
         />
       </head>
-      <body className="min-h-full h-dvh" style={{ fontFamily: fontFamily.pretendard }} data-self-slug={self?.slug ?? ""}>
+      <body className="min-h-full h-dvh" style={{ fontFamily: 'var(--font-pretendard), system-ui, sans-serif' }} data-self-slug={self?.slug ?? ""}>
         <ClerkProvider
           appearance={{
             layout: {

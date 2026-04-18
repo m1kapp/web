@@ -18,8 +18,9 @@ export async function GET(
   { params }: { params: Promise<{ slug: string[] }> }
 ) {
   const { slug: slugParts } = await params;
-  const rawSlug = slugParts.join("/").replace(/\.svg$/, "");
-  const slug = rawSlug.trim();
+  const joined = slugParts.join("/").replace(/\.svg$/, "");
+  const isDark = joined.endsWith("-dark");
+  const slug = (isDark ? joined.slice(0, -5) : joined).trim();
 
   if (!slug) {
     return new Response("Missing slug", { status: 400 });
@@ -147,6 +148,7 @@ export async function GET(
       ? `#${urlObj.searchParams.get("labelColor")}`
       : undefined,
     style: (urlObj.searchParams.get("style") || site.badgeStyle || "flat") as "flat" | "flat-square" | "rounded" | "cyworld",
+    theme: isDark ? "dark" : "light",
   }, counts.today);
 
   // 조회 전용은 30초 캐시, 카운트용은 5초

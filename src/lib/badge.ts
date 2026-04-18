@@ -10,6 +10,7 @@ export interface BadgeOptions {
   color?: string;
   labelColor?: string;
   style?: "flat" | "flat-square" | "rounded" | "cyworld";
+  theme?: "light" | "dark";
 }
 
 export function generateBadge(
@@ -104,11 +105,20 @@ function modernBadge(count: number, options: BadgeOptions): string {
 
 // ── 싸이월드 배지 ──
 function cyworldBadge(total: number, today: number, goal: number, options: BadgeOptions): string {
-  const accent = options.color || "#cc0000";
+  const dark = options.theme === "dark";
+  const accent = dark ? "#fafafa" : (options.color || "#cc0000");
   const label = options.label || "";
   const todayStr = today.toLocaleString();
   const totalStr = total.toLocaleString();
   const tvw = textWidth(todayStr);
+
+  // 테마별 색상
+  const bg = dark ? "none" : "#fff";
+  const border = dark ? "#3f3f46" : "#e5e5e5";
+  const labelFill = dark ? "#a1a1aa" : "#bbb";
+  const mutedFill = dark ? "#a1a1aa" : "#999";
+  const boldFill = dark ? "#fafafa" : "#555";
+  const dividerFill = dark ? "#52525b" : "#ddd";
 
   // 카운트 행 너비: TODAY {today} TOTAL {total}
   const countsRowW = Math.ceil(44 + tvw + 16 + 46 + textWidth(totalStr) + 4);
@@ -117,7 +127,6 @@ function cyworldBadge(total: number, today: number, goal: number, options: Badge
 
   const w = Math.max(countsRowW, labelRowW) + 12;
   const h = label ? 34 : 22;
-  const barH = 2;
 
   // 텍스트 Y 좌표
   const labelY = 14;
@@ -133,27 +142,23 @@ function cyworldBadge(total: number, today: number, goal: number, options: Badge
   const colTotalLabel = cx + 58 + tvw;
   const colTotalValue = cx + 102 + tvw;
 
-  // 프로그레스 바
-  const progress = goal > 0 ? Math.min(total / goal, 1) : 0;
-  const barFill = progress > 0 ? Math.max(Math.round(progress * w), 3) : 0;
-
   const labelSvg = label
-    ? `<text x="${w / 2}" y="${labelY}" font-size="9" fill="#bbb" text-anchor="middle" letter-spacing="1">${label}</text>`
+    ? `<text x="${w / 2}" y="${labelY}" font-size="9" fill="${labelFill}" text-anchor="middle" letter-spacing="1">${label}</text>`
     : "";
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" role="img">
   <clipPath id="r"><rect width="${w}" height="${h}" rx="3"/></clipPath>
   <g clip-path="url(#r)">
-    <rect width="${w}" height="${h}" fill="#fff"/>
+    <rect width="${w}" height="${h}" fill="${bg}"/>
   </g>
-  <rect width="${w}" height="${h}" rx="3" fill="none" stroke="#e5e5e5" stroke-width="0.5"/>
+  <rect width="${w}" height="${h}" rx="3" fill="none" stroke="${border}" stroke-width="0.5"/>
   <g font-family="Verdana,Tahoma,sans-serif" text-rendering="geometricPrecision">
     ${labelSvg}
-    <text x="${colTodayLabel}" y="${countsY}" font-size="9" fill="#999" letter-spacing="0.5">TODAY</text>
+    <text x="${colTodayLabel}" y="${countsY}" font-size="9" fill="${mutedFill}" letter-spacing="0.5">TODAY</text>
     <text x="${colTodayValue}" y="${countsY}" font-size="9" font-weight="bold" fill="${accent}">${todayStr}</text>
-    <text x="${colDivider}"    y="${countsY}" font-size="9" fill="#ddd">|</text>
-    <text x="${colTotalLabel}" y="${countsY}" font-size="9" fill="#999" letter-spacing="0.5">TOTAL</text>
-    <text x="${colTotalValue}" y="${countsY}" font-size="9" font-weight="bold" fill="#555">${totalStr}</text>
+    <text x="${colDivider}"    y="${countsY}" font-size="9" fill="${dividerFill}">|</text>
+    <text x="${colTotalLabel}" y="${countsY}" font-size="9" fill="${mutedFill}" letter-spacing="0.5">TOTAL</text>
+    <text x="${colTotalValue}" y="${countsY}" font-size="9" font-weight="bold" fill="${boldFill}">${totalStr}</text>
   </g>
 </svg>`;
 }

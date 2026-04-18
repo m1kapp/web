@@ -1,10 +1,89 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { auth } from "@clerk/nextjs/server";
+import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
+import { sql, desc, ilike, or, eq, and } from "drizzle-orm";
+import { auth, clerkClient } from "@clerk/nextjs/server";
+import { todayKST } from "@/lib/format";
+import type { RecentSite } from "@/lib/types";
 
 export type Site = typeof sites.$inferSelect;
+
+export interface FetchRecentSitesOptions {
+  q?: string;
+  sort?: "total" | "today" | "boosted";
+}
+
+export async function fetchRecentSites({
+  q = "",
+  sort = "total",
+}: FetchRecentSitesOptions = {}): Promise<RecentSite[]> {
+  const todayStr = todayKST();
+
+  const totalExpr = sql<number>`coalesce(sum(${hits.count}), 0)`;
+  const todayExpr = sql<number>`coalesce(sum(case when ${hits.date} = ${todayStr} then ${hits.count} else 0 end), 0)`;
+  const boostedExpr = sql<number>`coalesce((select sum(abs(${pointLogs.amount})) from ${pointLogs} where ${pointLogs.targetSiteId} = ${sites.id} and ${pointLogs.type} = 'inject'), 0)`;
+
+  const whereCondition = q
+    ? and(
+        eq(sites.verified, true),
+        or(
+          ilike(sites.title, `%${q}%`),
+          ilike(sites.ogTitle, `%${q}%`),
+          ilike(sites.ogDescription, `%${q}%`)
+        )
+      )
+    : eq(sites.verified, true);
+
+  let query = db
+    .select({
+      slug: sites.slug,
+      title: sites.title,
+      url: sites.url,
+      ogTitle: sites.ogTitle,
+      ogDescription: sites.ogDescription,
+      ogImage: sites.ogImage,
+      color: sites.color,
+      userId: sites.userId,
+      total: totalExpr,
+      today: todayExpr,
+      boosted: boostedExpr,
+      createdAt: sites.createdAt,
+    })
+    .from(sites)
+    .leftJoin(hits, eq(hits.siteId, sites.id))
+    .where(whereCondition)
+    .groupBy(sites.id);
+
+  if (sort === "today") {
+    query = query.orderBy(desc(todayExpr), desc(totalExpr)) as typeof query;
+  } else if (sort === "boosted") {
+    query = query.orderBy(desc(boostedExpr), desc(totalExpr)) as typeof query;
+  } else {
+    query = query.orderBy(desc(totalExpr)) as typeof query;
+  }
+
+  const result = await query.limit(30);
+
+  const userIds = [...new Set(result.map((s) => s.userId).filter(Boolean))] as string[];
+  const userMap: Record<string, { name: string; imageUrl: string }> = {};
+
+  if (userIds.length > 0) {
+    try {
+      const client = await clerkClient();
+      const users = await client.users.getUserList({ userId: userIds, limit: 100 });
+      for (const u of users.data) {
+        userMap[u.id] = { name: u.firstName || u.username || "", imageUrl: u.imageUrl };
+      }
+    } catch (e) {
+      console.error("[fetchRecentSites] clerk user fetch failed:", e);
+    }
+  }
+
+  return result.map((s) => ({
+    ...s,
+    owner: s.userId && userMap[s.userId] ? userMap[s.userId] : null,
+  }));
+}
 
 /** slug로 사이트 단건 조회 */
 export async function findSiteBySlug(slug: string): Promise<Site | undefined> {

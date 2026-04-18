@@ -108,7 +108,6 @@ export function StoreTab({
               ogDescription={site.ogDescription}
               ogImage={site.ogImage}
               color={site.color}
-              owner={site.owner}
               rightSlot={
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] tabular-nums font-semibold text-zinc-400">
