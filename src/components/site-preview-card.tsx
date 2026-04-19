@@ -24,26 +24,26 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
   const bg = color || slugToColor(slug);
   const dim = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-12 h-12" : "w-10 h-10";
   const rounded = size === "lg" ? "rounded-xl" : "rounded-lg";
+  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
   const favicon = url ? faviconUrl(url) : "";
 
-  if (favicon && !failed) {
-    return (
-      <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center`} style={{ backgroundColor: bg }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+  return (
+    <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center relative`} style={{ backgroundColor: bg }}>
+      {/* 글자 폴백 — 이미지 로드 성공 시 숨김 */}
+      {!loaded && <span className="text-xs font-black text-white/80">{name[0]?.toUpperCase()}</span>}
+      {/* 이미지 — hidden으로 시작해서 로드 완료 시에만 표시 (깨진 아이콘 방지) */}
+      {favicon && !failed && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={favicon}
           alt=""
-          className="w-5 h-5 object-contain"
+          className={`w-5 h-5 object-contain absolute ${loaded ? "" : "hidden"}`}
+          onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
         />
-      </div>
-    );
-  }
-  return (
-    <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center`} style={{ backgroundColor: bg }}>
-      <span className="text-xs font-black text-white/80">{name[0]?.toUpperCase()}</span>
+      )}
     </div>
   );
 }
