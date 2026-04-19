@@ -1,4 +1,4 @@
-import { OG, loadPretendard } from "@m1kapp/seo";
+import { OGImage, loadPretendard } from "@m1kapp/kit/ogimage";
 import { ImageResponse } from "next/og";
 import { db } from "@/lib/db";
 import { sites, hits } from "@/lib/db/schema";
@@ -7,8 +7,8 @@ import { eq, sql } from "drizzle-orm";
 export const runtime = "nodejs";
 export const revalidate = 3600;
 
-const DEFAULT_OG = (
-  <OG
+const DEFAULT_OGIMAGE = (
+  <OGImage
     type="default"
     title="방문자 1,000명을 향한 첫걸음"
     sub="배지 하나로 방문자 추적. 목표까지의 여정을 한눈에."
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
         .where(eq(hits.siteId, site.id));
 
       return new ImageResponse(
-        <OG
+        <OGImage
           type="stat"
           stat={Number(total).toLocaleString("ko-KR")}
           label={site.ogTitle || site.title || slug}
@@ -55,5 +55,5 @@ export async function GET(req: Request) {
     }
   }
 
-  return new ImageResponse(DEFAULT_OG, { ...OG_SIZE, fonts });
+  return new ImageResponse(DEFAULT_OGIMAGE, { ...OG_SIZE, fonts });
 }

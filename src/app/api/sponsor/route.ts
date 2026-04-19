@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { desc, gte, isNotNull } from "drizzle-orm";
+import { handler, ok } from "@m1kapp/kit/server";
 
 export const revalidate = 60;
 
@@ -11,7 +11,9 @@ export interface SponsorData {
   is1k: boolean;
 }
 
-export async function GET() {
+const CACHE_HEADERS = { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30" };
+
+export const GET = handler(async () => {
   const cutoff = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
   // 1순위: 최근 48h 내 1000 돌파 사이트
@@ -22,13 +24,11 @@ export async function GET() {
   });
 
   if (milestone) {
-    return NextResponse.json({
+    return Response.json({
       slug: milestone.slug,
       name: milestone.ogTitle || milestone.title || milestone.slug,
       is1k: true,
-    } satisfies SponsorData, {
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30" },
-    });
+    } satisfies SponsorData, { headers: CACHE_HEADERS });
   }
 
   // 2순위: 최근 등록 10개 중 6시간 슬롯으로 하나 선택
@@ -39,18 +39,14 @@ export async function GET() {
     columns: { slug: true, ogTitle: true, title: true },
   });
 
-  if (recent.length === 0) {
-    return NextResponse.json(null);
-  }
+  if (recent.length === 0) return ok(null);
 
   const slot = Math.floor(Date.now() / (6 * 60 * 60 * 1000)) % recent.length;
   const pick = recent[slot];
 
-  return NextResponse.json({
+  return Response.json({
     slug: pick.slug,
     name: pick.ogTitle || pick.title || pick.slug,
     is1k: false,
-  } satisfies SponsorData, {
-    headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30" },
-  });
-}
+  } satisfies SponsorData, { headers: CACHE_HEADERS });
+});

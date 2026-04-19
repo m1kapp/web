@@ -1,9 +1,10 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
 import { THEME_SCRIPT } from "@m1kapp/ui";
+import { ToastProvider } from "@m1kapp/kit";
 import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -29,6 +30,13 @@ const pretendard = localFont({
   display: "optional",
   weight: "45 920",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 
 export const metadata: Metadata = {
   title: "m1k — 방문자 1,000명을 향한 첫걸음",
@@ -102,7 +110,9 @@ export default async function RootLayout({
           }}
         >
           <PaddleProvider />
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </ClerkProvider>
       </body>
     </html>

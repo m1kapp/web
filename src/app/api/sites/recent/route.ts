@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
 import { fetchRecentSites } from "@/lib/site-service";
+import { handler, ok } from "@m1kapp/kit/server";
 
-export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
+export const GET = handler(async (req) => {
+  const url = new URL(req.url);
   const q = url.searchParams.get("q")?.trim() || "";
   const sort = (url.searchParams.get("sort") || "total") as "total" | "today" | "boosted";
 
   const enriched = await fetchRecentSites({ q, sort });
-  return NextResponse.json(enriched);
-}
+  return ok(enriched);
+});

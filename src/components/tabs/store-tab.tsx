@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { EmptyState } from "@m1kapp/ui";
+import { useFetch, useDebounce } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
 
 type Sort = "total" | "today" | "boosted";
@@ -20,25 +21,13 @@ export function StoreTab({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<Sort>("total");
-  const [sites, setSites] = useState<RecentSite[] | null>(null);
-  const [searching, setSearching] = useState(false);
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set("q", searchQuery);
-    params.set("sort", sort);
+  const params = new URLSearchParams();
+  if (debouncedQuery) params.set("q", debouncedQuery);
+  params.set("sort", sort);
 
-    const timeout = setTimeout(async () => {
-      setSearching(true);
-      try {
-        const res = await fetch(`/api/sites/recent?${params}`);
-        setSites(await res.json());
-      } catch (e) { console.error("[store] search fetch failed:", e); }
-      setSearching(false);
-    }, searchQuery ? 300 : 0);
-
-    return () => clearTimeout(timeout);
-  }, [searchQuery, sort]);
+  const { data: sites, loading: searching } = useFetch<RecentSite[]>(`/api/sites/recent?${params}`);
 
   return (
     <div className="px-4 py-5">
@@ -77,7 +66,7 @@ export function StoreTab({
       </div>
 
       {/* 목록 */}
-      {sites === null ? (
+      {!sites ? (
         <SiteCardSkeleton count={4} />
       ) : sites.length > 0 ? (
         <div className="space-y-0">

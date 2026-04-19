@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { MyTab } from "@/components/tabs/my-tab";
 import { useAppTheme } from "../theme-context";
+import { useFetch } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
 
 export default function MyPage() {
   const { bgColor } = useAppTheme();
   const { isSignedIn, isLoaded } = useUser();
-  const [mySites, setMySites] = useState<RecentSite[]>([]);
-  const [sitesLoading, setSitesLoading] = useState(true);
   const [timedOut, setTimedOut] = useState(false);
 
   useEffect(() => {
@@ -19,17 +18,10 @@ export default function MyPage() {
     return () => clearTimeout(id);
   }, [isLoaded]);
 
-  function fetchMySites() {
-    fetch("/api/sites/mine")
-      .then(r => r.json())
-      .then(data => setMySites(Array.isArray(data) ? data : []))
-      .catch(() => {})
-      .finally(() => setSitesLoading(false));
-  }
-
-  useEffect(() => {
-    if (isSignedIn) fetchMySites();
-  }, [isSignedIn]);
+  const { data: mySitesData, loading: sitesLoading, refetch } = useFetch<RecentSite[]>(
+    isSignedIn ? "/api/sites/mine" : null
+  );
+  const mySites = Array.isArray(mySitesData) ? mySitesData : [];
 
   if (!isLoaded && !timedOut) {
     return (
@@ -50,7 +42,7 @@ export default function MyPage() {
       sites={mySites}
       isSignedIn={!!isSignedIn}
       bgColor={bgColor}
-      onRegistered={fetchMySites}
+      onRegistered={refetch}
       sitesLoading={sitesLoading}
     />
   );

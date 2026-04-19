@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { points, pointLogs } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import crypto from "crypto";
+import { handler, ok } from "@m1kapp/kit/server";
 
 // 부스트 상품 매핑 (Paddle Price ID → 부스트 수량)
 // Paddle 대시보드에서 상품 만들고 여기에 매핑
@@ -34,9 +34,9 @@ function verifySignature(rawBody: string, signature: string | null): boolean {
   return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(h1));
 }
 
-export async function POST(request: NextRequest) {
-  const rawBody = await request.text();
-  const signature = request.headers.get("paddle-signature");
+export const POST = handler(async (req) => {
+  const rawBody = await req.text();
+  const signature = req.headers.get("paddle-signature");
 
   // 서명 검증 (production에서만 강제)
   if (process.env.NODE_ENV === "production" && !verifySignature(rawBody, signature)) {
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     if (!userId) {
       console.error("Paddle webhook: missing userId in custom_data");
-      return NextResponse.json({ ok: false, error: "missing userId" });
+      return ok({ ok: false, error: "missing userId" });
     }
 
     // 구매한 상품에서 부스트 수량 계산
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     if (totalBoost <= 0) {
       console.error("Paddle webhook: unknown price ID");
-      return NextResponse.json({ ok: false, error: "unknown product" });
+      return ok({ ok: false, error: "unknown product" });
     }
 
     // 지갑에 부스트 추가
@@ -96,9 +96,9 @@ export async function POST(request: NextRequest) {
       memo: `🚀 ${totalBoost.toLocaleString()} 부스트 구매 (Paddle: ${data.id})`,
     });
 
-    return NextResponse.json({ ok: true, boosted: totalBoost });
+    return ok({ ok: true, boosted: totalBoost });
   }
 
   // 다른 이벤트는 무시
-  return NextResponse.json({ ok: true });
-}
+  return ok({ ok: true });
+});

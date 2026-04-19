@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { CodeSnippet } from "./code-snippet";
 import { useAccent, ACCENT_COLORS, type AccentHex } from "@/lib/theme-context";
+import { useFormSubmit } from "@m1kapp/kit";
+import { api } from "@/lib/api";
 import type { SiteCounts } from "@/lib/achievements";
 
 interface BadgeConfiguratorProps {
@@ -57,20 +59,10 @@ export function BadgeConfigurator({
     }
   }, [color, setAccent]);
 
-  // 설정 저장
-  const saveSettings = useCallback(async () => {
-    await fetch("/api/sites/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        slug,
-        color,
-        badgeStyle: style,
-        badgeLabel: label,
-      }),
-    });
-    setSavedConfig({ color, style, label });
-  }, [slug, color, style, label]);
+  const { submit: saveSettings } = useFormSubmit(
+    () => api.put("/api/sites/settings", { slug, color, badgeStyle: style, badgeLabel: label }),
+    { onSuccess: () => setSavedConfig({ color, style, label }) }
+  );
 
   // 임베드 코드용: 저장된 상태면 파라미터 불필요 (서버가 DB 설정 자동 적용)
   // 미저장 변경이 있을 때만 파라미터로 명시
@@ -125,7 +117,7 @@ export function BadgeConfigurator({
               </span>
             ) : (
               <button
-                onClick={saveSettings}
+                onClick={() => saveSettings()}
                 className="text-[11px] font-semibold px-3 py-1 rounded-lg text-white transition-colors"
                 style={{ backgroundColor: accent }}
               >

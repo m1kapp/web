@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Show, UserButton, useUser } from "@clerk/nextjs";
 import { Watermark, AppShell, AppShellHeader, AppShellContent, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/ui";
+import { useFetch } from "@m1kapp/kit";
 import { ThemeProvider, useAppTheme } from "./theme-context";
+import { useState, useEffect } from "react";
 
 function TabsShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -12,12 +14,9 @@ function TabsShell({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const { bgColor, setBgColor } = useAppTheme();
   const [themeOpen, setThemeOpen] = useState(false);
-  const [sponsor, setSponsor] = useState<{ slug: string; name: string; is1k: boolean } | null>(null);
   const scrollRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    fetch("/api/sponsor").then(r => r.json()).then(d => d && setSponsor(d)).catch(() => {});
-  }, []);
+  const { data: sponsor } = useFetch<{ slug: string; name: string; is1k: boolean } | null>("/api/sponsor");
 
   useEffect(() => {
     // Cache the scroll container ref once on mount

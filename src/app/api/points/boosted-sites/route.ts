@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { pointLogs, sites } from "@/lib/db/schema";
 import { eq, and, ne, sql } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
+import { handler, ok, unauthorized } from "@m1kapp/kit/server";
 
 // 내가 부스트한 남의 사이트 목록
-export async function GET() {
+export const GET = handler(async () => {
   const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: "로그인이 필요합니다" }, { status: 401 });
+  if (!userId) unauthorized("로그인이 필요합니다");
 
   const rows = await db
     .select({
@@ -25,9 +25,9 @@ export async function GET() {
     .innerJoin(sites, eq(pointLogs.targetSiteId, sites.id))
     .where(
       and(
-        eq(pointLogs.userId, userId),
+        eq(pointLogs.userId, userId!),
         eq(pointLogs.type, "inject"),
-        ne(sites.userId, userId)
+        ne(sites.userId, userId!)
       )
     )
     .groupBy(
@@ -43,5 +43,5 @@ export async function GET() {
     )
     .orderBy(sql`sum(abs(${pointLogs.amount})) desc`);
 
-  return NextResponse.json({ sites: rows });
-}
+  return ok({ sites: rows });
+});

@@ -1,23 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sites, hits, hitLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte, desc } from "drizzle-orm";
 import { todayKST } from "@/lib/format";
+import { handler, ok, notFound } from "@m1kapp/kit/server";
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ slug: string[] }> }
-) {
-  const { slug: slugParts } = await params;
+export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: string[] }> }) => {
+  const { slug: slugParts } = await ctx.params;
   const slug = slugParts.join("/");
 
   const site = await db.query.sites.findFirst({
     where: eq(sites.slug, slug),
   });
 
-  if (!site) {
-    return NextResponse.json({ error: "프로젝트를 찾을 수 없습니다" }, { status: 404 });
-  }
+  if (!site) notFound("프로젝트를 찾을 수 없습니다");
 
   // 총 방문수 + 기간별
   const now = new Date();
@@ -28,10 +23,10 @@ export async function GET(
   monthAgo.setDate(monthAgo.getDate() - 30);
 
   const [[totalResult], [todayResult], [weeklyResult], [monthlyResult]] = await Promise.all([
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(weekAgo)))),
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(monthAgo)))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site!.id)),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), eq(hits.date, todayStr))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(weekAgo)))),
+    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(monthAgo)))),
   ]);
 
   // 최근 90일 일별 데이터 (잔디용)
@@ -43,7 +38,7 @@ export async function GET(
     .from(hits)
     .where(
       and(
-        eq(hits.siteId, site.id),
+        eq(hits.siteId, site!.id),
         gte(hits.date, todayKST(ninetyDaysAgo))
       )
     )
@@ -56,7 +51,7 @@ export async function GET(
       count: sql<number>`count(*)`,
     })
     .from(hitLogs)
-    .where(eq(hitLogs.siteId, site.id))
+    .where(eq(hitLogs.siteId, site!.id))
     .groupBy(hitLogs.country)
     .orderBy(desc(sql`count(*)`))
     .limit(10);
@@ -68,7 +63,7 @@ export async function GET(
       count: sql<number>`count(*)`,
     })
     .from(hitLogs)
-    .where(eq(hitLogs.siteId, site.id))
+    .where(eq(hitLogs.siteId, site!.id))
     .groupBy(hitLogs.device)
     .orderBy(desc(sql`count(*)`))
     .limit(5);
@@ -80,17 +75,17 @@ export async function GET(
       count: sql<number>`count(*)`,
     })
     .from(hitLogs)
-    .where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.referer} is not null`))
+    .where(and(eq(hitLogs.siteId, site!.id), sql`${hitLogs.referer} is not null`))
     .groupBy(sql`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`)
     .orderBy(desc(sql`count(*)`))
     .limit(10);
 
   const total = Number(totalResult.total);
 
-  return NextResponse.json({
-    slug: site.slug,
-    title: site.title,
-    url: site.url,
+  return ok({
+    slug: site!.slug,
+    title: site!.title,
+    url: site!.url,
     total,
     weekly: Number(weeklyResult.total),
     monthly: Number(monthlyResult.total),
@@ -100,6 +95,6 @@ export async function GET(
     countries,
     devices,
     referers,
-    createdAt: site.createdAt,
+    createdAt: site!.createdAt,
   });
-}
+});
