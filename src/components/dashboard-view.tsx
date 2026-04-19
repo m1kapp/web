@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { GrassMap } from "@m1kapp/ui";
+import { GrassMap } from "@m1kapp/kit";
 import { BadgeConfigurator } from "./badge-configurator";
-import { Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/ui";
+import { Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/kit";
 import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
 import { AnalyticsSection } from "./ui-parts";
 import { countryFlag, deviceIcon, extractDomain, browserIcon, osIcon, formatHour } from "@/lib/format";

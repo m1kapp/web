@@ -6,7 +6,7 @@ import { useUser, useClerk } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
 import { GitHubLoginButton } from "@/components/github-login-button";
 import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
-import { Divider, EmptyState } from "@m1kapp/ui";
+import { Divider, EmptyState } from "@m1kapp/kit";
 import { BoostShop } from "@/components/boost-shop";
 import { BoostHistorySheet, type BoostLog } from "@/components/boost-history-sheet";
 import type { RecentSite } from "@/lib/types";

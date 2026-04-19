@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { SiteCard } from "@/components/site-card";
-import { SectionHeader } from "@m1kapp/ui";
+import { SectionHeader } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
 
 const ROLLING_WORDS = [

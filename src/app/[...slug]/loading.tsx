@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { Watermark, AppShell, AppShellHeader, AppShellContent, Section, Divider } from "@m1kapp/ui";
+import { Watermark, AppShell, AppShellHeader, AppShellContent, Section, Divider } from "@m1kapp/kit";
 
 export default async function Loading() {
   const cookieStore = await cookies();

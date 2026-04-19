@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
-import { EmptyState } from "@m1kapp/ui";
+import { EmptyState } from "@m1kapp/kit";
 import { useFetch, useDebounce } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
 

@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Show, UserButton, useUser } from "@clerk/nextjs";
-import { Watermark, AppShell, AppShellHeader, AppShellContent, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/ui";
+import { Watermark, AppShell, AppShellHeader, AppShellContent, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/kit";
 import { useFetch } from "@m1kapp/kit";
 import { ThemeProvider, useAppTheme } from "./theme-context";
 import { useState, useEffect } from "react";

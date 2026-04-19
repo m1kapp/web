@@ -1,7 +1,7 @@
 "use client";
 
 import { useAccent } from "@/lib/theme-context";
-import { EmptyState } from "@m1kapp/ui";
+import { EmptyState } from "@m1kapp/kit";
 
 // ── 분석 바 차트 섹션 (accent 의존이라 로컬에 유지) ──
 export function AnalyticsSection({

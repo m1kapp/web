@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
-import { THEME_SCRIPT } from "@m1kapp/ui";
+import { THEME_SCRIPT } from "@m1kapp/kit";
 import { ToastProvider } from "@m1kapp/kit";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { db } from "@/lib/db";
@@ -37,6 +37,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
