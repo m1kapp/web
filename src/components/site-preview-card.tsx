@@ -7,7 +7,7 @@ import { extractDomain } from "@/lib/format";
 function faviconUrl(url: string): string {
   const domain = extractDomain(url);
   if (!domain || domain === url) return "";
-  return `https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=https://${domain}&size=64`;
+  return `https://${domain}/favicon.ico`;
 }
 
 // ─── 공통 썸네일 ───────────────────────────────────────────────
@@ -43,7 +43,7 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
   }
   return (
     <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center`} style={{ backgroundColor: bg }}>
-      <span className="text-xs font-black text-white/80">{name.slice(0, 2)}</span>
+      <span className="text-xs font-black text-white/80">{name[0]?.toUpperCase()}</span>
     </div>
   );
 }
