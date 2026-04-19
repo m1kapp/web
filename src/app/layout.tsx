@@ -1,24 +1,17 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
-import { THEME_SCRIPT } from "@m1kapp/kit";
-import { ToastProvider } from "@m1kapp/kit";
+import { THEME_SCRIPT, ToastProvider } from "@m1kapp/kit";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import "./globals.css";
 
-/**
- * Critical CSS inlined in <head> to prevent FOUC.
- * Duplicates the essential parts of globals.css that must be
- * available before the external stylesheet loads:
- * - Tailwind preflight border reset
- * - shadcn theme variables (:root / .dark)
- * - Base body/background styles
- */
+// Inlined to prevent FOUC before the external stylesheet loads
 const CRITICAL_CSS = `
 :root{--background:oklch(1 0 0);--foreground:oklch(0.145 0 0);--border:oklch(0.922 0 0);--ring:oklch(0.708 0 0);--radius:0.625rem;--card:oklch(1 0 0);--muted:oklch(0.97 0 0);--accent:oklch(0.97 0 0)}
 .dark{--background:oklch(0.145 0 0);--foreground:oklch(0.985 0 0);--border:oklch(1 0 0/10%);--ring:oklch(0.556 0 0);--card:oklch(0.205 0 0);--muted:oklch(0.269 0 0);--accent:oklch(0.269 0 0)}
@@ -32,18 +25,17 @@ const pretendard = localFont({
   weight: "45 920",
 });
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: "cover",
-};
+const getSelfSlug = unstable_cache(
+  () => db.query.sites.findFirst({ where: eq(sites.url, "https://m1k.app"), columns: { slug: true } }),
+  ["self-slug"],
+  { revalidate: false },
+);
+
+export { mobileViewport as viewport } from "@m1kapp/kit/pwa";
 
 export const metadata: Metadata = {
   title: "m1k — 방문자 1,000명을 향한 첫걸음",
   description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
-  manifest: "/manifest.json",
   openGraph: {
     title: "m1k — 방문자 1,000명을 향한 첫걸음",
     description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
@@ -70,10 +62,7 @@ export default async function RootLayout({
   const theme = cookieStore.get("theme")?.value ?? "light";
   const isDark = theme !== "light";
 
-  const self = await db.query.sites.findFirst({
-    where: eq(sites.url, "https://m1k.app"),
-    columns: { slug: true },
-  });
+  const self = await getSelfSlug();
 
   return (
     <html

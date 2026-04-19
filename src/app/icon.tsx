@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { OGImage, loadPretendard } from "@m1kapp/kit/ogimage";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
