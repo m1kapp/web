@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
 import { THEME_SCRIPT } from "@m1kapp/ui";
 import { ToastProvider } from "@m1kapp/kit";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -113,6 +114,7 @@ export default async function RootLayout({
           <ToastProvider>
             {children}
           </ToastProvider>
+          <SpeedInsights />
         </ClerkProvider>
       </body>
     </html>

@@ -15,6 +15,7 @@
     "@m1kapp/ui": "^0.1.17",
     "@neondatabase/serverless": "^1.0.2",
     "@paddle/paddle-js": "^1.6.2",
+    "@vercel/speed-insights": "^2.0.0",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
