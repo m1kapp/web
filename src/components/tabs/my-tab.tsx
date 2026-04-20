@@ -8,7 +8,7 @@ import { GitHubLoginButton } from "@/components/github-login-button";
 import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { Divider, EmptyState } from "@m1kapp/kit";
 import { BoostShop } from "@/components/boost-shop";
-import { BoostHistorySheet, type BoostLog } from "@/components/boost-history-sheet";
+import { BoostHistorySheet } from "@/components/boost-history-sheet";
 import type { RecentSite } from "@/lib/types";
 
 type BoostedSite = {
@@ -102,25 +102,11 @@ function RegisterForm({
 
 function BoostedSiteCard({ site }: { site: BoostedSite }) {
   const [showSheet, setShowSheet] = useState(false);
-  const [logs, setLogs] = useState<BoostLog[]>([]);
-  const [loadingLogs, setLoadingLogs] = useState(false);
   const name = site.ogTitle || site.title || site.url || site.slug;
-
-  function openSheet() {
-    setShowSheet(true);
-    if (logs.length === 0) {
-      setLoadingLogs(true);
-      fetch(`/api/points/inject?slug=${encodeURIComponent(site.slug)}`)
-        .then((r) => r.json())
-        .then((d) => setLogs(d.logs ?? []))
-        .catch(() => {})
-        .finally(() => setLoadingLogs(false));
-    }
-  }
 
   const chip = (
     <button
-      onClick={(e) => { e.stopPropagation(); openSheet(); }}
+      onClick={(e) => { e.stopPropagation(); setShowSheet(true); }}
       className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
     >
       나의 응원 🚀{Number(site.totalBoosted).toLocaleString()}
@@ -146,9 +132,6 @@ function BoostedSiteCard({ site }: { site: BoostedSite }) {
         open={showSheet}
         onClose={() => setShowSheet(false)}
         site={{ slug: site.slug, name: name ?? site.slug, ogImage: site.ogImage, color: site.color, description: site.ogDescription }}
-        total={Number(site.totalBoosted)}
-        logs={logs}
-        loading={loadingLogs}
       />
     </>
   );
