@@ -53,6 +53,12 @@ export function osIcon(os: string | null): string {
   return "💻";
 }
 
+export function formatLogDate(iso: string): string {
+  return new Date(iso).toLocaleString("ko-KR", {
+    month: "long", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit",
+  });
+}
+
 export function formatHour(hour: number): string {
   if (hour === 0) return "자정";
   if (hour < 12) return `오전 ${hour}시`;

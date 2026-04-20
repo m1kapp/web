@@ -6,7 +6,6 @@ import { todayKST } from "@/lib/format";
 import { recordMilestoneIfReached } from "@/lib/site-service";
 import { handler, ok, unauthorized, badRequest, notFound } from "@m1kapp/kit/server";
 
-// 내가 이 사이트에 보낸 부스트 이력 조회
 export const GET = handler(async (req) => {
   const { userId } = await auth();
   if (!userId) unauthorized("로그인이 필요합니다");
@@ -31,18 +30,18 @@ export const GET = handler(async (req) => {
 
   return ok({
     total,
-    logs: logs.map((l) => ({ amount: Math.abs(l.amount), createdAt: l.createdAt })),
+    logs: logs.map((l) => ({ amount: Math.abs(l.amount), createdAt: l.createdAt, memo: l.memo })),
   });
 });
 
-// 부스트 보내기 (내 사이트든 남의 사이트든)
 export const POST = handler(async (req) => {
   const { userId } = await auth();
   if (!userId) unauthorized("로그인이 필요합니다");
 
-  const { slug, amount } = (await req.json()) as {
+  const { slug, amount, comment } = (await req.json()) as {
     slug?: string;
     amount?: number;
+    comment?: string;
   };
 
   if (!slug || !amount || amount < 1) badRequest("slug과 1 이상의 amount가 필요합니다");
@@ -67,33 +66,32 @@ export const POST = handler(async (req) => {
     balance: sql`${points.balance} - ${roundedAmount}`,
   }).where(eq(points.userId, userId!));
 
-  await db
-    .insert(hits)
-    .values({ siteId: site!.id, date: today, count: roundedAmount })
-    .onConflictDoUpdate({
-      target: [hits.siteId, hits.date],
-      set: { count: sql`${hits.count} + ${roundedAmount}` },
-    });
+  await Promise.all([
+    db.insert(hits)
+      .values({ siteId: site!.id, date: today, count: roundedAmount })
+      .onConflictDoUpdate({
+        target: [hits.siteId, hits.date],
+        set: { count: sql`${hits.count} + ${roundedAmount}` },
+      }),
+    db.insert(pointLogs).values({
+      userId: userId!,
+      amount: -roundedAmount,
+      type: "inject",
+      targetSiteId: site!.id,
+      memo: comment?.trim() || (site!.userId === userId ? "🚀 내 사이트에 부스트" : `🚀 ${site!.title || site!.slug}에 부스트`),
+    }),
+  ]);
 
-  await db.insert(pointLogs).values({
-    userId: userId!,
-    amount: -roundedAmount,
-    type: "inject",
-    targetSiteId: site!.id,
-    memo: site!.userId === userId ? "🚀 내 사이트에 부스트" : `🚀 ${site!.title || site!.slug}에 부스트`,
-  });
-
-  if (!site!.reached1000At) {
-    const [{ v }] = await db
-      .select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` })
-      .from(hits)
-      .where(eq(hits.siteId, site!.id));
-    await recordMilestoneIfReached(site!, Number(v));
-  }
-
-  const updated = await db.query.points.findFirst({
-    where: eq(points.userId, userId!),
-  });
+  const [, updated] = await Promise.all([
+    site!.reached1000At ? Promise.resolve() : (async () => {
+      const [{ v }] = await db
+        .select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` })
+        .from(hits)
+        .where(eq(hits.siteId, site!.id));
+      await recordMilestoneIfReached(site!, Number(v));
+    })(),
+    db.query.points.findFirst({ where: eq(points.userId, userId!) }),
+  ]);
 
   return ok({
     ok: true,

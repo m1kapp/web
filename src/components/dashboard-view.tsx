@@ -2,31 +2,24 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { GrassMap } from "@m1kapp/kit";
+import { GrassMap, Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/kit";
 import { BadgeConfigurator } from "./badge-configurator";
-import { Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/kit";
 import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
 import { AnalyticsSection } from "./ui-parts";
-import { countryFlag, deviceIcon, extractDomain, browserIcon, osIcon, formatHour } from "@/lib/format";
-import { ShareButton } from "./share-button";
-import { GoogleLoginButton } from "./google-login-button";
-import { GitHubLoginButton } from "./github-login-button";
-import { BoostHistorySheet, type BoostLog } from "./boost-history-sheet";
-import { SitePreviewCard } from "./site-preview-card";
-import { getUnlockedAchievements, getLockedAchievements, getCurrentGoal, GOAL_TIERS, calcStreak } from "@/lib/achievements";
-import { buildBadgeSnippet } from "@/lib/badge";
-import { useCopy } from "@/lib/use-copy";
+import { countryFlag, deviceIcon, browserIcon, osIcon, formatHour } from "@/lib/format";
+import { GOAL_TIERS } from "@/lib/achievements";
+import Link from "next/link";
 import { useConfetti } from "./confetti";
+import { SiteHero, StreakChip } from "./site-hero";
+import { BoostButton } from "./boost-button";
+import { SubBadges } from "./sub-badges";
+import { RefreshOgButton, DeleteSiteButton, PendingBanner, SettingsLoginPrompt } from "./dashboard-settings";
 
 const POLL_INTERVAL_MS = 30_000;
-const COPY_FEEDBACK_MS = 2_000;
-const BOOST_RESULT_DISMISS_MS = 3_000;
-const BOOST_PRESETS = [10, 50, 100] as const;
-const STREAK_FIRE_THRESHOLD = 7;
 
 type Tab = "overview" | "analytics" | "settings";
 
-interface SiteData {
+export interface SiteData {
   slug: string;
   title: string | null;
   url: string | null;
@@ -70,7 +63,6 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
   const [tab, setTab] = useState<Tab>("overview");
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 목표 달성 시 confetti (1K, 10K, 100K, 1M)
   useEffect(() => {
     const achieved = GOAL_TIERS.some((t) => data.total >= t.goal);
     if (achieved) {
@@ -79,25 +71,42 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const slugRef = useRef(data.slug);
+  slugRef.current = data.slug;
+
   useEffect(() => {
-    const interval = setInterval(async () => {
-      if (document.hidden) return;
+    async function refresh() {
       try {
-        const res = await fetch(`/api/sites/${data.slug}`);
+        const res = await fetch(`/api/sites/${slugRef.current}`);
         if (!res.ok) return;
         const fresh = await res.json();
-        setData((prev) => ({
-          ...prev,
-          total: fresh.total,
-          weekly: fresh.weekly ?? prev.weekly,
-          monthly: fresh.monthly ?? prev.monthly,
-          todayCount: fresh.todayCount ?? prev.todayCount,
-          daily: fresh.daily ?? prev.daily,
-        }));
+        setData((prev) => {
+          const next = {
+            total: fresh.total,
+            weekly: fresh.weekly ?? prev.weekly,
+            monthly: fresh.monthly ?? prev.monthly,
+            todayCount: fresh.todayCount ?? prev.todayCount,
+            boosted: fresh.boosted ?? prev.boosted,
+          };
+          if (
+            prev.total === next.total &&
+            prev.weekly === next.weekly &&
+            prev.monthly === next.monthly &&
+            prev.todayCount === next.todayCount &&
+            prev.boosted === next.boosted
+          ) return prev;
+          return { ...prev, ...next, daily: fresh.daily ?? prev.daily };
+        });
       } catch (e) { console.error("[dashboard] poll failed:", e); }
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [data.slug]);
+    }
+
+    const interval = setInterval(() => { if (!document.hidden) refresh(); }, POLL_INTERVAL_MS);
+    window.addEventListener("m1k:boost-completed", refresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("m1k:boost-completed", refresh);
+    };
+  }, []);
 
   function switchTab(next: Tab) {
     setTab(next);
@@ -106,21 +115,15 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
 
   return (
     <AccentProvider initialAccent={(data.color as AccentHex) ?? undefined}>
-      <Watermark
-        sponsor={data.url ? { name: data.title ?? data.slug, url: data.url } : undefined}
-      >
+      <Watermark sponsor={data.url ? { name: data.title ?? data.slug, url: data.url } : undefined}>
         <AppShell>
-          {/* 헤더 — 뒤로가기 + 사이트 바로가기 */}
-          <DashboardHeader url={data.url} title={data.title} slug={data.slug} />
+          <DashboardHeader url={data.url} />
 
-          {/* 탭 콘텐츠 */}
           <div ref={scrollRef} className="flex-1 overflow-y-auto">
             {tab === "overview" && (
               <>
-                {/* 사이트 히어로 */}
                 <SiteHero data={data} onMoreBadges={() => router.push("/badges")} />
 
-                {/* 통계 칩 — 전체랑 다른 값만 노출 */}
                 <Section className="flex gap-3 pt-5">
                   <StreakChip daily={data.daily} />
                   {data.todayCount !== data.total && data.todayCount !== data.weekly && (
@@ -135,14 +138,20 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
                   <StatChip label="전체" value={data.total} />
                 </Section>
 
-                {/* 부스트 */}
                 <Section className="pt-3 pb-6">
-                  <BoostButton slug={data.slug} siteName={data.ogTitle || data.title || data.slug} siteDescription={data.ogDescription} siteOgImage={data.ogImage} siteColor={data.color} />
+                  <BoostButton
+                    slug={data.slug}
+                    siteName={data.ogTitle || data.title || data.slug}
+                    siteDescription={data.ogDescription}
+                    siteOgImage={data.ogImage}
+                    siteColor={data.color}
+                    isSignedIn={isSignedIn}
+                    totalBoosted={data.boosted}
+                  />
                 </Section>
 
                 <Divider />
 
-                {/* 잔디 */}
                 <Section className="pb-6">
                   <GrassMapWithAccent daily={data.daily} />
                 </Section>
@@ -208,7 +217,6 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
               <>
                 {isOwner ? (
                   <>
-                    {/* 하위 뱃지 */}
                     {!data.parentId && (
                       <>
                         <Section className="pb-1 pt-5">
@@ -217,16 +225,12 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
                         <Divider />
                       </>
                     )}
-
-                    {/* 미인증 안내 */}
                     {!data.verified && (
                       <>
                         <PendingBanner slug={data.slug} host={host} />
                         <Divider />
                       </>
                     )}
-
-                    {/* 배지 설정 */}
                     <Section className="pb-4">
                       <BadgeConfigurator
                         slug={data.slug}
@@ -238,13 +242,9 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
                         isOwner={isOwner}
                       />
                     </Section>
-
-                    {/* OG 정보 새로고침 */}
                     <Section className="pb-2">
                       <RefreshOgButton slug={data.slug} />
                     </Section>
-
-                    {/* 사이트 삭제 */}
                     <Section className="pb-6">
                       <DeleteSiteButton slug={data.slug} />
                     </Section>
@@ -256,7 +256,6 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
             )}
           </div>
 
-          {/* 하단 탭바 */}
           <BottomTabBar tab={tab} onTabChange={switchTab} />
         </AppShell>
       </Watermark>
@@ -267,6 +266,46 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
 function GrassMapWithAccent({ daily }: { daily: { date: string; count: number }[] }) {
   const { accent, isDark } = useAccent();
   return <GrassMap data={daily} accent={accent} isDark={isDark} unit="명" />;
+}
+
+function DashboardHeader({ url }: { url: string | null }) {
+  const { accent } = useAccent();
+
+  return (
+    <header className="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md h-14 shrink-0">
+      <div className="flex items-center justify-between px-4 h-full">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500 dark:text-zinc-400">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
+          </Link>
+          <Link href="/" className="text-xl font-black tracking-tighter" style={{ color: accent }}>
+            m1k
+          </Link>
+        </div>
+
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs font-medium border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-full"
+          >
+            <span>사이트 보러가기</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </a>
+        )}
+      </div>
+    </header>
+  );
 }
 
 function BottomTabBar({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) => void }) {
@@ -320,12 +359,8 @@ function BottomTabBar({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) =>
               className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors"
               style={{ color: active ? accent : undefined }}
             >
-              <span className={active ? "" : "text-zinc-400 dark:text-zinc-600"}>
-                {t.icon}
-              </span>
-              <span
-                className={`text-[10px] font-semibold ${active ? "" : "text-zinc-400 dark:text-zinc-600"}`}
-              >
+              <span className={active ? "" : "text-zinc-400 dark:text-zinc-600"}>{t.icon}</span>
+              <span className={`text-[10px] font-semibold ${active ? "" : "text-zinc-400 dark:text-zinc-600"}`}>
                 {t.label}
               </span>
             </button>
@@ -333,699 +368,5 @@ function BottomTabBar({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) =>
         })}
       </div>
     </nav>
-  );
-}
-
-function DashboardHeader({
-  url,
-  title,
-  slug,
-}: {
-  url: string | null;
-  title: string | null;
-  slug: string;
-}) {
-  const { accent } = useAccent();
-
-  return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md h-14 shrink-0">
-      <div className="flex items-center justify-between px-4 h-full">
-        {/* 뒤로 + 로고 */}
-        <div className="flex items-center gap-2">
-          <a
-            href="/"
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500 dark:text-zinc-400">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </a>
-          <a href="/" className="text-xl font-black tracking-tighter" style={{ color: accent }}>
-            m1k
-          </a>
-        </div>
-
-        {/* 사이트 보러가기 */}
-        {url && (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs font-medium border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-full"
-          >
-            <span>사이트 보러가기</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-          </a>
-        )}
-      </div>
-    </header>
-  );
-}
-
-interface SubBadge {
-  slug: string;
-  path: string | null;
-  title: string | null;
-  verified: boolean;
-  total: number;
-}
-
-function SubBadges({ slug, host, isOwner }: { slug: string; host: string; isOwner: boolean }) {
-  const { accent } = useAccent();
-  const [subs, setSubs] = useState<SubBadge[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [path, setPath] = useState("");
-  const [title, setTitle] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const { copied, copy: copySnippet } = useCopy(COPY_FEEDBACK_MS);
-
-  useEffect(() => {
-    fetch(`/api/sites/sub?parentSlug=${slug}`)
-      .then((res) => res.json())
-      .then((data) => Array.isArray(data) ? setSubs(data) : setSubs([]))
-      .catch(() => {});
-  }, [slug]);
-
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    if (!path.trim()) return;
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/sites/sub", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ parentSlug: slug, path: path.trim(), title: title.trim() || undefined }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setSubs((prev) => [...prev, data]);
-        setPath("");
-        setTitle("");
-        setShowForm(false);
-      } else {
-        setError(data.error || "추가에 실패했어요");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-          하위 뱃지 <span className="text-zinc-300 dark:text-zinc-600 font-normal">{subs.length}</span>
-        </h3>
-        {isOwner && (
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="text-[11px] font-semibold px-2.5 py-1 rounded-lg text-white transition-colors"
-            style={{ backgroundColor: accent }}
-          >
-            {showForm ? "취소" : "+ 추가"}
-          </button>
-        )}
-      </div>
-
-      {/* 추가 폼 */}
-      {showForm && (
-        <form onSubmit={handleAdd} className="mb-3 space-y-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-3">
-          <div className="flex items-center gap-2 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-2">
-            <span className="text-zinc-300 text-sm shrink-0">/</span>
-            <input
-              type="text"
-              placeholder="post/123"
-              value={path}
-              onChange={(e) => setPath(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none"
-              required
-            />
-          </div>
-          <input
-            type="text"
-            placeholder="라벨 (선택)"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-300 dark:placeholder:text-zinc-600 focus:outline-none"
-          />
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 rounded-lg text-xs font-bold text-white disabled:opacity-50"
-            style={{ backgroundColor: accent }}
-          >
-            {loading ? "추가 중..." : "하위 뱃지 추가"}
-          </button>
-        </form>
-      )}
-
-      {/* 목록 */}
-      {subs.length > 0 ? (
-        <div className="space-y-1.5">
-          {subs.map((sub) => (
-            <div
-              key={sub.slug}
-              className="flex items-center gap-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-3"
-            >
-              <div className="flex-1 min-w-0">
-                <a href={`/${sub.slug}`} className="hover:underline">
-                  <p className="text-sm font-medium text-zinc-900 dark:text-white truncate">
-                    /{sub.path}
-                  </p>
-                </a>
-                {sub.title && sub.title !== `/${sub.path}` && (
-                  <p className="text-[10px] text-zinc-400 truncate">{sub.title}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs tabular-nums font-semibold text-zinc-500">
-                  {Number(sub.total).toLocaleString()}
-                </span>
-                {!sub.verified && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="미인증" />
-                )}
-                <button
-                  onClick={() => copySnippet(buildBadgeSnippet(host, sub.slug), sub.slug)}
-                  className="text-[10px] font-semibold px-2 py-1 rounded-md transition-colors text-white"
-                  style={{ backgroundColor: copied === sub.slug ? "#22c55e" : accent }}
-                >
-                  {copied === sub.slug ? "복사됨" : "코드"}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : !showForm ? (
-        <p className="text-xs text-zinc-400 text-center py-3">
-          {isOwner ? "페이지별 방문 추적을 시작해보세요" : "아직 하위 뱃지가 없어요"}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function RefreshOgButton({ slug }: { slug: string }) {
-  const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-
-  async function handleRefresh() {
-    setLoading(true);
-    try {
-      await fetch("/api/sites/refresh-og", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug }),
-      });
-      setDone(true);
-      setTimeout(() => setDone(false), 3000);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  return (
-    <button
-      onClick={handleRefresh}
-      disabled={loading}
-      className="w-full text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors py-2 disabled:opacity-50"
-    >
-      {loading ? "새로고침 중..." : done ? "✓ OG 정보 업데이트됨" : "OG 정보 새로고침"}
-    </button>
-  );
-}
-
-function DeleteSiteButton({ slug }: { slug: string }) {
-  const [confirming, setConfirming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const router = useRouter();
-
-  async function handleDelete() {
-    setDeleting(true);
-    try {
-      const res = await fetch("/api/sites/settings", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug }),
-      });
-      if (res.ok) {
-        router.push("/");
-      }
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  if (!confirming) {
-    return (
-      <button
-        onClick={() => setConfirming(true)}
-        className="w-full text-xs text-zinc-400 hover:text-red-500 transition-colors py-2"
-      >
-        사이트 삭제
-      </button>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 p-4 space-y-3">
-      <p className="text-sm font-semibold text-red-600 dark:text-red-400">정말 삭제하시겠어요?</p>
-      <p className="text-xs text-red-500/70">모든 방문 기록과 뱃지 데이터가 삭제됩니다. 이 작업은 되돌릴 수 없어요.</p>
-      <div className="flex gap-2">
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="flex-1 py-2 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition-colors disabled:opacity-50"
-        >
-          {deleting ? "삭제 중..." : "삭제"}
-        </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="flex-1 py-2 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-        >
-          취소
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function PendingBanner({ slug, host }: { slug: string; host: string }) {
-  const { accent } = useAccent();
-  const { copied, copy } = useCopy(COPY_FEEDBACK_MS);
-  const snippet = buildBadgeSnippet(host, slug);
-
-  return (
-    <Section>
-      <div className="rounded-xl border-2 border-dashed p-4 space-y-3" style={{ borderColor: accent }}>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold animate-pulse" style={{ backgroundColor: accent }}>
-            !
-          </div>
-          <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
-            뱃지를 사이트에 심어주세요
-          </h3>
-        </div>
-        <p className="text-xs text-zinc-500 leading-relaxed">
-          아래 코드를 내 사이트에 붙여넣으면 인증이 완료되고,
-          탐색 목록에 노출돼요.
-        </p>
-        <pre className="bg-zinc-100 dark:bg-zinc-900 rounded-lg p-3 pr-4 text-[11px] text-zinc-700 dark:text-zinc-300 overflow-x-auto whitespace-pre-wrap break-all">
-          {snippet}
-        </pre>
-        <button
-          onClick={() => copy(snippet)}
-          className="w-full py-2 rounded-lg text-[11px] font-semibold text-white transition-colors"
-          style={{ backgroundColor: copied ? "#22c55e" : accent }}
-        >
-          {copied ? "복사됨!" : "복사"}
-        </button>
-        <p className="text-[10px] text-zinc-400">
-          방문자가 뱃지를 로드하면 자동으로 인증 완료됩니다
-        </p>
-      </div>
-    </Section>
-  );
-}
-
-function SettingsLoginPrompt({ isSignedIn }: { isSignedIn: boolean }) {
-  const { accent } = useAccent();
-
-  return (
-    <Section className="py-16">
-      <div className="flex flex-col items-center justify-center px-4">
-        <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center mb-4">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300 dark:text-zinc-600">
-            {isSignedIn ? (
-              <>
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </>
-            ) : (
-              <>
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0110 0v4" />
-              </>
-            )}
-          </svg>
-        </div>
-        {isSignedIn ? (
-          <>
-            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">이 사이트의 소유자가 아니에요</p>
-            <p className="text-xs text-zinc-400 mb-5">내 사이트를 등록하고 방문자 1,000명에 도전해보세요</p>
-            <a
-              href="/my"
-              className="w-full max-w-xs py-2.5 rounded-xl text-sm font-bold text-white text-center transition-colors"
-              style={{ backgroundColor: accent }}
-            >
-              내 사이트 만들러 가기
-            </a>
-          </>
-        ) : (
-          <>
-            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300 mb-1">내 사이트만 설정할 수 있어요</p>
-            <p className="text-xs text-zinc-400 mb-5">로그인하고 사이트를 등록하면 배지와 설정을 관리할 수 있어요</p>
-            <div className="flex flex-col gap-2 w-full max-w-xs">
-              <GoogleLoginButton
-                className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
-                style={{ backgroundColor: accent }}
-              />
-              <GitHubLoginButton
-                className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
-              />
-            </div>
-          </>
-        )}
-      </div>
-    </Section>
-  );
-}
-
-function BoostButton({ slug, siteName, siteDescription, siteOgImage, siteColor }: { slug: string; siteName: string; siteDescription?: string | null; siteOgImage?: string | null; siteColor?: string | null }) {
-  const { accent } = useAccent();
-  const [open, setOpen] = useState(false);
-  const [amount, setAmount] = useState("10");
-  const [balance, setBalance] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ message: string; ok: boolean } | null>(null);
-  const [myTotal, setMyTotal] = useState<number>(0);
-  const [myLogs, setMyLogs] = useState<BoostLog[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
-
-  // 내 부스트 이력 조회 (마운트 시 1회)
-  useEffect(() => {
-    fetch(`/api/points/inject?slug=${encodeURIComponent(slug)}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setMyTotal(d.total ?? 0);
-        setMyLogs(d.logs ?? []);
-      })
-      .catch(() => {});
-  }, [slug]);
-
-  // 잔액 조회
-  useEffect(() => {
-    if (open && balance === null) {
-      fetch("/api/points")
-        .then((r) => r.json())
-        .then((d) => setBalance(d.balance ?? null))
-        .catch(() => {});
-    }
-  }, [open, balance]);
-
-  async function handleInject() {
-    const num = parseInt(amount);
-    if (!num || num < 1) return;
-    setLoading(true);
-    setResult(null);
-    try {
-      const res = await fetch("/api/points/inject", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, amount: num }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setBalance(data.balance);
-        setMyTotal((prev) => prev + (data.injected as number));
-        setResult({ message: `🚀 +${(data.injected as number).toLocaleString()} 부스트 완료!`, ok: true });
-        setAmount("10");
-        setTimeout(() => setResult(null), BOOST_RESULT_DISMISS_MS);
-        window.dispatchEvent(new CustomEvent("m1k:boost-completed"));
-      } else {
-        setResult({ message: data.error || "실패", ok: false });
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!open) {
-    return (
-      <>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setOpen(true)}
-            className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98]"
-            style={{ backgroundColor: accent }}
-          >
-            🚀 부스트 보내기
-          </button>
-          {myTotal > 0 && (
-            <button
-              onClick={() => setShowHistory(true)}
-              className="px-3 py-2.5 rounded-xl text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors whitespace-nowrap"
-            >
-              나의 응원 🚀{myTotal.toLocaleString()}
-            </button>
-          )}
-        </div>
-
-        <BoostHistorySheet
-          open={showHistory}
-          onClose={() => setShowHistory(false)}
-          site={{ slug, name: siteName, description: siteDescription, ogImage: siteOgImage, color: siteColor }}
-          total={myTotal}
-          logs={myLogs}
-        />
-      </>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <h4 className="text-sm font-bold text-zinc-900 dark:text-white">🚀 부스트</h4>
-        <div className="flex items-center gap-2">
-          {balance !== null && (
-            <span className="text-xs text-zinc-400">
-              🚀 <span className="font-bold text-zinc-700 dark:text-zinc-300">{balance.toLocaleString()}</span>
-            </span>
-          )}
-          <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-zinc-600 text-lg leading-none">&times;</button>
-        </div>
-      </div>
-
-      {/* 부스트 설명 */}
-      <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900 p-3 space-y-2">
-        <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">🚀 부스트가 뭐예요?</p>
-        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed">
-          부스트를 보내면 뱃지에 표시되는 숫자가 올라가요.
-          실제 방문자와 합산되어 카운터에 표시됩니다.
-        </p>
-        <div className="flex gap-3 text-[10px] text-zinc-400">
-          <span>🙋 내 사이트를 더 있어보이게</span>
-        </div>
-        <div className="flex gap-3 text-[10px] text-zinc-400">
-          <span>🎁 친구 사이트에 응원 선물</span>
-        </div>
-        <div className="flex gap-3 text-[10px] text-zinc-400">
-          <span>🏃 1K 달성을 앞당기기</span>
-        </div>
-      </div>
-      <div className="flex gap-2">
-        {BOOST_PRESETS.map((v) => (
-          <button
-            key={v}
-            onClick={() => setAmount(String(v))}
-            className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors ${
-              amount === String(v) ? "text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-            }`}
-            style={amount === String(v) ? { backgroundColor: accent } : undefined}
-          >
-            +{v}
-          </button>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <input
-          type="number"
-          min="1"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm text-zinc-900 dark:text-white focus:outline-none tabular-nums"
-          placeholder="직접 입력"
-        />
-        <button
-          onClick={handleInject}
-          disabled={loading || !amount || parseInt(amount) < 1}
-          className="px-5 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-50 transition-all active:scale-[0.98]"
-          style={{ backgroundColor: accent }}
-        >
-          {loading ? "..." : "투입"}
-        </button>
-      </div>
-      {result && (
-        <p className={`text-xs font-semibold text-center ${result.ok ? "text-green-500" : "text-red-500"}`}>
-          {result.message}
-        </p>
-      )}
-      {balance !== null && balance <= 0 && (
-        <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900 p-3 text-center">
-          <p className="text-xs text-zinc-500 mb-2">부스트가 부족해요</p>
-          <a
-            href="/"
-            className="text-[11px] font-bold px-4 py-1.5 rounded-lg text-white inline-block"
-            style={{ backgroundColor: accent }}
-          >
-            부스트 충전하기
-          </a>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function StreakChip({ daily }: { daily: { date: string; count: number }[] }) {
-  const streak = calcStreak(daily);
-  const fire = streak >= STREAK_FIRE_THRESHOLD;
-  const label = streak > 0 ? `${streak}일 연속` : "스트릭";
-
-  return (
-    <div className={`flex-1 rounded-xl py-3 px-3 text-center ${fire ? "bg-orange-50 dark:bg-orange-950/30" : "bg-zinc-50 dark:bg-zinc-900"}`}>
-      <p className={`text-[10px] mb-0.5 ${fire ? "text-orange-400" : "text-zinc-400"}`}>
-        {fire ? "🔥 연속" : "연속"}
-      </p>
-      <p className={`text-lg font-black tabular-nums ${fire ? "text-orange-500" : streak > 0 ? "text-zinc-900 dark:text-white" : "text-zinc-300 dark:text-zinc-600"}`}>
-        {streak > 0 ? `${streak}일` : "-"}
-      </p>
-    </div>
-  );
-}
-
-function formatGoalNumber(n: number): string {
-  if (n >= 1_000_000) return `${n / 1_000_000}M`;
-  if (n >= 1_000) return `${n / 1_000}K`;
-  return n.toString();
-}
-
-function SiteHero({ data, onMoreBadges }: { data: SiteData; onMoreBadges?: () => void }) {
-  const { accent } = useAccent();
-  const displayName = data.ogTitle || data.title || data.slug;
-  const description = data.ogDescription;
-  const streak = calcStreak(data.daily);
-  const counts = { total: data.total, weekly: data.weekly, daily: data.todayCount, streak };
-  const unlocked = getUnlockedAchievements(counts);
-
-  // 동적 목표
-  const currentGoal = getCurrentGoal(data.total);
-  const prevGoalValue = GOAL_TIERS[GOAL_TIERS.indexOf(currentGoal) - 1]?.goal ?? 0;
-  const rangeTotal = currentGoal.goal - prevGoalValue;
-  const rangeCurrent = data.total - prevGoalValue;
-  const progress = data.total >= currentGoal.goal ? 1 : Math.min(rangeCurrent / rangeTotal, 1);
-  const percentage = (progress * 100).toFixed(1);
-
-  // 현재 구간 마일스톤 (4등분)
-  const step = rangeTotal / 4;
-  const milestones = [1, 2, 3, 4].map((i) => prevGoalValue + step * i);
-
-  // 달성한 목표들
-  const achievedGoals = GOAL_TIERS.filter((t) => data.total >= t.goal);
-  const latestAchieved = achievedGoals[achievedGoals.length - 1];
-
-  return (
-    <Section className="pt-6 pb-2">
-      {/* 사이트 정보 */}
-      <div className="mb-5">
-        <SitePreviewCard
-          slug={data.slug}
-          name={displayName}
-          url={data.url}
-          ogImage={data.ogImage}
-          color={accent}
-          description={description}
-          thumbnailSize="lg"
-          variant="bare"
-          right={<ShareButton slug={data.slug} title={displayName} />}
-        />
-      </div>
-
-      {/* 달성 뱃지 */}
-      {unlocked.length > 0 && (
-        <div className="flex items-center gap-1 mb-4">
-          <div className="flex flex-wrap gap-1 flex-1">
-            {unlocked.map((a) => (
-              <span key={a.name} className="text-base group relative cursor-default" title={a.name}>
-                {a.icon}
-                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
-                  <div className="bg-zinc-800 text-white text-[10px] px-2 py-1 rounded-md whitespace-nowrap">
-                    {a.name} — {a.condition}
-                  </div>
-                </div>
-              </span>
-            ))}
-          </div>
-          {onMoreBadges && (
-            <button
-              onClick={onMoreBadges}
-              className="shrink-0 text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors px-1.5 py-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            >
-              더보기 →
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* 숫자 + 게이지바 */}
-      <div className="space-y-2">
-        <div className="flex items-baseline justify-between">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-3xl font-black tabular-nums text-zinc-900 dark:text-white">
-              {data.total.toLocaleString()}
-            </span>
-            <span className="text-sm text-zinc-300 dark:text-zinc-600 font-medium">
-              / {currentGoal.label}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {latestAchieved && (
-              <span className="text-[10px] font-bold text-white px-1.5 py-0.5 rounded-full" style={{ backgroundColor: accent }}>
-                {latestAchieved.emoji} {latestAchieved.label} 달성!
-              </span>
-            )}
-            <span className="text-xs tabular-nums text-zinc-400 font-medium">
-              {percentage}%
-            </span>
-          </div>
-        </div>
-        <div className="h-2 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-700 ease-out"
-            style={{
-              width: `${Math.max(Number(percentage), 0.5)}%`,
-              backgroundColor: accent,
-            }}
-          />
-        </div>
-        {/* 마일스톤 */}
-        <div className="flex justify-between px-0.5">
-          {milestones.map((m) => (
-            <span
-              key={m}
-              className="text-[9px] tabular-nums font-medium"
-              style={{ color: data.total >= m ? accent : undefined }}
-            >
-              <span className={data.total < m ? "text-zinc-300 dark:text-zinc-700" : ""}>
-                {formatGoalNumber(m)}
-              </span>
-            </span>
-          ))}
-        </div>
-        {/* 실제 방문 vs 부스트 */}
-        {data.boosted > 0 && (
-          <div className="flex items-center gap-3 mt-2 text-[10px] text-zinc-400">
-            <span>실제 방문 <span className="font-semibold text-zinc-600 dark:text-zinc-300">{(data.total - data.boosted).toLocaleString()}</span></span>
-            <span>🚀 부스트 <span className="font-semibold text-zinc-600 dark:text-zinc-300">{data.boosted.toLocaleString()}</span></span>
-          </div>
-        )}
-      </div>
-    </Section>
   );
 }

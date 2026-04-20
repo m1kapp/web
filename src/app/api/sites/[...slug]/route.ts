@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs } from "@/lib/db/schema";
+import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte, desc } from "drizzle-orm";
 import { todayKST } from "@/lib/format";
 import { handler, ok, notFound } from "@m1kapp/kit/server";
@@ -14,7 +14,6 @@ export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: 
 
   if (!site) notFound("프로젝트를 찾을 수 없습니다");
 
-  // 총 방문수 + 기간별
   const now = new Date();
   const todayStr = todayKST(now);
   const weekAgo = new Date(now);
@@ -22,29 +21,18 @@ export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: 
   const monthAgo = new Date(now);
   monthAgo.setDate(monthAgo.getDate() - 30);
 
-  const [[totalResult], [todayResult], [weeklyResult], [monthlyResult]] = await Promise.all([
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+  const [[totalResult], [todayResult], [weeklyResult], [monthlyResult], [boostedResult], daily] = await Promise.all([
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site!.id)),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), eq(hits.date, todayStr))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(weekAgo)))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(monthAgo)))),
+    db.select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` }).from(pointLogs).where(and(eq(pointLogs.targetSiteId, site!.id), eq(pointLogs.type, "inject"))),
+    db.select({ date: hits.date, count: hits.count }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(ninetyDaysAgo)))).orderBy(hits.date),
   ]);
 
-  // 최근 90일 일별 데이터 (잔디용)
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-
-  const daily = await db
-    .select({ date: hits.date, count: hits.count })
-    .from(hits)
-    .where(
-      and(
-        eq(hits.siteId, site!.id),
-        gte(hits.date, todayKST(ninetyDaysAgo))
-      )
-    )
-    .orderBy(hits.date);
-
-  // 국가별 통계
   const countries = await db
     .select({
       country: hitLogs.country,
@@ -56,7 +44,6 @@ export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: 
     .orderBy(desc(sql`count(*)`))
     .limit(10);
 
-  // 디바이스별 통계
   const devices = await db
     .select({
       device: hitLogs.device,
@@ -68,7 +55,6 @@ export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: 
     .orderBy(desc(sql`count(*)`))
     .limit(5);
 
-  // 리퍼러 통계 (경로만 — 도메인 제거 후 group by)
   const referers = await db
     .select({
       referer: sql<string>`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`,
@@ -90,6 +76,7 @@ export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: 
     weekly: Number(weeklyResult.total),
     monthly: Number(monthlyResult.total),
     todayCount: Number(todayResult.total),
+    boosted: Number(boostedResult.total),
     progress: Math.min(total / 1000, 1),
     daily,
     countries,
