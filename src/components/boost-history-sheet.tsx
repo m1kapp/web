@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { formatLogDate } from "@/lib/format";
+import { InAppSheet, useFetch } from "@m1kapp/kit";
 import { SitePreviewCard } from "./site-preview-card";
 
 interface FeedLog {
@@ -27,9 +28,11 @@ interface BoostHistorySheetProps {
 type Sort = "latest" | "boost";
 
 export function BoostHistorySheet({ open, onClose, site, onBoost }: BoostHistorySheetProps) {
-  const [feed, setFeed] = useState<FeedLog[]>([]);
-  const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<Sort>("latest");
+  const { data, loading: feedLoading } = useFetch<FeedLog[]>(
+    open ? `/api/sites/boosts?slug=${encodeURIComponent(site.slug)}` : null
+  );
+  const feed = useMemo(() => (Array.isArray(data) ? data : []), [data]);
 
   const total = useMemo(() => feed.reduce((sum, l) => sum + l.amount, 0), [feed]);
   const sorted = useMemo(
@@ -37,28 +40,14 @@ export function BoostHistorySheet({ open, onClose, site, onBoost }: BoostHistory
     [feed, sort]
   );
 
-  useEffect(() => {
-    if (!open) { setFeed([]); return; }
-    setLoading(true);
-    fetch(`/api/sites/boosts?slug=${encodeURIComponent(site.slug)}`)
-      .then((r) => r.json())
-      .then((d) => setFeed(Array.isArray(d) ? d : []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [open, site.slug]);
-
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
+    <InAppSheet
+      open={open}
+      onClose={onClose}
+      className="h-full rounded-t-2xl bg-white dark:bg-zinc-950 shadow-2xl flex flex-col"
     >
-      <div
-        className="w-full max-w-sm bg-white dark:bg-zinc-950 rounded-t-2xl flex flex-col"
-        style={{ height: "100dvh" }}
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
           <span className="text-sm font-bold text-zinc-900 dark:text-white">응원 피드</span>
           <button
@@ -91,7 +80,7 @@ export function BoostHistorySheet({ open, onClose, site, onBoost }: BoostHistory
                 onClick={() => { onClose(); onBoost?.(); }}
                 className="text-[11px] font-bold px-3 py-1.5 rounded-lg text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 transition-colors"
               >
-                🚀 부스트 보내기
+                🚀 응원하기
               </button>
               <div className="flex">
                 {(["latest", "boost"] as Sort[]).map((s) => (
@@ -104,13 +93,13 @@ export function BoostHistorySheet({ open, onClose, site, onBoost }: BoostHistory
                         : "text-zinc-400 dark:text-zinc-600"
                     }`}
                   >
-                    {s === "latest" ? "최신순" : "부스트순"}
+                    {s === "latest" ? "최신순" : "응원순"}
                   </button>
                 ))}
               </div>
             </div>
           )}
-          {loading ? (
+          {feedLoading ? (
             <p className="text-xs text-zinc-400 text-center py-6">불러오는 중...</p>
           ) : feed.length === 0 ? (
             <p className="text-xs text-zinc-400 text-center py-6">아직 응원이 없어요</p>
@@ -137,7 +126,7 @@ export function BoostHistorySheet({ open, onClose, site, onBoost }: BoostHistory
                       </span>
                     </div>
                     <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-snug">
-                      {log.memo ?? <span className="text-zinc-400 dark:text-zinc-500 italic">Boost!!!</span>}
+                      {log.memo ?? <span className="text-zinc-400 dark:text-zinc-500 italic">응원합니다!</span>}
                     </p>
                     <span className="text-[11px] font-bold text-zinc-400 tabular-nums mt-0.5 inline-block">
                       🚀 +{log.amount.toLocaleString()}
@@ -148,7 +137,6 @@ export function BoostHistorySheet({ open, onClose, site, onBoost }: BoostHistory
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </InAppSheet>
   );
 }

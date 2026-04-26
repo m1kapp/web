@@ -100,6 +100,7 @@ npm run dev
 DATABASE_URL=           # Neon PostgreSQL
 CLERK_SECRET_KEY=       # Clerk
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+NEXT_PUBLIC_APP_URL=    # e.g. https://m1k.app
 IP_HASH_SALT=           # IP 해시 솔트
 
 # Paddle (선택)
@@ -107,6 +108,12 @@ NEXT_PUBLIC_PADDLE_CLIENT_TOKEN=
 NEXT_PUBLIC_PADDLE_ENV=sandbox
 PADDLE_WEBHOOK_SECRET=
 ```
+
+운영 로그인 설정 체크:
+
+- Clerk Production 인스턴스에 `GitHub` 소셜 연결을 별도로 활성화해야 합니다.
+- Clerk 허용 리다이렉트 URL에 `https://YOUR_DOMAIN/sso-callback` 을 추가해야 합니다.
+- 앱의 `NEXT_PUBLIC_APP_URL` 값과 Clerk/GitHub OAuth에 등록한 운영 도메인이 정확히 일치해야 합니다.
 
 ## 달성 뱃지 로드맵
 

@@ -6,6 +6,7 @@ import { auth } from "@clerk/nextjs/server";
 import { idToSlug } from "@/lib/utils";
 import dns from "dns/promises";
 import { handler, ok, unauthorized, badRequest, conflict } from "@m1kapp/kit/server";
+import { getUserById } from "@/lib/user-handle";
 
 export const POST = handler(async (req) => {
   const { userId } = await auth();
@@ -37,7 +38,10 @@ export const POST = handler(async (req) => {
   }
 
   // 신규 등록 + OG 수집
-  const og = await scrapeOg(rawUrl!);
+  const [og, owner] = await Promise.all([
+    scrapeOg(rawUrl!),
+    getUserById(userId!),
+  ]);
 
   const [site] = await db
     .insert(sites)
@@ -49,6 +53,9 @@ export const POST = handler(async (req) => {
       ogTitle: og.title,
       ogDescription: og.description,
       ogImage: og.image,
+      ownerHandle: owner?.handle ?? null,
+      ownerName: owner?.name ?? null,
+      ownerImageUrl: owner?.imageUrl ?? null,
     })
     .returning();
 

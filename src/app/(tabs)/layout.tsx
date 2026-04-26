@@ -45,7 +45,7 @@ function TabsShell({ children }: { children: React.ReactNode }) {
             <ThemeButton color={bgColor} onClick={() => setThemeOpen(true)} />
           </AppShellHeader>
 
-          <AppShellContent className="tab-scroll">
+          <AppShellContent className="tab-scroll relative">
             {children}
           </AppShellContent>
 
@@ -65,17 +65,10 @@ function TabsShell({ children }: { children: React.ReactNode }) {
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "store" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></svg>}
             />
             <Tab
-              active={tab === "badges"}
-              onClick={() => router.push("/badges")}
-              activeColor={bgColor}
-              label="배지 월드"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "badges" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.77 4 4 0 0 1 0 6.76 4 4 0 0 1-4.78 4.77 4 4 0 0 1-6.74 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" /><path d="m9 12 2 2 4-4" /></svg>}
-            />
-            <Tab
               active={tab === "my"}
               onClick={() => router.push("/my")}
               activeColor={bgColor}
-              label="마이페이지"
+              label="프로필"
               icon={user?.imageUrl
                 ? <img src={user.imageUrl} alt="" className={`w-5 h-5 rounded-full object-cover transition-all ${tab === "my" ? "ring-2 ring-offset-1" : "opacity-70"}`} style={{ "--tw-ring-color": bgColor } as React.CSSProperties} />
                 : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "my" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}

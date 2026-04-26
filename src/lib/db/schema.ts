@@ -16,6 +16,9 @@ export const sites = pgTable("sites", {
   ogDescription: text("og_description"),
   ogImage: text("og_image"),
   verified: boolean("verified").default(false).notNull(),
+  ownerHandle: text("owner_handle"),
+  ownerName: text("owner_name"),
+  ownerImageUrl: text("owner_image_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   reached1000At: timestamp("reached_1000_at", { withTimezone: true }),
 }, (table) => [

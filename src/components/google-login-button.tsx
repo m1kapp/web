@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useClerk } from "@clerk/nextjs";
+import { getAuthRedirectUrls } from "@/lib/auth-redirect";
 
 export function GoogleLoginButton({
   className,
@@ -31,11 +32,11 @@ export function GoogleLoginButton({
         return;
       }
     }
-    const base = window.location.origin;
+    const { redirectUrl, redirectUrlComplete } = getAuthRedirectUrls();
     await clerk.client!.signIn.authenticateWithRedirect({
       strategy: "oauth_google",
-      redirectUrl: `${base}/sso-callback`,
-      redirectUrlComplete: "/",
+      redirectUrl,
+      redirectUrlComplete,
     });
   }
 

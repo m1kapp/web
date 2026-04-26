@@ -6,7 +6,7 @@ import { useUser, useClerk } from "@clerk/nextjs";
 import { GoogleLoginButton } from "@/components/google-login-button";
 import { GitHubLoginButton } from "@/components/github-login-button";
 import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
-import { Divider, EmptyState } from "@m1kapp/kit";
+import { Divider, EmptyState, InAppSheet } from "@m1kapp/kit";
 import { BoostShop } from "@/components/boost-shop";
 import { BoostHistorySheet } from "@/components/boost-history-sheet";
 import type { RecentSite } from "@/lib/types";
@@ -25,9 +25,11 @@ type BoostedSite = {
 function RegisterForm({
   bgColor,
   onRegistered,
+  onClose,
 }: {
   bgColor: string;
   onRegistered: () => void;
+  onClose: () => void;
 }) {
   const [url, setUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -41,7 +43,11 @@ function RegisterForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    const normalized = url.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    const normalized = url
+      .trim()
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .replace(/\/+$/, "");
 
     if (!normalized) {
       setError("URL을 입력해주세요");
@@ -62,7 +68,9 @@ function RegisterForm({
       });
       const data = await res.json();
       if (res.ok) {
+        setUrl("");
         onRegistered();
+        onClose();
         router.push(`/${data.slug}`);
       } else {
         setError(data.error || "등록에 실패했어요");
@@ -73,21 +81,23 @@ function RegisterForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mb-4 space-y-2.5">
-      <div className="flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-3 focus-within:border-zinc-400 transition-colors">
-        <span className="text-zinc-300 text-sm shrink-0">https://</span>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="rounded-xl border border-zinc-200 px-4 py-3 focus-within:border-zinc-400 transition-colors">
         <input
           type="text"
-          placeholder="blog.naver.com/dellose"
+          placeholder="https://blog.naver.com/dellose"
           value={url}
           onChange={(e) => { setUrl(e.target.value); setError(""); }}
-          className="flex-1 bg-transparent text-sm text-zinc-900 placeholder:text-zinc-300 focus:outline-none"
+          className="w-full bg-transparent text-sm text-zinc-900 placeholder:text-zinc-300 focus:outline-none"
           required
         />
       </div>
       {error && (
         <p className="text-xs text-red-500 px-1">{error}</p>
       )}
+      <p className="text-[11px] text-zinc-400 px-1">
+        전체 URL을 붙여넣어도 되고, `https://` 는 자동으로 정리돼요.
+      </p>
       <button
         type="submit"
         disabled={loading}
@@ -154,6 +164,7 @@ export function MyTab({
   const { signOut } = useClerk();
   const [pointBalance, setPointBalance] = useState<number | null>(null);
   const [showBoostShop, setShowBoostShop] = useState(false);
+  const [showRegisterSheet, setShowRegisterSheet] = useState(false);
   const [boostedSites, setBoostedSites] = useState<BoostedSite[]>([]);
   const [activeSection, setActiveSection] = useState<"mine" | "others">("mine");
 
@@ -212,7 +223,7 @@ export function MyTab({
   }
 
   return (
-    <div className="px-4 pt-2 pb-5">
+    <div className="relative min-h-full px-4 pt-2 pb-24">
       {/* 프로필 */}
       <div className="flex items-center gap-3 mb-5 justify-between">
         <div className="flex items-center gap-3">
@@ -233,6 +244,14 @@ export function MyTab({
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
               {user?.firstName || user?.username || "나"}
             </h2>
+            {(() => {
+              const handle = user?.username || user?.primaryEmailAddress?.emailAddress.split("@")[0];
+              return handle ? (
+                <a href={`/@${handle}`} className="text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+                  @{handle}
+                </a>
+              ) : null;
+            })()}
             <p className="text-xs text-zinc-400">
               {sites.length}개 사이트 · 총 {totalHits.toLocaleString()}명 방문
               {pointBalance !== null && (
@@ -277,7 +296,7 @@ export function MyTab({
               : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
-          다른 사람의 도전
+          내가 응원한 도전
           {boostedSites.length > 0 && (
             <span className="ml-1 text-[9px] opacity-60">{boostedSites.length}</span>
           )}
@@ -286,7 +305,6 @@ export function MyTab({
 
       {activeSection === "mine" ? (
         <>
-          <RegisterForm bgColor={bgColor} onRegistered={onRegistered} />
           <Divider />
           {sitesLoading ? (
             <SiteCardSkeleton count={3} />
@@ -314,28 +332,62 @@ export function MyTab({
         </>
       )}
 
-      {showBoostShop && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowBoostShop(false)}
-        >
-          <div
-            className="w-full max-w-sm bg-white dark:bg-zinc-950 rounded-t-2xl p-5 pb-8"
-            onClick={(e) => e.stopPropagation()}
+      {activeSection === "mine" && (
+        <div className="absolute right-4 bottom-4 z-40">
+          <button
+            onClick={() => setShowRegisterSheet(true)}
+            className="flex items-center gap-2 rounded-full px-4 py-3 text-sm font-bold text-white shadow-lg shadow-black/20 active:scale-[0.98] transition-transform"
+            style={{ backgroundColor: bgColor }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-bold text-zinc-900 dark:text-white">부스트 충전</span>
-              <button
-                onClick={() => setShowBoostShop(false)}
-                className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs"
-              >
-                ✕
-              </button>
-            </div>
-            <BoostShop onPurchased={() => { refreshBalance(); setShowBoostShop(false); }} />
-          </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            사이트 등록
+          </button>
         </div>
       )}
+
+      <InAppSheet
+        open={showRegisterSheet}
+        onClose={() => setShowRegisterSheet(false)}
+        className="rounded-t-2xl bg-white dark:bg-zinc-950 p-5 pb-8 shadow-2xl"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-sm font-bold text-zinc-900 dark:text-white">사이트 등록</p>
+            <p className="text-[11px] text-zinc-400 mt-1">프로필에 연결할 사이트 주소를 입력하세요.</p>
+          </div>
+          <button
+            onClick={() => setShowRegisterSheet(false)}
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs"
+          >
+            ✕
+          </button>
+        </div>
+        <RegisterForm
+          bgColor={bgColor}
+          onRegistered={onRegistered}
+          onClose={() => setShowRegisterSheet(false)}
+        />
+      </InAppSheet>
+
+      <InAppSheet
+        open={showBoostShop}
+        onClose={() => setShowBoostShop(false)}
+        className="rounded-t-2xl bg-white dark:bg-zinc-950 p-5 pb-8 shadow-2xl"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-sm font-bold text-zinc-900 dark:text-white">부스트 충전</span>
+          <button
+            onClick={() => setShowBoostShop(false)}
+            className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs"
+          >
+            ✕
+          </button>
+        </div>
+        <BoostShop onPurchased={() => { refreshBalance(); setShowBoostShop(false); }} />
+      </InAppSheet>
     </div>
   );
 }

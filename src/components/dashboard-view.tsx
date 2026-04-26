@@ -1,18 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
-import { GrassMap, Watermark, AppShell, Section, Divider, StatChip } from "@m1kapp/kit";
-import { BadgeConfigurator } from "./badge-configurator";
+import { GrassMap, Watermark, AppShell, Section, Divider } from "@m1kapp/kit";
 import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
 import { AnalyticsSection } from "./ui-parts";
 import { countryFlag, deviceIcon, browserIcon, osIcon, formatHour } from "@/lib/format";
-import { GOAL_TIERS } from "@/lib/achievements";
 import Link from "next/link";
-import { useConfetti } from "./confetti";
-import { SiteHero, StreakChip } from "./site-hero";
+import { SiteHero, CumulativeCurve } from "./site-hero";
+import { OverviewInsights } from "./overview-insights";
 import { BoostButton } from "./boost-button";
-import { SubBadges } from "./sub-badges";
 import { RefreshOgButton, DeleteSiteButton, PendingBanner, SettingsLoginPrompt } from "./dashboard-settings";
 
 const POLL_INTERVAL_MS = 30_000;
@@ -36,9 +32,6 @@ export interface SiteData {
   hourly: { hour: number; count: number }[];
   createdAt: string | null;
   color: string | null;
-  badgeStyle: string | null;
-  badgeLabel: string | null;
-  badgeEmoji: string | null;
   ogTitle: string | null;
   ogDescription: string | null;
   ogImage: string | null;
@@ -47,6 +40,9 @@ export interface SiteData {
   verified: boolean;
   parentId: number | null;
   boosted: number;
+  ownerHandle: string | null;
+  ownerName: string | null;
+  ownerImageUrl: string | null;
 }
 
 interface DashboardViewProps {
@@ -54,22 +50,13 @@ interface DashboardViewProps {
   host: string;
   isOwner?: boolean;
   isSignedIn?: boolean;
+  owner?: { handle: string; name: string; imageUrl: string } | null;
 }
 
-export function DashboardView({ data: initialData, host, isOwner = false, isSignedIn = false }: DashboardViewProps) {
-  const fire = useConfetti();
-  const router = useRouter();
+export function DashboardView({ data: initialData, host, isOwner = false, isSignedIn = false, owner }: DashboardViewProps) {
   const [data, setData] = useState(initialData);
   const [tab, setTab] = useState<Tab>("overview");
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const achieved = GOAL_TIERS.some((t) => data.total >= t.goal);
-    if (achieved) {
-      const timer = setTimeout(fire, 500);
-      return () => clearTimeout(timer);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const slugRef = useRef(data.slug);
   slugRef.current = data.slug;
@@ -122,23 +109,11 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
           <div ref={scrollRef} className="flex-1 overflow-y-auto">
             {tab === "overview" && (
               <>
-                <SiteHero data={data} onMoreBadges={() => router.push("/badges")} />
+                {/* 사이트 배너 */}
+                <SiteHero data={data} owner={owner} />
 
-                <Section className="flex gap-3 pt-5">
-                  <StreakChip daily={data.daily} />
-                  {data.todayCount !== data.total && data.todayCount !== data.weekly && (
-                    <StatChip label="오늘" value={data.todayCount} />
-                  )}
-                  {data.weekly !== data.total && (
-                    <StatChip label="이번 주" value={data.weekly} />
-                  )}
-                  {data.monthly !== data.total && data.monthly !== data.weekly && (
-                    <StatChip label="이번 달" value={data.monthly} />
-                  )}
-                  <StatChip label="전체" value={data.total} />
-                </Section>
-
-                <Section className="pt-3 pb-6">
+                {/* stat 1: 부스트 보내기 + 내역 */}
+                <Section className="pb-3">
                   <BoostButton
                     slug={data.slug}
                     siteName={data.ogTitle || data.title || data.slug}
@@ -152,8 +127,25 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
 
                 <Divider />
 
-                <Section className="pb-6">
+                {/* stat 2: 누적 곡선 */}
+                <Section className="pt-3 pb-0">
+                  <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2">방문자 누적</p>
+                  <CumulativeCurveWithAccent daily={data.daily} total={data.total} todayCount={data.todayCount} />
+                </Section>
+
+                <Divider />
+
+                {/* stat 3: 잔디 */}
+                <Section className="pt-3 pb-4">
+                  <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2">방문자 데일리</p>
                   <GrassMapWithAccent daily={data.daily} />
+                </Section>
+
+                <Divider />
+
+                {/* 인사이트 */}
+                <Section className="pt-3 pb-6">
+                  <OverviewInsights data={data} />
                 </Section>
               </>
             )}
@@ -217,31 +209,12 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
               <>
                 {isOwner ? (
                   <>
-                    {!data.parentId && (
-                      <>
-                        <Section className="pb-1 pt-5">
-                          <SubBadges slug={data.slug} host={host} isOwner={isOwner} />
-                        </Section>
-                        <Divider />
-                      </>
-                    )}
                     {!data.verified && (
                       <>
                         <PendingBanner slug={data.slug} host={host} />
                         <Divider />
                       </>
                     )}
-                    <Section className="pb-4">
-                      <BadgeConfigurator
-                        slug={data.slug}
-                        host={host}
-                        initialColor={data.color || undefined}
-                        initialStyle={data.badgeStyle || undefined}
-                        initialLabel={data.badgeLabel || undefined}
-                        counts={{ total: data.total, weekly: data.weekly, daily: data.todayCount }}
-                        isOwner={isOwner}
-                      />
-                    </Section>
                     <Section className="pb-2">
                       <RefreshOgButton slug={data.slug} />
                     </Section>
@@ -261,6 +234,11 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
       </Watermark>
     </AccentProvider>
   );
+}
+
+function CumulativeCurveWithAccent({ daily, total, todayCount }: { daily: { date: string; count: number }[]; total: number; todayCount: number }) {
+  const { accent } = useAccent();
+  return <CumulativeCurve daily={daily} total={total} todayCount={todayCount} accent={accent} />;
 }
 
 function GrassMapWithAccent({ daily }: { daily: { date: string; count: number }[] }) {

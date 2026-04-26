@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAccent } from "@/lib/theme-context";
+import { InAppSheet } from "@m1kapp/kit";
 import Link from "next/link";
 import { SitePreviewCard } from "./site-preview-card";
 
@@ -57,7 +58,7 @@ export function BoostSendSheet({
         setBalance((prev) => prev !== null ? prev - (data.injected as number) : null);
         setAmount("10");
         setComment("");
-        setResult({ message: `🚀 +${(data.injected as number).toLocaleString()} 부스트 완료!`, ok: true });
+        setResult({ message: `🚀 +${(data.injected as number).toLocaleString()} 응원 완료!`, ok: true });
         setTimeout(() => { setResult(null); onClose(); }, BOOST_RESULT_DISMISS_MS);
         window.dispatchEvent(new CustomEvent("m1k:boost-completed"));
       } else {
@@ -71,17 +72,13 @@ export function BoostSendSheet({
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex flex-col justify-end items-center bg-black/40 backdrop-blur-sm"
-      onClick={onClose}
+    <InAppSheet
+      open={open}
+      onClose={onClose}
+      className="h-full max-h-full rounded-t-2xl bg-white dark:bg-zinc-950 shadow-2xl flex flex-col"
     >
-      <div
-        className="w-full max-w-sm bg-white dark:bg-zinc-950 rounded-t-2xl flex flex-col"
-        style={{ height: "100dvh", maxHeight: "100dvh" }}
-        onClick={(e) => e.stopPropagation()}
-      >
         <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
-          <span className="text-sm font-bold text-zinc-900 dark:text-white">🚀 부스트 보내기</span>
+          <span className="text-sm font-bold text-zinc-900 dark:text-white">🚀 응원하기</span>
           <button
             onClick={onClose}
             className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 text-xs"
@@ -109,10 +106,10 @@ export function BoostSendSheet({
           />
 
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-zinc-500">부스트 수량</span>
+            <span className="text-xs font-semibold text-zinc-500">응원 포인트</span>
             {balance !== null && (
               <span className="text-xs text-zinc-400">
-                🚀 <span className={`font-bold tabular-nums ${overBalance ? "text-red-500" : "text-zinc-700 dark:text-zinc-300"}`}>{balance.toLocaleString()}</span>
+                보유 <span className={`font-bold tabular-nums ${overBalance ? "text-red-500" : "text-zinc-700 dark:text-zinc-300"}`}>{balance.toLocaleString()}</span>
                 {num >= 1 && (
                   <>
                     <span className="mx-1">→</span>
@@ -181,18 +178,17 @@ export function BoostSendSheet({
 
           {balance !== null && balance <= 0 && (
             <div className="rounded-lg bg-zinc-50 dark:bg-zinc-900 p-3 text-center">
-              <p className="text-xs text-zinc-500 mb-2">부스트가 부족해요</p>
+              <p className="text-xs text-zinc-500 mb-2">응원 포인트가 부족해요</p>
               <Link
                 href="/"
                 className="text-[11px] font-bold px-4 py-1.5 rounded-lg text-white inline-block"
                 style={{ backgroundColor: accent }}
               >
-                부스트 충전하기
+                포인트 충전하기
               </Link>
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </InAppSheet>
   );
 }

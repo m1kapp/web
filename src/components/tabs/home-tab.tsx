@@ -140,10 +140,10 @@ export function HomeTab({
             <TypewriterHero bgColor={bgColor} />
           </p>
           <p className="text-xl font-black tracking-tight leading-snug text-zinc-900 dark:text-white">
-            방문자 트래커 손쉽게 달고
+            방문자 1,000명이 목표라면
           </p>
           <p className="text-xl font-black tracking-tight leading-snug" style={{ color: bgColor }}>
-            1,000명 함께 만들어봐요
+            방문자 트래커부터 달아보세요
           </p>
         </div>
 

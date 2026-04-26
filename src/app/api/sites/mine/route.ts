@@ -3,10 +3,14 @@ import { sites, hits } from "@/lib/db/schema";
 import { eq, sql, desc } from "drizzle-orm";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { handler, ok, unauthorized } from "@m1kapp/kit/server";
+import { todayKST } from "@/lib/format";
 
 export const GET = handler(async () => {
   const { userId } = await auth();
   if (!userId) unauthorized("로그인이 필요합니다");
+  const todayStr = todayKST();
+  const totalExpr = sql<number>`coalesce(sum(${hits.count}), 0)`;
+  const todayExpr = sql<number>`coalesce(sum(case when ${hits.date} = ${todayStr} then ${hits.count} else 0 end), 0)`;
 
   const [mySites, client] = await Promise.all([
     db
@@ -18,7 +22,8 @@ export const GET = handler(async () => {
         ogDescription: sites.ogDescription,
         ogImage: sites.ogImage,
         color: sites.color,
-        total: sql<number>`coalesce(sum(${hits.count}), 0)`,
+        total: totalExpr,
+        today: todayExpr,
         createdAt: sites.createdAt,
       })
       .from(sites)

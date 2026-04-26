@@ -36,6 +36,16 @@ export { mobileViewport as viewport } from "@m1kapp/kit/pwa";
 export const metadata: Metadata = {
   title: "m1k — 방문자 1,000명을 향한 첫걸음",
   description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", type: "image/x-icon" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16.png", type: "image/png", sizes: "16x16" },
+    ],
+    apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
+  },
+  manifest: "/manifest.json",
   openGraph: {
     title: "m1k — 방문자 1,000명을 향한 첫걸음",
     description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
@@ -71,6 +81,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <meta name="theme-color" content="#09090b" />
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
         <link

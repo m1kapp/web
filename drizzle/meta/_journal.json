@@ -15,6 +15,13 @@
       "when": 1776002582276,
       "tag": "0001_thick_spiral",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1777204696829,
+      "tag": "0002_charming_mephistopheles",
+      "breakpoints": true
     }
   ]
 }

@@ -34,11 +34,15 @@ export function SiteCard({ site, rightSlot }: SiteCardProps) {
       {rightSlot ? (
         <div className="shrink-0">{rightSlot}</div>
       ) : total != null ? (
-        <div className="shrink-0 grid grid-cols-[auto_auto] gap-x-1 gap-y-0.5 items-baseline leading-snug">
-          <span className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-widest">TODAY</span>
-          <span className="text-[10px] font-bold tabular-nums text-zinc-800 text-right dark:text-zinc-100">{compactNumber(Number(today ?? 0))}</span>
-          <span className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-widest">TOTAL</span>
-          <span className="text-[10px] font-bold tabular-nums text-zinc-800 text-right dark:text-zinc-100">{compactNumber(Number(total))}</span>
+        <div className="shrink-0 w-[84px] space-y-0.5 leading-snug">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-widest">TODAY</span>
+            <span className="min-w-[24px] text-[10px] font-bold tabular-nums text-zinc-800 text-right dark:text-zinc-100">{compactNumber(Number(today ?? 0))}</span>
+          </div>
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[9px] text-zinc-400 dark:text-zinc-500 tracking-widest">TOTAL</span>
+            <span className="min-w-[24px] text-[10px] font-bold tabular-nums text-zinc-800 text-right dark:text-zinc-100">{compactNumber(Number(total))}</span>
+          </div>
         </div>
       ) : (
         /* eslint-disable-next-line @next/next/no-img-element */

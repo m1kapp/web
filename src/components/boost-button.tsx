@@ -37,15 +37,18 @@ export function BoostButton({ slug, siteName, siteDescription, siteOgImage, site
           className="flex-1 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98]"
           style={{ backgroundColor: accent }}
         >
-          🚀 부스트 보내기
+          🚀 응원하기
         </button>
         <button
           onClick={() => setShowHistory(true)}
           className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
         >
-          부스트 내역 🚀{totalBoosted.toLocaleString()}
+          응원 내역 🚀{totalBoosted.toLocaleString()}
         </button>
       </div>
+      <p className="text-[10px] text-zinc-400 dark:text-zinc-600 text-center mt-1.5">
+        응원 포인트는 방문자 수에 합산돼요
+      </p>
 
       <BoostSendSheet
         open={openSend}
@@ -67,7 +70,7 @@ export function BoostButton({ slug, siteName, siteDescription, siteOgImage, site
 
       <Dialog open={showLoginPrompt} onClose={() => setShowLoginPrompt(false)} title="로그인이 필요해요">
         <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-5">
-          로그인 후 부스트를 보낼 수 있어요. 로그인 페이지로 이동할까요?
+          로그인 후 응원 포인트를 보낼 수 있어요. 로그인 페이지로 이동할까요?
         </p>
         <div className="flex gap-2">
           <button

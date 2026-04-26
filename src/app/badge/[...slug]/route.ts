@@ -3,8 +3,20 @@ import { db } from "@/lib/db";
 import { sites, hits, hitLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte } from "drizzle-orm";
 import { generateBadge } from "@/lib/badge";
-import { getCurrentGoal } from "@/lib/achievements";
 import { findSiteBySlug, recordMilestoneIfReached } from "@/lib/site-service";
+
+const GOAL_TIERS = [
+  { goal: 1_000, label: "1K" },
+  { goal: 10_000, label: "10K" },
+  { goal: 100_000, label: "100K" },
+  { goal: 1_000_000, label: "1M" },
+];
+function getCurrentGoal(total: number) {
+  for (const tier of GOAL_TIERS) {
+    if (total < tier.goal) return tier;
+  }
+  return GOAL_TIERS[GOAL_TIERS.length - 1];
+}
 import { createHash } from "crypto";
 import { todayKST } from "@/lib/format";
 

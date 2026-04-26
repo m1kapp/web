@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
 import { eq, sql, and, gte, desc } from "drizzle-orm";
 import { DashboardView } from "@/components/dashboard-view";
+import { UserProfileView } from "@/components/user-profile-view";
 import { auth } from "@clerk/nextjs/server";
 import { todayKST } from "@/lib/format";
 
@@ -50,8 +51,8 @@ const getSiteData = cache(async function getSiteData(slug: string) {
     db.select({ referer: sql<string>`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.referer} is not null`)).groupBy(sql`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`).orderBy(desc(sql`count(*)`)).limit(5),
     db.select({ browser: hitLogs.browser, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.browser).orderBy(desc(sql`count(*)`)).limit(5),
     db.select({ os: hitLogs.os, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.os).orderBy(desc(sql`count(*)`)).limit(5),
-    db.select({ city: hitLogs.city, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.city} is not null`)).groupBy(hitLogs.city).orderBy(desc(sql`count(*)`)).limit(5),
-    db.select({ hour: sql<number>`extract(hour from ${hitLogs.createdAt})::int`, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(sql`extract(hour from ${hitLogs.createdAt})`).orderBy(desc(sql`count(*)`)).limit(6),
+    db.select({ city: hitLogs.city, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.city} is not null`)).groupBy(hitLogs.city).orderBy(desc(sql`count(*)`)),
+    db.select({ hour: sql<number>`extract(hour from ${hitLogs.createdAt} at time zone 'Asia/Seoul')::int`, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(sql`extract(hour from ${hitLogs.createdAt} at time zone 'Asia/Seoul')`).orderBy(sql`extract(hour from ${hitLogs.createdAt} at time zone 'Asia/Seoul')`).limit(24),
     db.select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` }).from(pointLogs).where(and(eq(pointLogs.targetSiteId, site.id), eq(pointLogs.type, "inject"))),
   ]);
 
@@ -72,9 +73,6 @@ const getSiteData = cache(async function getSiteData(slug: string) {
     hourly,
     createdAt: site.createdAt?.toISOString() ?? null,
     color: site.color ?? null,
-    badgeStyle: site.badgeStyle ?? null,
-    badgeLabel: site.badgeLabel ?? null,
-    badgeEmoji: site.badgeEmoji ?? null,
     ogTitle: site.ogTitle ?? null,
     ogDescription: site.ogDescription ?? null,
     ogImage: site.ogImage ?? null,
@@ -83,12 +81,43 @@ const getSiteData = cache(async function getSiteData(slug: string) {
     verified: site.verified,
     parentId: site.parentId ?? null,
     boosted: Number(boostResult.total),
+    ownerHandle: site.ownerHandle ?? null,
+    ownerName: site.ownerName ?? null,
+    ownerImageUrl: site.ownerImageUrl ?? null,
   };
 });
+
+async function getUserSites(userId: string) {
+  const todayStr = todayKST();
+  return db
+    .select({
+      slug: sites.slug,
+      title: sites.title,
+      url: sites.url,
+      color: sites.color,
+      ogTitle: sites.ogTitle,
+      ogDescription: sites.ogDescription,
+      ogImage: sites.ogImage,
+      total: sql<number>`coalesce(sum(${hits.count}), 0)`,
+      today: sql<number>`coalesce(sum(case when ${hits.date} = ${todayStr} then ${hits.count} else 0 end), 0)`,
+    })
+    .from(sites)
+    .leftJoin(hits, eq(hits.siteId, sites.id))
+    .where(eq(sites.userId, userId))
+    .groupBy(sites.id)
+    .orderBy(desc(sites.createdAt));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug: slugParts } = await params;
   const slug = slugParts.join("/");
+
+  const decodedSlug = decodeURIComponent(slug);
+  if (decodedSlug.startsWith("@")) {
+    const handle = decodedSlug.slice(1);
+    return { title: `@${handle} — m1k` };
+  }
+
   const data = await getSiteData(slug);
   if (!data) return {};
 
@@ -125,11 +154,54 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function DashboardPage({ params }: Props) {
   const { slug: slugParts } = await params;
   const slug = slugParts.join("/");
+
+  const decodedSlug = decodeURIComponent(slug);
+  // /@handle — 유저 프로필 페이지
+  if (decodedSlug.startsWith("@")) {
+    const handle = decodedSlug.slice(1);
+
+    // Clerk 대신 DB에서 owner_handle로 조회
+    const ownerSite = await db.query.sites.findFirst({
+      where: eq(sites.ownerHandle, handle),
+    });
+    if (!ownerSite?.userId) notFound();
+
+    const user = {
+      id: ownerSite.userId,
+      handle: ownerSite.ownerHandle ?? handle,
+      name: ownerSite.ownerName ?? handle,
+      imageUrl: ownerSite.ownerImageUrl ?? "",
+    };
+
+    const rawSites = await getUserSites(user.id);
+    const userSites = rawSites.map((s) => ({
+      ...s,
+      total: Number(s.total),
+      today: Number(s.today),
+      owner: { name: user.name, imageUrl: user.imageUrl },
+    }));
+
+    return <UserProfileView user={user} sites={userSites} />;
+  }
+
+  // 사이트 상세 페이지
   const data = await getSiteData(slug);
   if (!data) notFound();
 
   const { userId } = await auth();
   const isOwner = !!userId && data.userId === userId;
 
-  return <DashboardView data={data} host={appHost()} isOwner={isOwner} isSignedIn={!!userId} />;
+  const owner = data.ownerHandle
+    ? { handle: data.ownerHandle, name: data.ownerName ?? data.ownerHandle, imageUrl: data.ownerImageUrl ?? "" }
+    : null;
+
+  return (
+    <DashboardView
+      data={data}
+      host={appHost()}
+      isOwner={isOwner}
+      isSignedIn={!!userId}
+      owner={owner}
+    />
+  );
 }
