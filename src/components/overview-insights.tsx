@@ -625,16 +625,22 @@ function CityMapSection({ cities, countries }: { cities: SiteData["cities"]; cou
       const n = decodeCity(c.city);
       return n === "Seoul" || SEOUL_GU_SET.has(n ?? "");
     });
+    const FIXED_ORDER = ["SEOUL", "KR", "US"];
     const result: MapTab[] = [];
-    if (countryCount["KR"]) {
-      result.push({ id: "KR", label: "🇰🇷 한국" });
-      if (hasSeoulDetail) result.push({ id: "SEOUL", label: "서울" });
+
+    for (const id of FIXED_ORDER) {
+      if (id === "SEOUL") {
+        if (hasSeoulDetail) result.push({ id: "SEOUL", label: "SEOUL" });
+      } else if (countryCount[id]) {
+        result.push({ id, label: id });
+      }
     }
+
     Object.entries(countryCount)
-      .filter(([cc]) => cc !== "KR")
+      .filter(([cc]) => !FIXED_ORDER.includes(cc))
       .sort(([, a], [, b]) => b - a)
       .forEach(([cc]) => {
-        result.push({ id: cc, label: `${countryFlag(cc)} ${COUNTRY_NAMES[cc] ?? cc}` });
+        result.push({ id: cc, label: cc });
       });
     return result;
   }, [cities]);

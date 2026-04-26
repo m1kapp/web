@@ -4,43 +4,42 @@ import { useState } from "react";
 import { slugToColor } from "@/lib/site-color";
 import { extractDomain } from "@/lib/format";
 
-function faviconUrl(url: string): string {
-  const domain = extractDomain(url);
-  if (!domain || domain === url) return "";
-  return `https://${domain}/favicon.ico`;
-}
-
 // ─── 공통 썸네일 ───────────────────────────────────────────────
 interface SiteThumbnailProps {
   slug: string;
   name: string;
-  /** 사이트 원본 URL — 있으면 파비콘을 우선 표시 */
   url?: string | null;
   color?: string | null;
   size?: "sm" | "md" | "lg";
+}
+
+function faviconUrl(url: string): string {
+  try {
+    return new URL(url).origin + "/favicon.ico";
+  } catch {
+    return "";
+  }
 }
 
 export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumbnailProps) {
   const bg = color || slugToColor(slug);
   const dim = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-12 h-12" : "w-10 h-10";
   const rounded = size === "lg" ? "rounded-xl" : "rounded-lg";
-  const [loaded, setLoaded] = useState(false);
+  const fontSize = size === "lg" ? "text-base" : "text-xs";
   const [failed, setFailed] = useState(false);
 
   const favicon = url ? faviconUrl(url) : "";
+  const showFavicon = !!favicon && !failed;
 
   return (
-    <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center relative`} style={{ backgroundColor: bg }}>
-      {/* 글자 폴백 — 이미지 로드 성공 시 숨김 */}
-      {!loaded && <span className="text-xs font-black text-white/80">{name[0]?.toUpperCase()}</span>}
-      {/* 이미지 — hidden으로 시작해서 로드 완료 시에만 표시 (깨진 아이콘 방지) */}
-      {favicon && !failed && (
+    <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center overflow-hidden relative`} style={{ backgroundColor: bg }}>
+      <span className={`${fontSize} font-black text-white/90`}>{name[0]?.toUpperCase()}</span>
+      {showFavicon && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={favicon}
           alt=""
-          className={`w-5 h-5 object-contain absolute ${loaded ? "" : "hidden"}`}
-          onLoad={() => setLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-cover ${rounded}`}
           onError={() => setFailed(true)}
         />
       )}
