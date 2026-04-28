@@ -504,6 +504,19 @@ function SeoulGuMap({ cities, accent }: { cities: SiteData["cities"]; accent: st
   );
 }
 
+const US_STATE_ABBR: Record<string, string> = {
+  Alabama:"AL",Alaska:"AK",Arizona:"AZ",Arkansas:"AR",California:"CA",
+  Colorado:"CO",Connecticut:"CT",Delaware:"DE",Florida:"FL",Georgia:"GA",
+  Hawaii:"HI",Idaho:"ID",Illinois:"IL",Indiana:"IN",Iowa:"IA",
+  Kansas:"KS",Kentucky:"KY",Louisiana:"LA",Maine:"ME",Maryland:"MD",
+  Massachusetts:"MA",Michigan:"MI",Minnesota:"MN",Mississippi:"MS",Missouri:"MO",
+  Montana:"MT",Nebraska:"NE",Nevada:"NV","New Hampshire":"NH","New Jersey":"NJ",
+  "New Mexico":"NM","New York":"NY","North Carolina":"NC","North Dakota":"ND",Ohio:"OH",
+  Oklahoma:"OK",Oregon:"OR",Pennsylvania:"PA","Rhode Island":"RI","South Carolina":"SC",
+  "South Dakota":"SD",Tennessee:"TN",Texas:"TX",Utah:"UT",Vermont:"VT",
+  Virginia:"VA",Washington:"WA","West Virginia":"WV",Wisconsin:"WI",Wyoming:"WY",
+};
+
 // ─── 미국 주 choropleth ───────────────────────────────────────────────────────
 
 function USMap({ cities, accent }: { cities: SiteData["cities"]; accent: string }) {
@@ -533,7 +546,9 @@ function USMap({ cities, accent }: { cities: SiteData["cities"]; accent: string 
     const feats = continental.features.map((f, i) => {
       const props = (f as GeoJSON.Feature).properties as { name: string };
       const count = stateCounts[props.name] ?? 0;
-      return { d: gen(f as GeoPermissibleObjects) ?? "", name: props.name, count, key: i };
+      const [cx, cy] = gen.centroid(f as GeoPermissibleObjects);
+      const abbr = US_STATE_ABBR[props.name] ?? "";
+      return { d: gen(f as GeoPermissibleObjects) ?? "", name: props.name, count, key: i, cx, cy, abbr };
     });
     return { projection: proj, features: feats };
   }, [geo, stateCounts]);
@@ -544,14 +559,25 @@ function USMap({ cities, accent }: { cities: SiteData["cities"]; accent: string 
 
   return (
     <ZoomableSVG vw={W} vh={H} className="w-full" style={{ background: "#f4f4f5" }}>
-      {features.map(({ d, count, key }) => {
+      {features.map(({ d, count, key, cx, cy, abbr }) => {
         const t = count / maxCount;
+        const hasCount = count > 0;
         return (
-          <path key={key} d={d}
-            fill={count > 0 ? accent : "#e4e4e7"}
-            fillOpacity={count > 0 ? 0.15 + t * 0.78 : 1}
-            stroke="white" strokeWidth="0.5"
-            vectorEffect="non-scaling-stroke" />
+          <g key={key}>
+            <path d={d}
+              fill={hasCount ? accent : "#e4e4e7"}
+              fillOpacity={hasCount ? 0.15 + t * 0.78 : 1}
+              stroke="white" strokeWidth="0.5"
+              vectorEffect="non-scaling-stroke" />
+            {abbr && !isNaN(cx) && !isNaN(cy) && (
+              <text x={cx.toFixed(1)} y={(cy + 3).toFixed(1)}
+                textAnchor="middle" fontSize="4.5" fontWeight="600" fontFamily="inherit"
+                fill={hasCount ? (t > 0.5 ? "white" : accent) : "#a1a1aa"}
+                style={{ pointerEvents: "none", userSelect: "none" }}>
+                {abbr}
+              </text>
+            )}
+          </g>
         );
       })}
     </ZoomableSVG>
@@ -608,6 +634,7 @@ function CountryMap({ cities, country, accent }: {
 
 type MapTab = { id: string; label: string };
 
+
 function CityMapSection({ cities, countries }: { cities: SiteData["cities"]; countries: SiteData["countries"] }) {
   const { accent } = useAccent();
 
@@ -659,7 +686,7 @@ function CityMapSection({ cities, countries }: { cities: SiteData["cities"]; cou
                 selected === tab.id ? "text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
               }`}
               style={selected === tab.id ? { backgroundColor: accent } : undefined}>
-              {tab.label}
+              {countryFlag(tab.id === "SEOUL" ? "KR" : tab.id)} {tab.label}
             </button>
           ))}
         </div>
