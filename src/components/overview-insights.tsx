@@ -554,7 +554,6 @@ function USMap({ cities, accent }: { cities: SiteData["cities"]; accent: string 
             vectorEffect="non-scaling-stroke" />
         );
       })}
-      <CityDots cities={cities} country="US" projection={projection} accent={accent} />
     </ZoomableSVG>
   );
 }

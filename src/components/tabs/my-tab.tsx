@@ -10,6 +10,7 @@ import { Divider, EmptyState, InAppSheet } from "@m1kapp/kit";
 import { BoostShop } from "@/components/boost-shop";
 import { BoostHistorySheet } from "@/components/boost-history-sheet";
 import type { RecentSite } from "@/lib/types";
+import { Avatar } from "@/components/avatar";
 
 type BoostedSite = {
   slug: string;
@@ -227,19 +228,7 @@ export function MyTab({
       {/* 프로필 */}
       <div className="flex items-center gap-3 mb-5 justify-between">
         <div className="flex items-center gap-3">
-          {user?.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.imageUrl} alt="" className="w-12 h-12 rounded-full" />
-          ) : (
-            <div
-              className="w-12 h-12 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: bgColor }}
-            >
-              <span className="text-lg font-black text-white">
-                {(user?.firstName || "?").slice(0, 1)}
-              </span>
-            </div>
-          )}
+          <Avatar imageUrl={user?.imageUrl} name={user?.firstName || user?.username || "?"} size={44} />
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
               {user?.firstName || user?.username || "나"}

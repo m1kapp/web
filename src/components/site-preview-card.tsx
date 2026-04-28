@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { slugToColor } from "@/lib/site-color";
 import { extractDomain } from "@/lib/format";
 
@@ -13,35 +13,54 @@ interface SiteThumbnailProps {
   size?: "sm" | "md" | "lg";
 }
 
-function faviconUrl(url: string): string {
-  try {
-    return new URL(url).origin + "/favicon.ico";
-  } catch {
-    return "";
-  }
-}
+const FAVICON_CANDIDATES = (origin: string) => [
+  `${origin}/apple-touch-icon.png`,           // 180×180 — 최고화질
+  `${origin}/apple-touch-icon-precomposed.png`,
+  `${origin}/favicon-32.png`,
+  `${origin}/favicon.ico`,
+];
+
+// 세션 캐시: origin → 성공한 favicon URL
+const faviconCache = new Map<string, string>();
 
 export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumbnailProps) {
   const bg = color || slugToColor(slug);
   const dim = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-12 h-12" : "w-10 h-10";
   const rounded = size === "lg" ? "rounded-xl" : "rounded-lg";
   const fontSize = size === "lg" ? "text-base" : "text-xs";
-  const [failed, setFailed] = useState(false);
 
-  const favicon = url ? faviconUrl(url) : "";
-  const showFavicon = !!favicon && !failed;
+  const origin = (() => { try { return new URL(url!).origin; } catch { return ""; } })();
+
+  // 캐시 히트 → 즉시 표시, 미스 → 병렬 시도 후 첫 성공
+  const [faviconSrc, setFaviconSrc] = useState<string | null>(() => faviconCache.get(origin) ?? null);
+
+  useEffect(() => {
+    if (!origin || faviconCache.has(origin)) return;
+    let settled = false;
+    const imgs = FAVICON_CANDIDATES(origin).map((candidate) => {
+      const img = new Image();
+      img.onload = () => {
+        if (settled) return;
+        settled = true;
+        faviconCache.set(origin, candidate);
+        setFaviconSrc(candidate);
+      };
+      img.src = candidate;
+      return img;
+    });
+    return () => {
+      settled = true;
+      imgs.forEach((img) => { img.onload = null; });
+    };
+  }, [origin]);
 
   return (
     <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center overflow-hidden relative`} style={{ backgroundColor: bg }}>
       <span className={`${fontSize} font-black text-white/90`}>{name[0]?.toUpperCase()}</span>
-      {showFavicon && (
+      {faviconSrc && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={favicon}
-          alt=""
-          className={`absolute inset-0 w-full h-full object-cover ${rounded}`}
-          onError={() => setFailed(true)}
-        />
+        <img src={faviconSrc} alt=""
+          className={`absolute inset-0 w-full h-full object-cover ${rounded}`} />
       )}
     </div>
   );

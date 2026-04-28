@@ -3,33 +3,8 @@
 import { useFetch } from "@m1kapp/kit";
 import type { Builder } from "@/app/api/builders/route";
 import { SiteThumbnail } from "@/components/site-preview-card";
+import { Avatar } from "@/components/avatar";
 import { useRouter } from "next/navigation";
-
-// 인스타그램 스타일 프로필 링
-function AvatarRing({ imageUrl, name, size = 44 }: { imageUrl?: string | null; name: string; size?: number }) {
-  const letter = name[0]?.toUpperCase();
-  return (
-    <div
-      className="shrink-0 rounded-full p-[2.5px]"
-      style={{
-        width: size + 5, height: size + 5,
-        background: "linear-gradient(135deg, #f9a825, #f06292, #ab47bc, #5c6bc0)",
-      }}
-    >
-      <div className="w-full h-full rounded-full bg-white dark:bg-zinc-900 p-[2px]">
-        {imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={imageUrl} alt={name}
-            className="w-full h-full rounded-full object-cover" />
-        ) : (
-          <div className="w-full h-full rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-sm font-bold text-zinc-500">
-            {letter}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function BuilderCard({ builder }: { builder: Builder }) {
   const router = useRouter();
@@ -40,7 +15,7 @@ function BuilderCard({ builder }: { builder: Builder }) {
     <div className="py-4 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
       {/* 빌더 프로필 */}
       <div className="flex items-center gap-3 mb-3">
-        <AvatarRing imageUrl={builder.imageUrl} name={displayName} />
+        <Avatar imageUrl={builder.imageUrl} name={displayName} size={40} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{displayName}</p>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500">

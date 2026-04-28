@@ -6,6 +6,7 @@ import { SitePreviewCard } from "./site-preview-card";
 import { ShareButton } from "./share-button";
 import { todayKST } from "@/lib/format";
 import type { SiteData } from "./dashboard-view";
+import { Avatar } from "./avatar";
 
 const MILESTONES = [
   { value: 1_000,     label: "1K"  },
@@ -329,14 +330,7 @@ export function SiteHero({ data, owner }: {
           className="flex items-center justify-end gap-1.5 mt-1.5 group"
         >
           <span className="text-[11px] text-zinc-300 dark:text-zinc-600">built by</span>
-          {owner.imageUrl ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={owner.imageUrl} alt="" className="w-4 h-4 rounded-full object-cover" />
-          ) : (
-            <div className="w-4 h-4 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center">
-              <span className="text-[8px] font-bold text-zinc-500">{owner.name.slice(0, 1).toUpperCase()}</span>
-            </div>
-          )}
+          <Avatar imageUrl={owner.imageUrl} name={owner.name} size={20} ring={false} />
           <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 transition-colors">
             @{owner.handle}
           </span>
