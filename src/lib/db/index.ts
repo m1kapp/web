@@ -4,7 +4,7 @@ import * as schema from "./schema";
 
 const _sql = neon(process.env.DATABASE_URL!);
 
-// Neon cold start 시 fetch failed 에러를 자동 retry (최대 3회)
+// Neon cold start 시 fetch failed 에러를 자동 retry (최대 3회, 빠른 간격)
 const sql = new Proxy(_sql, {
   apply(target, thisArg, args) {
     const attempt = async (n: number): Promise<unknown> => {
@@ -14,7 +14,7 @@ const sql = new Proxy(_sql, {
         const isConnErr = err instanceof Error &&
           (err.message.includes("fetch failed") || err.message.includes("Error connecting to database"));
         if (isConnErr && n < 2) {
-          await new Promise(r => setTimeout(r, 300 * (n + 1)));
+          await new Promise(r => setTimeout(r, 150));
           return attempt(n + 1);
         }
         throw err;
