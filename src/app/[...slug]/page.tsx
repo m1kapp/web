@@ -15,9 +15,13 @@ interface Props {
 }
 
 const getSiteData = cache(async function getSiteData(slug: string) {
-  const site = await db.query.sites.findFirst({
-    where: eq(sites.slug, slug),
-  });
+  let site;
+  try {
+    site = await db.query.sites.findFirst({ where: eq(sites.slug, slug) });
+  } catch (err) {
+    console.error("[getSiteData] DB error:", (err as Error).message?.slice(0, 80));
+    return null;
+  }
   if (!site) return null;
 
   const weekAgo = new Date();
@@ -26,20 +30,9 @@ const getSiteData = cache(async function getSiteData(slug: string) {
   monthAgo.setDate(monthAgo.getDate() - 30);
   const todayStr = todayKST();
 
-  const [
-    [weeklyResult],
-    [todayResult],
-    [monthlyResult],
-    daily,
-    countries,
-    devices,
-    referers,
-    browsers,
-    os,
-    cities,
-    hourly,
-    [boostResult],
-  ] = await Promise.all([
+  let queryResult;
+  try {
+    queryResult = await Promise.all([
     // total은 sites.totalHits 사용 (SUM 쿼리 제거)
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(weekAgo)))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
@@ -54,7 +47,26 @@ const getSiteData = cache(async function getSiteData(slug: string) {
     db.select({ city: dailyGeoStats.city, count: sql<number>`sum(${dailyGeoStats.count})` }).from(dailyGeoStats).where(and(eq(dailyGeoStats.siteId, site.id), ne(dailyGeoStats.city, ""))).groupBy(dailyGeoStats.city).orderBy(desc(sql`sum(${dailyGeoStats.count})`)),
     db.select({ hour: dailyHourStats.hour, count: sql<number>`sum(${dailyHourStats.count})` }).from(dailyHourStats).where(eq(dailyHourStats.siteId, site.id)).groupBy(dailyHourStats.hour).orderBy(dailyHourStats.hour),
     db.select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` }).from(pointLogs).where(and(eq(pointLogs.targetSiteId, site.id), eq(pointLogs.type, "inject"))),
-  ]);
+    ]);
+  } catch (err) {
+    console.error("[getSiteData] stats query error:", (err as Error).message?.slice(0, 80));
+    return null;
+  }
+
+  const [
+    [weeklyResult],
+    [todayResult],
+    [monthlyResult],
+    daily,
+    countries,
+    devices,
+    referers,
+    browsers,
+    os,
+    cities,
+    hourly,
+    [boostResult],
+  ] = queryResult;
 
   return {
     slug: site.slug,
