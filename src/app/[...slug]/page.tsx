@@ -3,8 +3,8 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { appHost } from "@/lib/utils";
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
-import { eq, sql, and, gte, desc } from "drizzle-orm";
+import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats, dailyHourStats, pointLogs } from "@/lib/db/schema";
+import { eq, sql, and, gte, desc, ne } from "drizzle-orm";
 import { DashboardView } from "@/components/dashboard-view";
 import { UserProfileView } from "@/components/user-profile-view";
 import { auth } from "@clerk/nextjs/server";
@@ -27,7 +27,6 @@ const getSiteData = cache(async function getSiteData(slug: string) {
   const todayStr = todayKST();
 
   const [
-    [totalResult],
     [weeklyResult],
     [todayResult],
     [monthlyResult],
@@ -41,18 +40,19 @@ const getSiteData = cache(async function getSiteData(slug: string) {
     hourly,
     [boostResult],
   ] = await Promise.all([
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
+    // total은 sites.totalHits 사용 (SUM 쿼리 제거)
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(weekAgo)))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(monthAgo)))),
     db.select({ date: hits.date, count: hits.count }).from(hits).where(eq(hits.siteId, site.id)).orderBy(hits.date),
-    db.select({ country: hitLogs.country, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.country).orderBy(desc(sql`count(*)`)).limit(5),
-    db.select({ device: hitLogs.device, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.device).orderBy(desc(sql`count(*)`)).limit(5),
+    // 사전집계 테이블 사용 (hitLogs 전체 스캔 제거)
+    db.select({ country: dailyGeoStats.country, count: sql<number>`sum(${dailyGeoStats.count})` }).from(dailyGeoStats).where(and(eq(dailyGeoStats.siteId, site.id), ne(dailyGeoStats.country, ""))).groupBy(dailyGeoStats.country).orderBy(desc(sql`sum(${dailyGeoStats.count})`)).limit(5),
+    db.select({ device: dailyDeviceStats.device, count: sql<number>`sum(${dailyDeviceStats.count})` }).from(dailyDeviceStats).where(eq(dailyDeviceStats.siteId, site.id)).groupBy(dailyDeviceStats.device).orderBy(desc(sql`sum(${dailyDeviceStats.count})`)).limit(5),
     db.select({ referer: sql<string>`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.referer} is not null`)).groupBy(sql`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`).orderBy(desc(sql`count(*)`)).limit(5),
-    db.select({ browser: hitLogs.browser, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.browser).orderBy(desc(sql`count(*)`)).limit(5),
-    db.select({ os: hitLogs.os, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(hitLogs.os).orderBy(desc(sql`count(*)`)).limit(5),
-    db.select({ city: hitLogs.city, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site.id), sql`${hitLogs.city} is not null`)).groupBy(hitLogs.city).orderBy(desc(sql`count(*)`)),
-    db.select({ hour: sql<number>`extract(hour from ${hitLogs.createdAt} at time zone 'Asia/Seoul')::int`, count: sql<number>`count(*)` }).from(hitLogs).where(eq(hitLogs.siteId, site.id)).groupBy(sql`extract(hour from ${hitLogs.createdAt} at time zone 'Asia/Seoul')`).orderBy(sql`extract(hour from ${hitLogs.createdAt} at time zone 'Asia/Seoul')`).limit(24),
+    db.select({ browser: dailyDeviceStats.browser, count: sql<number>`sum(${dailyDeviceStats.count})` }).from(dailyDeviceStats).where(eq(dailyDeviceStats.siteId, site.id)).groupBy(dailyDeviceStats.browser).orderBy(desc(sql`sum(${dailyDeviceStats.count})`)).limit(5),
+    db.select({ os: dailyDeviceStats.os, count: sql<number>`sum(${dailyDeviceStats.count})` }).from(dailyDeviceStats).where(eq(dailyDeviceStats.siteId, site.id)).groupBy(dailyDeviceStats.os).orderBy(desc(sql`sum(${dailyDeviceStats.count})`)).limit(5),
+    db.select({ city: dailyGeoStats.city, count: sql<number>`sum(${dailyGeoStats.count})` }).from(dailyGeoStats).where(and(eq(dailyGeoStats.siteId, site.id), ne(dailyGeoStats.city, ""))).groupBy(dailyGeoStats.city).orderBy(desc(sql`sum(${dailyGeoStats.count})`)),
+    db.select({ hour: dailyHourStats.hour, count: sql<number>`sum(${dailyHourStats.count})` }).from(dailyHourStats).where(eq(dailyHourStats.siteId, site.id)).groupBy(dailyHourStats.hour).orderBy(dailyHourStats.hour),
     db.select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` }).from(pointLogs).where(and(eq(pointLogs.targetSiteId, site.id), eq(pointLogs.type, "inject"))),
   ]);
 
@@ -60,7 +60,7 @@ const getSiteData = cache(async function getSiteData(slug: string) {
     slug: site.slug,
     title: site.title,
     url: site.url,
-    total: Number(totalResult.total),
+    total: site.totalHits,
     weekly: Number(weeklyResult.total),
     monthly: Number(monthlyResult.total),
     daily,

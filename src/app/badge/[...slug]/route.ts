@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs } from "@/lib/db/schema";
+import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats, dailyHourStats } from "@/lib/db/schema";
 import { eq, sql, and, gte } from "drizzle-orm";
 import { generateBadge } from "@/lib/badge";
 import { findSiteBySlug, recordMilestoneIfReached } from "@/lib/site-service";
@@ -80,24 +80,32 @@ export async function GET(
       const os = parseOS(ua);
       const referer = request.headers.get("referer") || null;
 
-      await db.insert(hitLogs).values({
-        siteId: site.id,
-        ipHash,
-        country,
-        city,
-        device,
-        browser,
-        os,
-        referer,
-      });
+      // KST 기준 시간 (사전집계 테이블용)
+      const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+      const hourKST = nowKST.getUTCHours();
 
-      await db
-        .insert(hits)
-        .values({ siteId: site.id, date: today, count: 1 })
-        .onConflictDoUpdate({
-          target: [hits.siteId, hits.date],
-          set: { count: sql`${hits.count} + 1` },
-        });
+      // 모든 hit 기록 + 사전집계 업데이트를 단일 Promise.all로
+      await Promise.all([
+        db.insert(hitLogs).values({ siteId: site.id, ipHash, country, city, device, browser, os, referer }),
+        db.insert(hits).values({ siteId: site.id, date: today, count: 1 })
+          .onConflictDoUpdate({ target: [hits.siteId, hits.date], set: { count: sql`${hits.count} + 1` } }),
+        db.update(sites).set({ totalHits: sql`${sites.totalHits} + 1` }).where(eq(sites.id, site.id)),
+        db.insert(dailyGeoStats).values({ siteId: site.id, date: today, country: country ?? "", city: city ?? "" })
+          .onConflictDoUpdate({
+            target: [dailyGeoStats.siteId, dailyGeoStats.date, dailyGeoStats.country, dailyGeoStats.city],
+            set: { count: sql`${dailyGeoStats.count} + 1` },
+          }),
+        db.insert(dailyDeviceStats).values({ siteId: site.id, date: today, device, browser, os })
+          .onConflictDoUpdate({
+            target: [dailyDeviceStats.siteId, dailyDeviceStats.date, dailyDeviceStats.device, dailyDeviceStats.browser, dailyDeviceStats.os],
+            set: { count: sql`${dailyDeviceStats.count} + 1` },
+          }),
+        db.insert(dailyHourStats).values({ siteId: site.id, date: today, hour: hourKST })
+          .onConflictDoUpdate({
+            target: [dailyHourStats.siteId, dailyHourStats.date, dailyHourStats.hour],
+            set: { count: sql`${dailyHourStats.count} + 1` },
+          }),
+      ]);
 
       // Referer가 등록된 사이트 도메인과 일치하면 → 인증 완료
       if (!site.verified && referer && site.url) {
@@ -121,15 +129,15 @@ export async function GET(
   const monthAgo = new Date(now);
   monthAgo.setDate(monthAgo.getDate() - 30);
 
-  const [[totalR], [todayR], [weeklyR], [monthlyR]] = await Promise.all([
-    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site.id)),
+  // total은 사전집계된 sites.totalHits 사용 (SUM 쿼리 제거)
+  const [[todayR], [weeklyR], [monthlyR]] = await Promise.all([
     db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
     db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(weekAgo)))),
     db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(monthAgo)))),
   ]);
 
   const counts = {
-    total: Number(totalR.v),
+    total: site.totalHits,
     today: Number(todayR.v),
     weekly: Number(weeklyR.v),
     monthly: Number(monthlyR.v),

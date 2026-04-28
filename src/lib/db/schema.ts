@@ -19,6 +19,7 @@ export const sites = pgTable("sites", {
   ownerHandle: text("owner_handle"),
   ownerName: text("owner_name"),
   ownerImageUrl: text("owner_image_url"),
+  totalHits: integer("total_hits").default(0).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   reached1000At: timestamp("reached_1000_at", { withTimezone: true }),
 }, (table) => [
@@ -53,6 +54,45 @@ export const hitLogs = pgTable("hit_logs", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 }, (table) => [
   index("idx_hit_logs_site_id").on(table.siteId),
+]);
+
+// ─── 사전집계 통계 테이블 ──────────────────────────────────────────────────────
+// hitLogs 전체 스캔 대신 hit 기록 시 함께 업데이트 → analytics 쿼리 O(1)
+
+export const dailyGeoStats = pgTable("daily_geo_stats", {
+  id: serial("id").primaryKey(),
+  siteId: integer("site_id").notNull().references(() => sites.id),
+  date: date("date").notNull(),
+  country: text("country").notNull().default(""),
+  city: text("city").notNull().default(""),
+  count: integer("count").default(1).notNull(),
+}, (table) => [
+  uniqueIndex("idx_daily_geo_stats_unique").on(table.siteId, table.date, table.country, table.city),
+  index("idx_daily_geo_stats_site").on(table.siteId),
+]);
+
+export const dailyDeviceStats = pgTable("daily_device_stats", {
+  id: serial("id").primaryKey(),
+  siteId: integer("site_id").notNull().references(() => sites.id),
+  date: date("date").notNull(),
+  device: text("device").notNull().default(""),
+  browser: text("browser").notNull().default(""),
+  os: text("os").notNull().default(""),
+  count: integer("count").default(1).notNull(),
+}, (table) => [
+  uniqueIndex("idx_daily_device_stats_unique").on(table.siteId, table.date, table.device, table.browser, table.os),
+  index("idx_daily_device_stats_site").on(table.siteId),
+]);
+
+export const dailyHourStats = pgTable("daily_hour_stats", {
+  id: serial("id").primaryKey(),
+  siteId: integer("site_id").notNull().references(() => sites.id),
+  date: date("date").notNull(),
+  hour: integer("hour").notNull(),
+  count: integer("count").default(1).notNull(),
+}, (table) => [
+  uniqueIndex("idx_daily_hour_stats_unique").on(table.siteId, table.date, table.hour),
+  index("idx_daily_hour_stats_site").on(table.siteId),
 ]);
 
 // 포인트 지갑

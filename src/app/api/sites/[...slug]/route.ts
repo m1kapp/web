@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
-import { eq, sql, and, gte, desc } from "drizzle-orm";
+import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats, pointLogs } from "@/lib/db/schema";
+import { eq, sql, and, gte, desc, ne } from "drizzle-orm";
 import { todayKST } from "@/lib/format";
 import { handler, ok, notFound } from "@m1kapp/kit/server";
 
@@ -24,49 +24,19 @@ export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: 
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-  const [[totalResult], [todayResult], [weeklyResult], [monthlyResult], [boostedResult], daily] = await Promise.all([
-    db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(eq(hits.siteId, site!.id)),
+  const [[todayResult], [weeklyResult], [monthlyResult], [boostedResult], daily, countries, devices, referers] = await Promise.all([
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), eq(hits.date, todayStr))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(weekAgo)))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(monthAgo)))),
     db.select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` }).from(pointLogs).where(and(eq(pointLogs.targetSiteId, site!.id), eq(pointLogs.type, "inject"))),
     db.select({ date: hits.date, count: hits.count }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(ninetyDaysAgo)))).orderBy(hits.date),
+    // 사전집계 테이블 사용
+    db.select({ country: dailyGeoStats.country, count: sql<number>`sum(${dailyGeoStats.count})` }).from(dailyGeoStats).where(and(eq(dailyGeoStats.siteId, site!.id), ne(dailyGeoStats.country, ""))).groupBy(dailyGeoStats.country).orderBy(desc(sql`sum(${dailyGeoStats.count})`)).limit(10),
+    db.select({ device: dailyDeviceStats.device, count: sql<number>`sum(${dailyDeviceStats.count})` }).from(dailyDeviceStats).where(eq(dailyDeviceStats.siteId, site!.id)).groupBy(dailyDeviceStats.device).orderBy(desc(sql`sum(${dailyDeviceStats.count})`)).limit(5),
+    db.select({ referer: sql<string>`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`, count: sql<number>`count(*)` }).from(hitLogs).where(and(eq(hitLogs.siteId, site!.id), sql`${hitLogs.referer} is not null`)).groupBy(sql`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`).orderBy(desc(sql`count(*)`)).limit(10),
   ]);
 
-  const countries = await db
-    .select({
-      country: hitLogs.country,
-      count: sql<number>`count(*)`,
-    })
-    .from(hitLogs)
-    .where(eq(hitLogs.siteId, site!.id))
-    .groupBy(hitLogs.country)
-    .orderBy(desc(sql`count(*)`))
-    .limit(10);
-
-  const devices = await db
-    .select({
-      device: hitLogs.device,
-      count: sql<number>`count(*)`,
-    })
-    .from(hitLogs)
-    .where(eq(hitLogs.siteId, site!.id))
-    .groupBy(hitLogs.device)
-    .orderBy(desc(sql`count(*)`))
-    .limit(5);
-
-  const referers = await db
-    .select({
-      referer: sql<string>`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`,
-      count: sql<number>`count(*)`,
-    })
-    .from(hitLogs)
-    .where(and(eq(hitLogs.siteId, site!.id), sql`${hitLogs.referer} is not null`))
-    .groupBy(sql`regexp_replace(${hitLogs.referer}, '^https?://[^/]+', '')`)
-    .orderBy(desc(sql`count(*)`))
-    .limit(10);
-
-  const total = Number(totalResult.total);
+  const total = site!.totalHits;
 
   return ok({
     slug: site!.slug,
