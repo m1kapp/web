@@ -62,6 +62,7 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
       {faviconSrc && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={faviconSrc} alt=""
+          onError={() => { faviconCache.delete(origin); setFaviconSrc(null); }}
           className={`absolute inset-0 w-full h-full object-cover ${rounded}`} />
       )}
     </div>

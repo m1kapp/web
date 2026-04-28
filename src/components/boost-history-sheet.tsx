@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { formatLogDate } from "@/lib/format";
 import { InAppSheet, useFetch } from "@m1kapp/kit";
 import { SitePreviewCard } from "./site-preview-card";
+import { Avatar } from "./avatar";
 
 interface FeedLog {
   amount: number;
@@ -108,13 +109,7 @@ export function BoostHistorySheet({ open, onClose, site, onBoost }: BoostHistory
               {sorted.map((log, i) => (
                 <div key={i} className="flex gap-3 px-5 py-3.5">
                   <div className="shrink-0">
-                    {log.user.imageUrl ? (
-                      <img src={log.user.imageUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-bold text-zinc-500">
-                        {log.user.name[0]?.toUpperCase() ?? "?"}
-                      </div>
-                    )}
+                    <Avatar imageUrl={log.user.imageUrl} name={log.user.name || "?"} size={36} ring={false} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline gap-2 mb-1">
