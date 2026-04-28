@@ -36,22 +36,24 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
 
   useEffect(() => {
     if (!origin || faviconCache.has(origin)) return;
-    let settled = false;
-    const imgs = FAVICON_CANDIDATES(origin).map((candidate) => {
+    let cancelled = false;
+
+    const tryNext = (candidates: string[]) => {
+      if (cancelled || candidates.length === 0) return;
+      const [candidate, ...rest] = candidates;
       const img = new Image();
       img.onload = () => {
-        if (settled) return;
-        settled = true;
+        if (cancelled) return;
+        if (img.naturalWidth < 8 || img.naturalHeight < 8) { tryNext(rest); return; }
         faviconCache.set(origin, candidate);
         setFaviconSrc(candidate);
       };
+      img.onerror = () => { if (!cancelled) tryNext(rest); };
       img.src = candidate;
-      return img;
-    });
-    return () => {
-      settled = true;
-      imgs.forEach((img) => { img.onload = null; });
     };
+
+    tryNext(FAVICON_CANDIDATES(origin));
+    return () => { cancelled = true; };
   }, [origin]);
 
   return (
