@@ -16,20 +16,20 @@ interface AvatarProps {
 export function Avatar({ imageUrl, name, size = 40, ring = true, className = "" }: AvatarProps) {
   const inner = size - (ring ? 6 : 0); // 링 두께 3px 양쪽
   const fontSize = inner < 28 ? "text-[10px]" : inner < 36 ? "text-xs" : "text-sm";
-  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
-  // 폴백(글자)은 항상 렌더, 이미지는 로드 완료 시에만 opacity-100
+  // 이미지 먼저 시도, 실패하면 글자 폴백
   const photo = (
     <div className="relative w-full h-full rounded-full overflow-hidden">
-      <div className={`absolute inset-0 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center ${fontSize} font-bold text-zinc-500`}>
-        {name[0]?.toUpperCase()}
-      </div>
-      {imageUrl && (
+      {imageUrl && !imgFailed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imageUrl} alt={name}
-          onLoad={() => setImgLoaded(true)}
-          onError={() => setImgLoaded(false)}
-          className={`absolute inset-0 w-full h-full rounded-full object-cover transition-opacity duration-200 ${imgLoaded ? "opacity-100" : "opacity-0"}`} />
+          onError={() => setImgFailed(true)}
+          className="absolute inset-0 w-full h-full rounded-full object-cover" />
+      ) : (
+        <div className={`absolute inset-0 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center ${fontSize} font-bold text-zinc-500`}>
+          {name[0]?.toUpperCase()}
+        </div>
       )}
     </div>
   );

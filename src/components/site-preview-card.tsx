@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { slugToColor } from "@/lib/site-color";
 import { extractDomain } from "@/lib/format";
 
@@ -30,31 +30,23 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
   const fontSize = size === "lg" ? "text-base" : "text-xs";
 
   const origin = (() => { try { return new URL(url!).origin; } catch { return ""; } })();
+  const candidates = origin ? FAVICON_CANDIDATES(origin) : [];
 
-  // 캐시 히트 → 즉시 표시, 미스 → 병렬 시도 후 첫 성공
-  const [faviconSrc, setFaviconSrc] = useState<string | null>(() => faviconCache.get(origin) ?? null);
+  // 캐시 히트 → 즉시 해당 URL, 미스 → 첫 후보부터 <img>에 직접 시도
+  const [faviconSrc, setFaviconSrc] = useState<string | null>(() =>
+    faviconCache.get(origin) ?? candidates[0] ?? null
+  );
 
-  useEffect(() => {
-    if (!origin || faviconCache.has(origin)) return;
-    let cancelled = false;
-
-    const tryNext = (candidates: string[]) => {
-      if (cancelled || candidates.length === 0) return;
-      const [candidate, ...rest] = candidates;
-      const img = new Image();
-      img.onload = () => {
-        if (cancelled) return;
-        if (img.naturalWidth < 8 || img.naturalHeight < 8) { tryNext(rest); return; }
-        faviconCache.set(origin, candidate);
-        setFaviconSrc(candidate);
-      };
-      img.onerror = () => { if (!cancelled) tryNext(rest); };
-      img.src = candidate;
-    };
-
-    tryNext(FAVICON_CANDIDATES(origin));
-    return () => { cancelled = true; };
-  }, [origin]);
+  const tryNext = (current: string) => {
+    const idx = candidates.indexOf(current);
+    const next = candidates[idx + 1] ?? null;
+    if (next) {
+      setFaviconSrc(next);
+    } else {
+      faviconCache.delete(origin);
+      setFaviconSrc(null); // 모두 실패 → 폴백 글자
+    }
+  };
 
   return (
     <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center overflow-hidden relative`} style={{ backgroundColor: bg }}>
@@ -62,7 +54,12 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
       {faviconSrc && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={faviconSrc} alt=""
-          onError={() => { faviconCache.delete(origin); setFaviconSrc(null); }}
+          onLoad={(e) => {
+            const img = e.currentTarget;
+            if (img.naturalWidth < 8 || img.naturalHeight < 8) { tryNext(faviconSrc); return; }
+            faviconCache.set(origin, faviconSrc);
+          }}
+          onError={() => tryNext(faviconSrc)}
           className={`absolute inset-0 w-full h-full object-cover ${rounded}`} />
       )}
     </div>
