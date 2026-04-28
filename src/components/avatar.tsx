@@ -16,28 +16,21 @@ interface AvatarProps {
 export function Avatar({ imageUrl, name, size = 40, ring = true, className = "" }: AvatarProps) {
   const inner = size - (ring ? 6 : 0); // 링 두께 3px 양쪽
   const fontSize = inner < 28 ? "text-[10px]" : inner < 36 ? "text-xs" : "text-sm";
-  const [status, setStatus] = useState<"loading" | "loaded" | "failed">(imageUrl ? "loading" : "failed");
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   const photo = (
-    <div className="relative w-full h-full rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800">
-      {/* 로딩 중: 스피너 */}
-      {status === "loading" && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-1/2 h-1/2 rounded-full border-2 border-zinc-300 dark:border-zinc-600 border-t-transparent animate-spin" />
-        </div>
-      )}
-      {/* 실패: 글자 폴백 */}
-      {status === "failed" && (
-        <div className={`absolute inset-0 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center ${fontSize} font-bold text-zinc-500`}>
-          {name[0]?.toUpperCase()}
-        </div>
-      )}
+    <div className="relative w-full h-full rounded-full overflow-hidden">
+      {/* 글자 항상 표시 */}
+      <div className={`absolute inset-0 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center ${fontSize} font-bold text-zinc-500`}>
+        {name[0]?.toUpperCase()}
+      </div>
+      {/* 이미지 로드 완료 시 글자 위에 덮음 */}
       {imageUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imageUrl} alt={name}
-          onLoad={() => setStatus("loaded")}
-          onError={() => setStatus("failed")}
-          className={`absolute inset-0 w-full h-full rounded-full object-cover transition-opacity duration-150 ${status === "loaded" ? "opacity-100" : "opacity-0"}`} />
+          onLoad={() => setImgLoaded(true)}
+          onError={() => setImgLoaded(false)}
+          className={`absolute inset-0 w-full h-full rounded-full object-cover transition-opacity duration-150 ${imgLoaded ? "opacity-100" : "opacity-0"}`} />
       )}
     </div>
   );

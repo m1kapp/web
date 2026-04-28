@@ -32,36 +32,27 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
   const origin = (() => { try { return new URL(url!).origin; } catch { return ""; } })();
   const candidates = origin ? FAVICON_CANDIDATES(origin) : [];
 
-  const cached = faviconCache.get(origin);
-  // 캐시 히트면 바로 loaded, 미스면 첫 후보부터 로딩
-  const [faviconSrc, setFaviconSrc] = useState<string | null>(cached ?? candidates[0] ?? null);
-  const [faviconStatus, setFaviconStatus] = useState<"loading" | "loaded" | "failed">(
-    cached ? "loaded" : candidates.length > 0 ? "loading" : "failed"
+  const [faviconSrc, setFaviconSrc] = useState<string | null>(
+    faviconCache.get(origin) ?? candidates[0] ?? null
   );
+  const [faviconLoaded, setFaviconLoaded] = useState(!!faviconCache.get(origin));
 
   const tryNext = (current: string) => {
     const idx = candidates.indexOf(current);
     const next = candidates[idx + 1] ?? null;
     if (next) {
       setFaviconSrc(next);
-      setFaviconStatus("loading");
     } else {
       faviconCache.delete(origin);
-      setFaviconSrc(null);
-      setFaviconStatus("failed");
+      setFaviconSrc(null); // 모두 실패 → 글자만
     }
   };
 
   return (
     <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center overflow-hidden relative`} style={{ backgroundColor: bg }}>
-      {/* 로딩 중: 스피너 */}
-      {faviconStatus === "loading" && (
-        <div className="w-1/2 h-1/2 rounded-full border-2 border-white/40 border-t-transparent animate-spin" />
-      )}
-      {/* 실패: 글자 폴백 */}
-      {faviconStatus === "failed" && (
-        <span className={`${fontSize} font-black text-white/90`}>{name[0]?.toUpperCase()}</span>
-      )}
+      {/* 글자 항상 표시 */}
+      <span className={`${fontSize} font-black text-white/90`}>{name[0]?.toUpperCase()}</span>
+      {/* 이미지 로드 완료 시 글자 위에 덮음 */}
       {faviconSrc && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={faviconSrc} alt=""
@@ -69,10 +60,10 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
             const img = e.currentTarget;
             if (img.naturalWidth < 8 || img.naturalHeight < 8) { tryNext(faviconSrc); return; }
             faviconCache.set(origin, faviconSrc);
-            setFaviconStatus("loaded");
+            setFaviconLoaded(true);
           }}
           onError={() => tryNext(faviconSrc)}
-          className={`absolute inset-0 w-full h-full object-cover ${rounded} transition-opacity duration-150 ${faviconStatus === "loaded" ? "opacity-100" : "opacity-0"}`} />
+          className={`absolute inset-0 w-full h-full object-cover ${rounded} transition-opacity duration-150 ${faviconLoaded ? "opacity-100" : "opacity-0"}`} />
       )}
     </div>
   );
