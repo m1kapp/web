@@ -32,10 +32,11 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
   const origin = (() => { try { return new URL(url!).origin; } catch { return ""; } })();
   const candidates = origin ? FAVICON_CANDIDATES(origin) : [];
 
-  const [faviconSrc, setFaviconSrc] = useState<string | null>(
-    faviconCache.get(origin) ?? candidates[0] ?? null
+  const cached = faviconCache.get(origin);
+  const [faviconSrc, setFaviconSrc] = useState<string | null>(cached ?? candidates[0] ?? null);
+  const [faviconStatus, setFaviconStatus] = useState<"loading" | "loaded" | "failed">(
+    cached ? "loaded" : candidates.length > 0 ? "loading" : "failed"
   );
-  const [faviconLoaded, setFaviconLoaded] = useState(!!faviconCache.get(origin));
 
   const tryNext = (current: string) => {
     const idx = candidates.indexOf(current);
@@ -44,15 +45,18 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
       setFaviconSrc(next);
     } else {
       faviconCache.delete(origin);
-      setFaviconSrc(null); // 모두 실패 → 글자만
+      setFaviconSrc(null);
+      setFaviconStatus("failed");
     }
   };
 
   return (
-    <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center overflow-hidden relative`} style={{ backgroundColor: bg }}>
-      {/* 글자 항상 표시 */}
-      <span className={`${fontSize} font-black text-white/90`}>{name[0]?.toUpperCase()}</span>
-      {/* 이미지 로드 완료 시 글자 위에 덮음 */}
+    <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center overflow-hidden relative border border-transparent`}
+      style={{ backgroundColor: faviconStatus === "failed" ? bg : "transparent", borderColor: faviconStatus !== "failed" ? "rgb(228 228 231)" : "transparent" }}>
+      {/* 실패 시에만 글자 폴백 */}
+      {faviconStatus === "failed" && (
+        <span className={`${fontSize} font-black text-white/90`}>{name[0]?.toUpperCase()}</span>
+      )}
       {faviconSrc && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={faviconSrc} alt=""
@@ -60,10 +64,10 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
             const img = e.currentTarget;
             if (img.naturalWidth < 8 || img.naturalHeight < 8) { tryNext(faviconSrc); return; }
             faviconCache.set(origin, faviconSrc);
-            setFaviconLoaded(true);
+            setFaviconStatus("loaded");
           }}
           onError={() => tryNext(faviconSrc)}
-          className={`absolute inset-0 w-full h-full object-cover ${rounded} transition-opacity duration-150 ${faviconLoaded ? "opacity-100" : "opacity-0"}`} />
+          className={`absolute inset-0 w-full h-full object-cover ${rounded} transition-opacity duration-150 ${faviconStatus === "loaded" ? "opacity-100" : "opacity-0"}`} />
       )}
     </div>
   );
