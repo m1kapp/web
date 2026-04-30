@@ -23,8 +23,13 @@ export const GET = handler(async (req) => {
   const clerk = await clerkClient();
   const users = await clerk.users.getUserList({ userId: uniqueUserIds, limit: Math.min(uniqueUserIds.length, 100) });
   const userMap = Object.fromEntries(
-    users.data.map((u) => [u.id, { name: u.firstName || u.username || "익명", imageUrl: u.imageUrl }])
+    users.data.map((u) => [u.id, { name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || u.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "익명", imageUrl: u.imageUrl }])
   );
+
+  const missingIds = uniqueUserIds.filter((id) => !userMap[id]);
+  if (missingIds.length > 0) {
+    console.warn("[boosts] Clerk에서 못 찾은 userId:", missingIds);
+  }
 
   return ok(
     logs.map((l) => ({
