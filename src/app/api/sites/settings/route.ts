@@ -6,10 +6,11 @@ import { handler, ok, badRequest } from "@m1kapp/kit/server";
 
 export const PUT = handler(async (req) => {
   const body = await req.json();
-  const { slug, color, badgeStyle, badgeLabel, badgeEmoji } = body as {
+  const { slug, color, badgeStyle, badgeColor, badgeLabel, badgeEmoji } = body as {
     slug: string;
     color?: string;
     badgeStyle?: string;
+    badgeColor?: string;
     badgeLabel?: string;
     badgeEmoji?: string | null;
   };
@@ -22,6 +23,7 @@ export const PUT = handler(async (req) => {
   const updates: Record<string, string | null> = {};
   if (color) updates.color = color;
   if (badgeStyle) updates.badgeStyle = badgeStyle;
+  if (badgeColor) updates.badgeColor = badgeColor;
   if (badgeLabel) updates.badgeLabel = badgeLabel;
   if (badgeEmoji !== undefined) updates.badgeEmoji = badgeEmoji;
 

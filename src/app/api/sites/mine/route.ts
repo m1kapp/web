@@ -21,6 +21,7 @@ export const GET = handler(async () => {
         ogTitle: sites.ogTitle,
         ogDescription: sites.ogDescription,
         ogImage: sites.ogImage,
+        faviconUrl: sites.faviconUrl,
         color: sites.color,
         total: totalExpr,
         today: todayExpr,

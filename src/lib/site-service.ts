@@ -42,6 +42,7 @@ export async function fetchRecentSites({
       ogTitle: sites.ogTitle,
       ogDescription: sites.ogDescription,
       ogImage: sites.ogImage,
+      faviconUrl: sites.faviconUrl,
       color: sites.color,
       userId: sites.userId,
       total: totalExpr,

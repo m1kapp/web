@@ -8,7 +8,7 @@ export type BuilderSite = {
   slug: string;
   title: string | null;
   ogTitle: string | null;
-  ogImage: string | null;
+  faviconUrl: string | null;
   color: string | null;
   url: string | null;
   total: number;
@@ -37,14 +37,14 @@ export const GET = handler(async () => {
       slug: sites.slug,
       title: sites.title,
       ogTitle: sites.ogTitle,
-      ogImage: sites.ogImage,
+      faviconUrl: sites.faviconUrl,
       color: sites.color,
       url: sites.url,
       total: sql<number>`coalesce(sum(${hits.count}), 0)`,
     })
     .from(sites)
     .leftJoin(hits, eq(hits.siteId, sites.id))
-    .where(isNotNull(sites.userId))
+    .where(sql`${sites.userId} is not null and ${sites.verified} = true`)
     .groupBy(sites.id)
     .orderBy(desc(sql<number>`coalesce(sum(${hits.count}), 0)`));
 
@@ -71,7 +71,7 @@ export const GET = handler(async () => {
       slug: row.slug,
       title: row.title,
       ogTitle: row.ogTitle,
-      ogImage: row.ogImage,
+      faviconUrl: row.faviconUrl,
       color: row.color,
       url: row.url,
       total,

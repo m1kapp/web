@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { scrapeOg } from "@/lib/og";
+import { resolveFavicon, extractDominantColor } from "@/lib/favicon";
 import { auth } from "@clerk/nextjs/server";
 import { idToSlug } from "@/lib/utils";
 import dns from "dns/promises";
@@ -37,11 +38,15 @@ export const POST = handler(async (req) => {
     return ok(existing);
   }
 
-  // 신규 등록 + OG 수집
-  const [og, owner] = await Promise.all([
+  // 신규 등록 + OG 수집 + favicon
+  const [og, owner, faviconUrl] = await Promise.all([
     scrapeOg(rawUrl!),
     getUserById(userId!),
+    resolveFavicon(fullUrl),
   ]);
+
+  // favicon에서 dominant color 추출 (favicon 탐색 후 순차)
+  const autoColor = faviconUrl ? await extractDominantColor(faviconUrl) : null;
 
   const [site] = await db
     .insert(sites)
@@ -53,6 +58,8 @@ export const POST = handler(async (req) => {
       ogTitle: og.title,
       ogDescription: og.description,
       ogImage: og.image,
+      faviconUrl: faviconUrl ?? null,
+      color: autoColor,
       ownerHandle: owner?.handle ?? null,
       ownerName: owner?.name ?? null,
       ownerImageUrl: owner?.imageUrl ?? null,

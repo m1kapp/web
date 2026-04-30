@@ -18,6 +18,7 @@ export const GET = handler(async () => {
       ogTitle: sites.ogTitle,
       ogDescription: sites.ogDescription,
       ogImage: sites.ogImage,
+      faviconUrl: sites.faviconUrl,
       ownerUserId: sites.userId,
       totalBoosted: sql<number>`sum(abs(${pointLogs.amount}))`,
     })

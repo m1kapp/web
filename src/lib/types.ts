@@ -8,6 +8,7 @@ export interface RecentSite {
   ogTitle: string | null;
   ogDescription: string | null;
   ogImage: string | null;
+  faviconUrl?: string | null;
   color: string | null;
   owner: { name: string; imageUrl: string } | null;
 }
