@@ -206,10 +206,8 @@ function VerifiedStatus({ verified, showEditor, onToggleEditor }: {
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-1.5">
         {verified ? (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
+          <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-700 dark:text-amber-400">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 5.8L21 9l-4.5 4.4 1.1 6.3L12 16.8l-5.6 2.9 1.1-6.3L3 9l6.1-1.2z"/></svg>
             인증됨
           </span>
         ) : (
