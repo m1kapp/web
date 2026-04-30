@@ -192,13 +192,23 @@ export function BadgeEditor({ slug, host, pending = false, savedStyle, savedColo
           </pre>
         </div>
 
-        <button
-          onClick={() => copy(snippet)}
-          className="w-full mt-4 py-2.5 rounded-lg text-xs font-semibold text-white transition-colors"
-          style={{ backgroundColor: copied ? "#22c55e" : accent }}
-        >
-          {copied ? "복사됨!" : "코드 복사"}
-        </button>
+        {pending ? (
+          <button
+            onClick={() => copy(snippet)}
+            className="w-full mt-4 py-2.5 rounded-lg text-xs font-semibold text-white transition-colors"
+            style={{ backgroundColor: copied ? "#22c55e" : accent }}
+          >
+            {copied ? "복사됨!" : "코드 복사"}
+          </button>
+        ) : (
+          <button
+            onClick={() => { save(style, color); copy(snippet); }}
+            className="w-full mt-4 py-2.5 rounded-lg text-xs font-semibold text-white transition-colors"
+            style={{ backgroundColor: copied ? "#22c55e" : accent }}
+          >
+            {copied ? "저장됨!" : "저장"}
+          </button>
+        )}
 
         {pending && (
           <p className="text-[10px] text-zinc-400 text-center mt-2">
