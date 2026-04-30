@@ -1,75 +1,31 @@
 "use client";
 
-import { useState } from "react";
 import { slugToColor } from "@/lib/site-color";
-import { extractDomain } from "@/lib/format";
+import { Avatar } from "./avatar";
 
 // ─── 공통 썸네일 ───────────────────────────────────────────────
 interface SiteThumbnailProps {
   slug: string;
   name: string;
-  url?: string | null;
+  faviconUrl?: string | null;  // DB에 저장된 favicon URL (있으면 바로 사용)
   color?: string | null;
   size?: "sm" | "md" | "lg";
 }
 
-const FAVICON_CANDIDATES = (origin: string) => [
-  `${origin}/apple-touch-icon.png`,           // 180×180 — 최고화질
-  `${origin}/apple-touch-icon-precomposed.png`,
-  `${origin}/favicon-32.png`,
-  `${origin}/favicon.ico`,
-];
-
-// 세션 캐시: origin → 성공한 favicon URL
-const faviconCache = new Map<string, string>();
-
-export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumbnailProps) {
+export function SiteThumbnail({ slug, name, faviconUrl, color, size = "md" }: SiteThumbnailProps) {
   const bg = color || slugToColor(slug);
-  const dim = size === "sm" ? "w-8 h-8" : size === "lg" ? "w-12 h-12" : "w-10 h-10";
-  const rounded = size === "lg" ? "rounded-xl" : "rounded-lg";
-  const fontSize = size === "lg" ? "text-base" : "text-xs";
-
-  const origin = (() => { try { return new URL(url!).origin; } catch { return ""; } })();
-  const candidates = origin ? FAVICON_CANDIDATES(origin) : [];
-
-  const cached = faviconCache.get(origin);
-  const [faviconSrc, setFaviconSrc] = useState<string | null>(cached ?? candidates[0] ?? null);
-  const [faviconStatus, setFaviconStatus] = useState<"loading" | "loaded" | "failed">(
-    cached ? "loaded" : candidates.length > 0 ? "loading" : "failed"
-  );
-
-  const tryNext = (current: string) => {
-    const idx = candidates.indexOf(current);
-    const next = candidates[idx + 1] ?? null;
-    if (next) {
-      setFaviconSrc(next);
-    } else {
-      faviconCache.delete(origin);
-      setFaviconSrc(null);
-      setFaviconStatus("failed");
-    }
-  };
+  const dim = size === "sm" ? 32 : size === "lg" ? 48 : 40;
+  const roundedClass = size === "lg" ? "rounded-xl" : "rounded-lg";
 
   return (
-    <div className={`${dim} ${rounded} shrink-0 flex items-center justify-center overflow-hidden relative border border-transparent`}
-      style={{ backgroundColor: faviconStatus === "failed" ? bg : "transparent", borderColor: faviconStatus !== "failed" ? "rgb(228 228 231)" : "transparent" }}>
-      {/* 실패 시에만 글자 폴백 */}
-      {faviconStatus === "failed" && (
-        <span className={`${fontSize} font-black text-white/90`}>{name[0]?.toUpperCase()}</span>
-      )}
-      {faviconSrc && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={faviconSrc} alt=""
-          onLoad={(e) => {
-            const img = e.currentTarget;
-            if (img.naturalWidth < 8 || img.naturalHeight < 8) { tryNext(faviconSrc); return; }
-            faviconCache.set(origin, faviconSrc);
-            setFaviconStatus("loaded");
-          }}
-          onError={() => tryNext(faviconSrc)}
-          className={`absolute inset-0 w-full h-full object-cover ${rounded} transition-opacity duration-150 ${faviconStatus === "loaded" ? "opacity-100" : "opacity-0"}`} />
-      )}
-    </div>
+    <Avatar
+      imageUrl={faviconUrl ?? undefined}
+      name={name}
+      size={dim}
+      ring={false}
+      rounded={roundedClass}
+      bg={bg}
+    />
   );
 }
 
@@ -77,8 +33,7 @@ export function SiteThumbnail({ slug, name, url, color, size = "md" }: SiteThumb
 interface SitePreviewCardProps {
   slug: string;
   name: string;
-  url?: string | null;
-  ogImage?: string | null;
+  faviconUrl?: string | null;
   color?: string | null;
   description?: string | null;
   right?: React.ReactNode;
@@ -88,14 +43,14 @@ interface SitePreviewCardProps {
   thumbnailSize?: "sm" | "md" | "lg";
 }
 
-export function SitePreviewCard({ slug, name, url, color, description, right, onClick, variant = "card", thumbnailSize = "md" }: SitePreviewCardProps) {
+export function SitePreviewCard({ slug, name, faviconUrl, color, description, right, onClick, variant = "card", thumbnailSize = "md" }: SitePreviewCardProps) {
   const base = variant === "bare"
     ? "flex items-center gap-3"
     : "flex items-center gap-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 px-3 py-3";
 
   const content = (
     <>
-      <SiteThumbnail slug={slug} name={name} url={url} color={color} size={thumbnailSize} />
+      <SiteThumbnail slug={slug} name={name} faviconUrl={faviconUrl} color={color} size={thumbnailSize} />
       <div className="flex-1 min-w-0">
         <p className={`font-semibold text-zinc-900 dark:text-white truncate ${thumbnailSize === "lg" ? "text-base" : "text-sm"}`}>{name}</p>
         {description && (

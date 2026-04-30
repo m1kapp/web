@@ -373,7 +373,9 @@ function CityDots({ cities, country, projection, accent }: {
 
 function KoreaMap({ cities, accent }: { cities: SiteData["cities"]; accent: string }) {
   const geo = useGeo(GEO_URLS.KR);
-  const W = 300, H = 400;
+  const W = 320, H = 370;
+  // 제주 인셋 박스
+  const INSET_W = 74, INSET_H = 48, INSET_X = 4, INSET_Y = H - INSET_H - 2;
 
   const provinceCounts = useMemo(() => {
     const m: Record<string, number> = {};
@@ -386,49 +388,86 @@ function KoreaMap({ cities, accent }: { cities: SiteData["cities"]; accent: stri
     return m;
   }, [cities]);
 
-  const { projection, features } = useMemo(() => {
-    if (!geo) return { projection: geoMercator(), features: [] };
-    const proj = geoMercator().fitExtent([[12, 12], [W - 12, H - 12]], geo);
-    const gen = geoPath(proj);
-    const feats = geo.features.map((f, i) => {
+  const { mainFeatures, jejuFeature } = useMemo(() => {
+    if (!geo) return { mainFeatures: [], jejuFeature: null };
+
+    // 본토 / 제주 분리
+    const mainland = geo.features.filter((f) => (f.properties as { name_eng: string }).name_eng !== "Jeju-do");
+    const jeju = geo.features.find((f) => (f.properties as { name_eng: string }).name_eng === "Jeju-do");
+    const mainlandGeo = { type: "FeatureCollection" as const, features: mainland };
+
+    // 본토 projection — 제주 제외하여 더 크게, 여백 최소화
+    const mainProj = geoMercator().fitExtent([[0, 0], [W, INSET_Y - 2]], mainlandGeo);
+    const mainGen = geoPath(mainProj);
+    const mainFeats = mainland.map((f, i) => {
       const props = f.properties as { name: string; name_eng: string };
       const count = provinceCounts[props.name_eng] ?? 0;
-      const centroid = gen.centroid(f as GeoPermissibleObjects);
-      return { d: gen(f as GeoPermissibleObjects) ?? "", props, count, centroid, key: i };
+      const centroid = mainGen.centroid(f as GeoPermissibleObjects);
+      return { d: mainGen(f as GeoPermissibleObjects) ?? "", props, count, centroid, key: i };
     });
-    return { projection: proj, features: feats };
+
+    // 제주 인셋 projection
+    let jejuFeat = null;
+    if (jeju) {
+      const jejuGeo = { type: "FeatureCollection" as const, features: [jeju] };
+      const jejuProj = geoMercator().fitExtent(
+        [[INSET_X + 6, INSET_Y + 6], [INSET_X + INSET_W - 6, INSET_Y + INSET_H - 6]],
+        jejuGeo,
+      );
+      const jejuGen = geoPath(jejuProj);
+      const props = jeju.properties as { name: string; name_eng: string };
+      const count = provinceCounts[props.name_eng] ?? 0;
+      const centroid = jejuGen.centroid(jeju as GeoPermissibleObjects);
+      jejuFeat = { d: jejuGen(jeju as GeoPermissibleObjects) ?? "", props, count, centroid };
+    }
+
+    return { mainFeatures: mainFeats, jejuFeature: jejuFeat };
   }, [geo, provinceCounts]);
 
-  const maxCount = Math.max(...features.map((f) => f.count), 1);
+  const maxCount = Math.max(...mainFeatures.map((f) => f.count), jejuFeature?.count ?? 0, 1);
 
   if (!geo) return <div className="h-64 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />;
 
+  function renderRegion(d: string, count: number, props: { name: string }, centroid: [number, number], key: number | string, fontSize = 6.5) {
+    const t = count / maxCount;
+    const hasData = count > 0;
+    return (
+      <g key={key}>
+        <path d={d}
+          fill={hasData ? accent : "#e4e4e7"}
+          fillOpacity={hasData ? 0.15 + t * 0.78 : 1}
+          stroke="white" strokeWidth="0.7"
+          vectorEffect="non-scaling-stroke" />
+        {centroid && !isNaN(centroid[0]) && hasData && (
+          <text x={centroid[0].toFixed(1)} y={centroid[1].toFixed(1)}
+            textAnchor="middle" dominantBaseline="middle"
+            fontSize={fontSize} fontWeight="600" fontFamily="inherit"
+            fill={t > 0.55 ? "white" : accent}
+            stroke={t > 0.55 ? "transparent" : "white"}
+            strokeWidth="2" paintOrder="stroke"
+            style={{ pointerEvents: "none" }}>
+            {props.name}
+          </text>
+        )}
+      </g>
+    );
+  }
+
   return (
-    <ZoomableSVG vw={W} vh={H} className="w-full max-h-72" style={{ background: "#f4f4f5" }}>
-      {features.map(({ d, count, props, centroid, key }) => {
-        const t = count / maxCount;
-        const hasData = count > 0;
-        return (
-          <g key={key}>
-            <path d={d}
-              fill={hasData ? accent : "#e4e4e7"}
-              fillOpacity={hasData ? 0.15 + t * 0.78 : 1}
-              stroke="white" strokeWidth="0.7"
-              vectorEffect="non-scaling-stroke" />
-            {centroid && !isNaN(centroid[0]) && hasData && (
-              <text x={centroid[0].toFixed(1)} y={centroid[1].toFixed(1)}
-                textAnchor="middle" dominantBaseline="middle"
-                fontSize="6.5" fontWeight="600" fontFamily="inherit"
-                fill={t > 0.55 ? "white" : accent}
-                stroke={t > 0.55 ? "transparent" : "white"}
-                strokeWidth="2" paintOrder="stroke"
-                style={{ pointerEvents: "none" }}>
-                {props.name}
-              </text>
-            )}
-          </g>
-        );
-      })}
+    <ZoomableSVG vw={W} vh={H} className="w-full" style={{ background: "#f4f4f5" }}>
+      {/* 본토 */}
+      {mainFeatures.map(({ d, count, props, centroid, key }) =>
+        renderRegion(d, count, props, centroid, key),
+      )}
+
+      {/* 제주 인셋 */}
+      {jejuFeature && (
+        <>
+          <rect x={INSET_X} y={INSET_Y} width={INSET_W} height={INSET_H} rx="4"
+            fill="#f4f4f5" stroke="#d4d4d8" strokeWidth="0.5" strokeDasharray="2 1.5" />
+          {renderRegion(jejuFeature.d, jejuFeature.count, jejuFeature.props, jejuFeature.centroid, "jeju", 5)}
+        </>
+      )}
     </ZoomableSVG>
   );
 }
@@ -799,6 +838,67 @@ function DeviceBar({ devices }: { devices: SiteData["devices"] }) {
   );
 }
 
+// ─── 브라우저 · OS ───────────────────────────────────────────────────────────
+
+const BROWSER_COLORS = ["#3b82f6", "#f97316", "#10b981", "#8b5cf6", "#a1a1aa"];
+const OS_COLORS      = ["#06b6d4", "#f43f5e", "#eab308", "#8b5cf6", "#a1a1aa"];
+
+function StackedBarLegend({ items, colors }: { items: { name: string; pct: number }[]; colors: string[] }) {
+  const total = items.reduce((s, d) => s + d.pct, 0);
+  return (
+    <div className="space-y-1.5">
+      <div className="flex h-2 rounded-full overflow-hidden gap-px">
+        {items.map((d, i) => (
+          <div key={d.name} style={{ width: `${(d.pct / (total || 1)) * 100}%`, backgroundColor: colors[i] }} />
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1">
+        {items.map((d, i) => (
+          <div key={d.name} className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors[i] }} />
+            <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{d.name}</span>
+            <span className="text-[11px] font-semibold text-zinc-700 dark:text-zinc-300">{d.pct}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BrowserOsBar({ browsers, os }: { browsers: SiteData["browsers"]; os: SiteData["os"] }) {
+  function prepare(arr: { browser?: string | null; os?: string | null; count: number }[], key: "browser" | "os") {
+    const valid = arr.filter((d) => d[key]).map((d) => ({ name: d[key] as string, count: Number(d.count) }));
+    const total = valid.reduce((s, d) => s + d.count, 0);
+    if (!total) return [];
+    const top = valid.slice(0, 4);
+    const rest = valid.slice(4).reduce((s, d) => s + d.count, 0);
+    if (rest > 0) top.push({ name: "기타", count: rest });
+    return top.map((d) => ({ name: d.name, pct: Math.round((d.count / total) * 100) }));
+  }
+
+  const bItems = prepare(browsers as { browser: string | null; count: number }[], "browser");
+  const oItems = prepare(os as { os: string | null; count: number }[], "os");
+
+  if (!bItems.length && !oItems.length) return null;
+
+  return (
+    <div className="space-y-4">
+      {bItems.length > 0 && (
+        <div>
+          <p className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 mb-1.5">브라우저</p>
+          <StackedBarLegend items={bItems} colors={BROWSER_COLORS} />
+        </div>
+      )}
+      {oItems.length > 0 && (
+        <div>
+          <p className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500 mb-1.5">운영체제</p>
+          <StackedBarLegend items={oItems} colors={OS_COLORS} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── 유입 경로 ────────────────────────────────────────────────────────────────
 
 function RefererList({ referers }: { referers: SiteData["referers"] }) {
@@ -824,31 +924,219 @@ function RefererList({ referers }: { referers: SiteData["referers"] }) {
   );
 }
 
+// ─── 1K 코치 ─────────────────────────────────────────────────────────────────
+
+interface Tip { icon: string; observation: string; action: string; priority: number }
+
+const KR_DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+function formatHourKR(h: number): string {
+  if (h === 0) return "자정";
+  if (h === 12) return "정오";
+  return h < 12 ? `오전 ${h}시` : `오후 ${h - 12}시`;
+}
+
+function generateTips(data: SiteData): Tip[] {
+  const tips: Tip[] = [];
+  const { daily, devices, referers, countries, browsers, hourly, total, createdAt } = data;
+
+  // WoW 성장률
+  if (daily.length >= 14) {
+    const recent7 = daily.slice(-7).reduce((s, d) => s + d.count, 0);
+    const prev7 = daily.slice(-14, -7).reduce((s, d) => s + d.count, 0);
+    if (prev7 > 0) {
+      const pct = Math.round(((recent7 - prev7) / prev7) * 100);
+      if (pct >= 20) tips.push({ icon: "📈", observation: `지난주보다 ${pct}% 올랐어요`, action: "이 추세 유지하세요! 지금 하는 게 통하고 있어요", priority: 90 });
+      else if (pct <= -20) tips.push({ icon: "📉", observation: `지난주보다 ${Math.abs(pct)}% 줄었어요`, action: "새로운 채널을 시도해보세요", priority: 85 });
+    }
+  }
+
+  // 유입 경로 없음
+  if (referers.length === 0) {
+    tips.push({ icon: "🔍", observation: "유입 경로가 아직 없어요", action: "SEO나 SNS 공유를 시작해보세요", priority: 80 });
+  } else {
+    // 직접 접속 비율
+    const totalRef = referers.reduce((s, r) => s + Number(r.count), 0);
+    const direct = referers.filter((r) => !r.referer).reduce((s, r) => s + Number(r.count), 0);
+    if (totalRef > 0 && direct / totalRef >= 0.7) {
+      const pct = Math.round((direct / totalRef) * 100);
+      tips.push({ icon: "🔗", observation: `직접 접속이 ${pct}%에요`, action: "SNS나 커뮤니티에 링크를 공유해보세요", priority: 75 });
+    }
+  }
+
+  // 모바일 비율
+  const totalDev = devices.reduce((s, d) => s + Number(d.count), 0);
+  if (totalDev > 0) {
+    const mobile = devices.filter((d) => d.device === "mobile").reduce((s, d) => s + Number(d.count), 0);
+    if (mobile / totalDev >= 0.65) {
+      const pct = Math.round((mobile / totalDev) * 100);
+      tips.push({ icon: "📱", observation: `모바일 사용자가 ${pct}%에요`, action: "모바일 로딩 속도를 체크해보세요", priority: 70 });
+    }
+  }
+
+  // 초반 격려
+  if (total < 100 && createdAt) {
+    const daysSince = Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000);
+    if (daysSince >= 7) {
+      tips.push({ icon: "🌱", observation: "아직 초반이에요", action: "꾸준히 공유하면 반드시 늘어요", priority: 65 });
+    }
+  }
+
+  // 해외 비율
+  const totalGeo = countries.reduce((s, c) => s + Number(c.count), 0);
+  if (totalGeo > 0) {
+    const kr = countries.filter((c) => c.country === "KR").reduce((s, c) => s + Number(c.count), 0);
+    const foreign = (totalGeo - kr) / totalGeo;
+    if (foreign >= 0.3) {
+      tips.push({ icon: "🌏", observation: `해외 방문자가 ${Math.round(foreign * 100)}%에요`, action: "영어 콘텐츠를 고려해보세요", priority: 60 });
+    }
+  }
+
+  // 주말 약세
+  if (daily.length >= 14) {
+    const weekday: number[] = [], weekend: number[] = [];
+    daily.forEach((d) => {
+      const day = new Date(d.date + "T00:00:00+09:00").getDay();
+      (day === 0 || day === 6 ? weekend : weekday).push(d.count);
+    });
+    const wdAvg = weekday.length ? weekday.reduce((a, b) => a + b, 0) / weekday.length : 0;
+    const weAvg = weekend.length ? weekend.reduce((a, b) => a + b, 0) / weekend.length : 0;
+    if (wdAvg > 0 && weAvg < wdAvg * 0.5) {
+      tips.push({ icon: "📅", observation: "주말 트래픽이 약해요", action: "주말용 콘텐츠를 준비해보세요", priority: 55 });
+    }
+  }
+
+  // 피크 시간대
+  if (hourly.length > 0) {
+    const peak = hourly.reduce((a, b) => (Number(b.count) > Number(a.count) ? b : a));
+    if (Number(peak.count) > 0) {
+      tips.push({ icon: "⏰", observation: `${formatHourKR(peak.hour)}가 피크에요`, action: "이 시간에 콘텐츠를 올리면 효과적", priority: 50 });
+    }
+  }
+
+  // 단일 브라우저 지배
+  const totalBr = browsers.reduce((s, b) => s + Number(b.count), 0);
+  if (totalBr > 0 && browsers.length > 0) {
+    const top = browsers[0];
+    if (Number(top.count) / totalBr >= 0.8) {
+      tips.push({ icon: "🌐", observation: `${top.browser}이 ${Math.round((Number(top.count) / totalBr) * 100)}%에요`, action: "다른 브라우저에서도 잘 되는지 확인하세요", priority: 45 });
+    }
+  }
+
+  tips.sort((a, b) => b.priority - a.priority);
+
+  // 최소 2개 보장
+  if (tips.length < 2) {
+    tips.push({ icon: "💪", observation: "꾸준함이 최고의 전략이에요", action: "매일 조금씩 공유하면 1K는 시간문제에요", priority: 10 });
+  }
+
+  return tips.slice(0, 3);
+}
+
+export function CoachSection({ data }: { data: SiteData }) {
+  const { daily, total } = data;
+  const tips = useMemo(() => generateTips(data), [data]);
+
+  // 성장 지표 계산
+  const growth = useMemo(() => {
+    if (daily.length < 7) return { label: "수집 중", color: "" };
+    const recent = daily.slice(-7).reduce((s, d) => s + d.count, 0);
+    if (daily.length < 14) return { label: `${recent.toLocaleString()}명`, color: "" };
+    const prev = daily.slice(-14, -7).reduce((s, d) => s + d.count, 0);
+    if (prev === 0) return { label: "첫 주!", color: "text-emerald-500" };
+    const pct = Math.round(((recent - prev) / prev) * 100);
+    return {
+      label: `${pct >= 0 ? "+" : ""}${pct}%`,
+      color: pct >= 0 ? "text-emerald-500" : "text-red-400",
+    };
+  }, [daily]);
+
+  const bestDay = useMemo(() => {
+    if (!daily.length) return null;
+    const best = daily.reduce((a, b) => (b.count > a.count ? b : a));
+    if (best.count === 0) return null;
+    const d = new Date(best.date + "T00:00:00+09:00");
+    return `${d.getMonth() + 1}/${d.getDate()} (${best.count.toLocaleString()}명)`;
+  }, [daily]);
+
+  const bestDow = useMemo(() => {
+    if (daily.length < 7) return null;
+    const sums: number[] = [0, 0, 0, 0, 0, 0, 0];
+    const cnts: number[] = [0, 0, 0, 0, 0, 0, 0];
+    daily.forEach((d) => {
+      const day = new Date(d.date + "T00:00:00+09:00").getDay();
+      sums[day] += d.count;
+      cnts[day]++;
+    });
+    let maxAvg = 0, maxDay = 0;
+    for (let i = 0; i < 7; i++) {
+      const avg = cnts[i] ? sums[i] / cnts[i] : 0;
+      if (avg > maxAvg) { maxAvg = avg; maxDay = i; }
+    }
+    return maxAvg > 0 ? `${KR_DAYS[maxDay]}요일` : null;
+  }, [daily]);
+
+  return (
+    <div className="space-y-3">
+      {/* 성장 지표 칩 */}
+      <div className="flex gap-2">
+        <div className="flex-1 min-w-0 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl px-2.5 py-2.5 text-center">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mb-0.5">이번 주</p>
+          <p className={`text-[13px] font-bold ${growth.color || "text-zinc-700 dark:text-zinc-200"}`}>{growth.label}</p>
+        </div>
+        <div className="flex-1 min-w-0 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl px-2.5 py-2.5 text-center">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mb-0.5">최고의 날</p>
+          <p className="text-[13px] font-bold text-zinc-700 dark:text-zinc-200 truncate">{bestDay ?? "–"}</p>
+        </div>
+        <div className="flex-1 min-w-0 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl px-2.5 py-2.5 text-center">
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mb-0.5">베스트 요일</p>
+          <p className="text-[13px] font-bold text-zinc-700 dark:text-zinc-200">{bestDow ?? "–"}</p>
+        </div>
+      </div>
+
+      {/* 코칭 팁 */}
+      <div className="space-y-2">
+        {tips.map((tip, i) => (
+          <div key={i} className="flex items-start gap-2.5 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl px-3 py-2.5">
+            <span className="text-base shrink-0 mt-0.5">{tip.icon}</span>
+            <div className="min-w-0">
+              <p className="text-[12px] font-medium text-zinc-700 dark:text-zinc-200">{tip.observation}</p>
+              <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">{tip.action}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── 메인 ─────────────────────────────────────────────────────────────────────
 
 export function OverviewInsights({ data }: { data: SiteData }) {
-  const hasCountries = data.countries.filter((c) => c.country).length > 0;
-  const hasCities    = data.cities.length > 0;
-  const hasHourly    = data.hourly.length > 0;
-  const hasDevices   = data.devices.length > 0;
-  const hasReferers  = data.referers.length > 0;
+  const hasCountries  = data.countries.filter((c) => c.country).length > 0;
+  const hasCities     = data.cities.length > 0;
+  const hasHourly     = data.hourly.length > 0;
+  const hasDevices    = data.devices.length > 0;
+  const hasBrowsersOs = data.browsers.filter((b) => b.browser).length > 0 || data.os.filter((o) => o.os).length > 0;
+  const hasReferers   = data.referers.length > 0;
 
   if (!hasCountries && !hasCities && !hasHourly && !hasDevices) return null;
 
   const blocks = [
-    { title: "국가",       content: <CountryBars countries={data.countries} />,                         show: hasCountries },
-    { title: "도시",       content: <CityMapSection cities={data.cities} countries={data.countries} />, show: hasCities    },
-    { title: "활성 시간대", content: <HourlyAreaChart hourly={data.hourly} />,                          show: hasHourly    },
-    { title: "디바이스",   content: <DeviceBar devices={data.devices} />,                               show: hasDevices   },
-    { title: "유입 경로",  content: <RefererList referers={data.referers} />,                           show: hasReferers  },
+    { id: "sec-country",  title: "국가",         content: <CountryBars countries={data.countries} />,                         show: hasCountries  },
+    { id: "sec-city",     title: "도시",         content: <CityMapSection cities={data.cities} countries={data.countries} />, show: hasCities     },
+    { id: "sec-hourly",   title: "활성 시간대",  content: <HourlyAreaChart hourly={data.hourly} />,                           show: hasHourly     },
+    { id: "sec-device",   title: "디바이스",     content: <DeviceBar devices={data.devices} />,                               show: hasDevices    },
+    { id: "sec-browser",  title: "브라우저 · OS", content: <BrowserOsBar browsers={data.browsers} os={data.os} />,            show: hasBrowsersOs },
+    { id: "sec-referer",  title: "유입 경로",    content: <RefererList referers={data.referers} />,                           show: hasReferers   },
   ];
 
   const visible = blocks.filter((b) => b.show);
   return (
     <div>
       {visible.map((b, i) => (
-        <div key={b.title}>
-          <div className="py-4">
+        <div key={b.title} id={b.id}>
+          <div className="py-5">
             <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2.5">{b.title}</p>
             {b.content}
           </div>

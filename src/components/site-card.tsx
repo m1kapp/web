@@ -12,14 +12,14 @@ interface SiteCardProps {
 }
 
 export function SiteCard({ site, rightSlot }: SiteCardProps) {
-  const { slug, url, title, ogTitle, ogDescription, color: colorProp, total, today } = site;
+  const { slug, url, title, ogTitle, ogDescription, faviconUrl, color: colorProp, total, today } = site;
   const displayName = ogTitle || title || slug;
   const color = colorProp || slugToColor(slug);
 
   return (
     <div className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all active:scale-[0.98] relative">
       <a href={`/${slug}`} className="shrink-0">
-        <SiteThumbnail slug={slug} name={displayName} url={url} color={color} />
+        <SiteThumbnail slug={slug} name={displayName} faviconUrl={faviconUrl} color={color} />
       </a>
 
       <a href={`/${slug}`} className="min-w-0 flex-1">

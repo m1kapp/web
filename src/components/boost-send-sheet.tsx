@@ -15,13 +15,13 @@ interface BoostSendSheetProps {
   slug: string;
   siteName: string;
   siteDescription?: string | null;
-  siteOgImage?: string | null;
+  siteFaviconUrl?: string | null;
   siteColor?: string | null;
   onSuccess: (injected: number) => void;
 }
 
 export function BoostSendSheet({
-  open, onClose, slug, siteName, siteDescription, siteOgImage, siteColor, onSuccess,
+  open, onClose, slug, siteName, siteDescription, siteFaviconUrl, siteColor, onSuccess,
 }: BoostSendSheetProps) {
   const { accent } = useAccent();
   const [amount, setAmount] = useState("10");
@@ -91,7 +91,7 @@ export function BoostSendSheet({
           <SitePreviewCard
             slug={slug}
             name={siteName}
-            ogImage={siteOgImage}
+            faviconUrl={siteFaviconUrl}
             color={siteColor}
             description={siteDescription}
           />

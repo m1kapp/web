@@ -43,7 +43,7 @@ function hoursToReach(daily: { date: string; count: number }[], target: number):
 }
 
 function getContextLine(data: SiteData, streak: number): string {
-  const { total, todayCount, daily } = data;
+  const { total, todayCount, daily, verified } = data;
   const remaining = 1_000 - total;
   const hours1K = hoursToReach(daily, 1_000);
   const activeDays = daily.filter((d) => d.count > 0).length;
@@ -60,7 +60,8 @@ function getContextLine(data: SiteData, streak: number): string {
   if (todayCount > 0 && streak > 1) return `오늘도 ${todayCount.toLocaleString()}명 방문 중 · ${streak}일 연속`;
   if (todayCount > 0) return `오늘 ${todayCount.toLocaleString()}명이 찾아왔어요`;
   if (activeDays > 0) return `방문자 트래커 달고 ${activeDays}일째 기록 중`;
-  return `트래커가 달려있어요 — 첫 방문자를 기다리는 중`;
+  if (!verified) return `뱃지를 심으면 방문자 추적이 시작돼요`;
+  return `트래커 설치 완료 — 첫 방문자를 기다리는 중`;
 }
 
 export function StreakChip({ daily }: { daily: { date: string; count: number }[] }) {
@@ -314,8 +315,7 @@ export function SiteHero({ data, owner }: {
       <SitePreviewCard
         slug={data.slug}
         name={displayName}
-        url={data.url}
-        ogImage={data.ogImage}
+        faviconUrl={data.faviconUrl}
         color={accent}
         description={data.ogDescription}
         thumbnailSize="lg"

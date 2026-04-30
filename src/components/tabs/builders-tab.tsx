@@ -5,6 +5,7 @@ import type { Builder } from "@/app/api/builders/route";
 import { SiteThumbnail } from "@/components/site-preview-card";
 import { Avatar } from "@/components/avatar";
 import { useRouter } from "next/navigation";
+import { UsersRound } from "lucide-react";
 
 function BuilderCard({ builder }: { builder: Builder }) {
   const router = useRouter();
@@ -12,10 +13,16 @@ function BuilderCard({ builder }: { builder: Builder }) {
   const topSites = builder.sites.slice(0, 3);
 
   return (
-    <div className="py-4 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
+    <div
+      onClick={() => builder.handle && router.push(`/@${builder.handle}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === "Enter" && builder.handle && router.push(`/@${builder.handle}`)}
+      className="py-4 px-4 border-b border-zinc-200 dark:border-zinc-800 last:border-0 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors active:bg-zinc-100 dark:active:bg-zinc-800"
+    >
       {/* 빌더 프로필 */}
-      <div className="flex items-center gap-3 mb-3">
-        <Avatar imageUrl={builder.imageUrl} name={displayName} size={40} />
+      <div className="flex items-center gap-3 mb-3 w-full text-left">
+        <Avatar imageUrl={builder.imageUrl} name={displayName} size={40} ring={false} />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-zinc-900 dark:text-white truncate">{displayName}</p>
           <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
@@ -27,22 +34,25 @@ function BuilderCard({ builder }: { builder: Builder }) {
       {/* 앱 아이콘 목록 */}
       <div className="flex gap-3 overflow-x-auto pb-0.5 pl-[49px]">
         {topSites.map((site) => (
-          <button
+          <div
             key={site.slug}
-            onClick={() => router.push(`/${site.slug}`)}
+            onClick={(e) => { e.stopPropagation(); router.push(`/${site.slug}`); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); router.push(`/${site.slug}`); } }}
             className="shrink-0 flex flex-col items-center gap-1 w-[56px] group"
           >
             <SiteThumbnail
               slug={site.slug}
               name={site.ogTitle || site.title || site.slug}
-              url={site.url}
+              faviconUrl={site.faviconUrl}
               color={site.color}
               size="lg"
             />
             <p className="text-[9px] text-zinc-400 dark:text-zinc-500 truncate w-full text-center leading-tight">
               {site.ogTitle || site.title || site.slug}
             </p>
-          </button>
+          </div>
         ))}
         {builder.siteCount > 3 && (
           <div className="shrink-0 w-[56px] flex flex-col items-center gap-1">
@@ -79,9 +89,12 @@ export function BuildersTab({ bgColor }: { bgColor: string }) {
   const { data: builders, loading } = useFetch<Builder[]>("/api/builders");
 
   return (
-    <div className="px-4 py-5">
-      <div className="mb-4">
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-white">빌더</h2>
+    <div className="py-2">
+      <div className="mb-2 px-4 pt-3">
+        <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+          <UsersRound className="w-5 h-5" />
+          빌더
+        </h2>
         <p className="text-xs text-zinc-400 dark:text-zinc-500">m1k에서 만들고 있는 사람들</p>
       </div>
 

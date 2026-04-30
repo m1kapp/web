@@ -11,13 +11,13 @@ interface BoostButtonProps {
   slug: string;
   siteName: string;
   siteDescription?: string | null;
-  siteOgImage?: string | null;
+  siteFaviconUrl?: string | null;
   siteColor?: string | null;
   isSignedIn: boolean;
   totalBoosted?: number;
 }
 
-export function BoostButton({ slug, siteName, siteDescription, siteOgImage, siteColor, isSignedIn, totalBoosted = 0 }: BoostButtonProps) {
+export function BoostButton({ slug, siteName, siteDescription, siteFaviconUrl, siteColor, isSignedIn, totalBoosted = 0 }: BoostButtonProps) {
   const { accent } = useAccent();
   const router = useRouter();
   const [openSend, setOpenSend] = useState(false);
@@ -56,7 +56,7 @@ export function BoostButton({ slug, siteName, siteDescription, siteOgImage, site
         slug={slug}
         siteName={siteName}
         siteDescription={siteDescription}
-        siteOgImage={siteOgImage}
+        siteFaviconUrl={siteFaviconUrl}
         siteColor={siteColor}
         onSuccess={() => {}}
       />
@@ -64,7 +64,7 @@ export function BoostButton({ slug, siteName, siteDescription, siteOgImage, site
       <BoostHistorySheet
         open={showHistory}
         onClose={() => setShowHistory(false)}
-        site={{ slug, name: siteName, description: siteDescription, ogImage: siteOgImage, color: siteColor }}
+        site={{ slug, name: siteName, description: siteDescription, faviconUrl: siteFaviconUrl, color: siteColor }}
         onBoost={handleBoostClick}
       />
 

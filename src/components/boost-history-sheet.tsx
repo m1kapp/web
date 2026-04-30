@@ -19,7 +19,7 @@ interface BoostHistorySheetProps {
   site: {
     slug: string;
     name: string;
-    ogImage?: string | null;
+    faviconUrl?: string | null;
     color?: string | null;
     description?: string | null;
   };
@@ -63,7 +63,7 @@ export function BoostHistorySheet({ open, onClose, site, onBoost }: BoostHistory
           <SitePreviewCard
             slug={site.slug}
             name={site.name}
-            ogImage={site.ogImage}
+            faviconUrl={site.faviconUrl}
             color={site.color}
             description={site.description}
             right={

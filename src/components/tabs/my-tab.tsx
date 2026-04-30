@@ -20,6 +20,7 @@ type BoostedSite = {
   ogTitle: string | null;
   ogDescription: string | null;
   ogImage: string | null;
+  faviconUrl?: string | null;
   totalBoosted: number;
 };
 
@@ -142,7 +143,7 @@ function BoostedSiteCard({ site }: { site: BoostedSite }) {
       <BoostHistorySheet
         open={showSheet}
         onClose={() => setShowSheet(false)}
-        site={{ slug: site.slug, name: name ?? site.slug, ogImage: site.ogImage, color: site.color, description: site.ogDescription }}
+        site={{ slug: site.slug, name: name ?? site.slug, faviconUrl: site.faviconUrl, color: site.color, description: site.ogDescription }}
       />
     </>
   );

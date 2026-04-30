@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Show, UserButton, useUser } from "@clerk/nextjs";
+import { Avatar } from "@/components/avatar";
 import { Watermark, AppShell, AppShellHeader, AppShellContent, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/kit";
 import { useFetch } from "@m1kapp/kit";
 import { ThemeProvider, useAppTheme } from "./theme-context";
@@ -69,15 +70,15 @@ function TabsShell({ children }: { children: React.ReactNode }) {
               onClick={() => router.push("/builder")}
               activeColor={bgColor}
               label="빌더"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "builder" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>}
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "builder" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3" /><path d="M7 21a5 5 0 0 1 10 0" /><circle cx="5" cy="10" r="2.5" /><path d="M2 21a3 3 0 0 1 6 0" /><circle cx="19" cy="10" r="2.5" /><path d="M16 21a3 3 0 0 1 6 0" /></svg>}
             />
             <Tab
               active={tab === "my"}
               onClick={() => router.push("/my")}
               activeColor={bgColor}
               label="프로필"
-              icon={user?.imageUrl
-                ? <img src={user.imageUrl} alt="" className={`w-5 h-5 rounded-full object-cover transition-all ${tab === "my" ? "ring-2 ring-offset-1" : "opacity-70"}`} style={{ "--tw-ring-color": bgColor } as React.CSSProperties} />
+              icon={user
+                ? <Avatar imageUrl={user.imageUrl} name={user.firstName || user.username || "?"} size={20} ring={false} className={`transition-all ${tab === "my" ? "ring-2 ring-offset-1" : "opacity-70"}`} style={{ "--tw-ring-color": bgColor } as React.CSSProperties} />
                 : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "my" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
             />
           </TabBar>

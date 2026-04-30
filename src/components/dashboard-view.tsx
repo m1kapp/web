@@ -1,19 +1,16 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { GrassMap, Watermark, AppShell, Section, Divider } from "@m1kapp/kit";
 import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
-import { AnalyticsSection } from "./ui-parts";
-import { countryFlag, deviceIcon, browserIcon, osIcon, formatHour } from "@/lib/format";
 import Link from "next/link";
 import { SiteHero, CumulativeCurve } from "./site-hero";
-import { OverviewInsights } from "./overview-insights";
+import { OverviewInsights, CoachSection } from "./overview-insights";
 import { BoostButton } from "./boost-button";
-import { RefreshOgButton, DeleteSiteButton, PendingBanner, SettingsLoginPrompt } from "./dashboard-settings";
+import { RefreshOgButton, DeleteSiteButton } from "./dashboard-settings";
+import { BadgeEditor } from "./badge-editor";
 
 const POLL_INTERVAL_MS = 30_000;
-
-type Tab = "overview" | "analytics" | "settings";
 
 export interface SiteData {
   slug: string;
@@ -35,6 +32,9 @@ export interface SiteData {
   ogTitle: string | null;
   ogDescription: string | null;
   ogImage: string | null;
+  faviconUrl: string | null;
+  badgeStyle: string | null;
+  badgeColor: string | null;
   userId: string | null;
   todayCount: number;
   verified: boolean;
@@ -55,8 +55,7 @@ interface DashboardViewProps {
 
 export function DashboardView({ data: initialData, host, isOwner = false, isSignedIn = false, owner }: DashboardViewProps) {
   const [data, setData] = useState(initialData);
-  const [tab, setTab] = useState<Tab>("overview");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showBadgeEditor, setShowBadgeEditor] = useState(false);
 
   const slugRef = useRef(data.slug);
   slugRef.current = data.slug;
@@ -95,10 +94,7 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
     };
   }, []);
 
-  function switchTab(next: Tab) {
-    setTab(next);
-    scrollRef.current?.scrollTo({ top: 0 });
-  }
+  const hasData = data.total > 0;
 
   return (
     <AccentProvider initialAccent={(data.color as AccentHex) ?? undefined}>
@@ -106,133 +102,137 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
         <AppShell>
           <DashboardHeader url={data.url} />
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto">
-            {tab === "overview" && (
+          <div className="flex-1 overflow-y-auto">
+            <SiteHero data={data} owner={owner} />
+
+            {isOwner && (
+              <Section className="pt-1 pb-3">
+                <VerifiedStatus
+                  verified={data.verified}
+                  showEditor={showBadgeEditor}
+                  onToggleEditor={() => setShowBadgeEditor((v) => !v)}
+                />
+              </Section>
+            )}
+
+            {isOwner && !data.verified && (
+              <BadgeEditor slug={data.slug} host={host} pending savedStyle={data.badgeStyle} savedColor={data.badgeColor} />
+            )}
+
+            {isOwner && data.verified && showBadgeEditor && (
               <>
-                {/* 사이트 배너 */}
-                <SiteHero data={data} owner={owner} />
+                <BadgeEditor slug={data.slug} host={host} savedStyle={data.badgeStyle} savedColor={data.badgeColor} />
+                <Divider />
+              </>
+            )}
 
-                {/* stat 1: 부스트 보내기 + 내역 */}
-                <Section className="pb-3">
-                  <BoostButton
-                    slug={data.slug}
-                    siteName={data.ogTitle || data.title || data.slug}
-                    siteDescription={data.ogDescription}
-                    siteOgImage={data.ogImage}
-                    siteColor={data.color}
-                    isSignedIn={isSignedIn}
-                    totalBoosted={data.boosted}
-                  />
-                </Section>
+            {(hasData || data.verified) && (
+              <Section className="py-3">
+                <BoostButton
+                  slug={data.slug}
+                  siteName={data.ogTitle || data.title || data.slug}
+                  siteDescription={data.ogDescription}
+                  siteFaviconUrl={data.faviconUrl}
+                  siteColor={data.color}
+                  isSignedIn={isSignedIn}
+                  totalBoosted={data.boosted}
+                />
+              </Section>
+            )}
+
+            {hasData && (
+              <>
+                {/* 섹션 탭 네비게이션 */}
+                <SectionNav hasCoach={data.daily.length >= 3} data={data} />
+
+                {data.daily.length >= 3 && (
+                  <div id="sec-coach">
+                    <Section className="py-5">
+                      <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2.5">1K 코치</p>
+                      <CoachSection data={data} />
+                    </Section>
+                    <Divider />
+                  </div>
+                )}
+
+                <div id="sec-cumulative">
+                  <Section className="py-5">
+                    <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2">방문자 누적</p>
+                    <CumulativeCurveWithAccent daily={data.daily} total={data.total} todayCount={data.todayCount} />
+                  </Section>
+                </div>
 
                 <Divider />
 
-                {/* stat 2: 누적 곡선 */}
-                <Section className="pt-3 pb-0">
-                  <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2">방문자 누적</p>
-                  <CumulativeCurveWithAccent daily={data.daily} total={data.total} todayCount={data.todayCount} />
-                </Section>
+                <div id="sec-daily">
+                  <Section className="py-5">
+                    <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2">방문자 데일리</p>
+                    <GrassMapWithAccent daily={data.daily} />
+                  </Section>
+                </div>
 
                 <Divider />
 
-                {/* stat 3: 잔디 */}
-                <Section className="pt-3 pb-4">
-                  <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2">방문자 데일리</p>
-                  <GrassMapWithAccent daily={data.daily} />
-                </Section>
-
-                <Divider />
-
-                {/* 인사이트 */}
-                <Section className="pt-3 pb-6">
+                <Section className="py-3">
                   <OverviewInsights data={data} />
                 </Section>
               </>
             )}
 
-            {tab === "analytics" && (
-              <Section className="space-y-5 py-5 pb-6">
-                <AnalyticsSection
-                  title="국가"
-                  items={data.countries.map((c) => ({
-                    label: `${countryFlag(c.country)} ${c.country || "알 수 없음"}`,
-                    value: Number(c.count),
-                  }))}
-                />
-                <AnalyticsSection
-                  title="도시"
-                  items={data.cities.map((c) => {
-                    let city = c.city || "알 수 없음";
-                    try { city = decodeURIComponent(city); } catch {}
-                    return { label: `📍 ${city}`, value: Number(c.count) };
-                  })}
-                />
-                <AnalyticsSection
-                  title="디바이스"
-                  items={data.devices.map((d) => ({
-                    label: `${deviceIcon(d.device)} ${d.device}`,
-                    value: Number(d.count),
-                  }))}
-                />
-                <AnalyticsSection
-                  title="브라우저"
-                  items={data.browsers.map((b) => ({
-                    label: `${browserIcon(b.browser)} ${b.browser || "알 수 없음"}`,
-                    value: Number(b.count),
-                  }))}
-                />
-                <AnalyticsSection
-                  title="운영체제"
-                  items={data.os.map((o) => ({
-                    label: `${osIcon(o.os)} ${o.os || "알 수 없음"}`,
-                    value: Number(o.count),
-                  }))}
-                />
-                <AnalyticsSection
-                  title="유입 경로"
-                  items={data.referers.map((r) => {
-                    if (!r.referer) return { label: "직접 접속", value: Number(r.count) };
-                    return { label: r.referer || "/", value: Number(r.count) };
-                  })}
-                />
-                <AnalyticsSection
-                  title="활성 시간대"
-                  items={data.hourly.map((h) => ({
-                    label: `🕐 ${formatHour(h.hour)}`,
-                    value: Number(h.count),
-                  }))}
-                />
-              </Section>
-            )}
-
-            {tab === "settings" && (
+            {isOwner && (
               <>
-                {isOwner ? (
-                  <>
-                    {!data.verified && (
-                      <>
-                        <PendingBanner slug={data.slug} host={host} />
-                        <Divider />
-                      </>
-                    )}
-                    <Section className="pb-2">
-                      <RefreshOgButton slug={data.slug} />
-                    </Section>
-                    <Section className="pb-6">
-                      <DeleteSiteButton slug={data.slug} />
-                    </Section>
-                  </>
-                ) : (
-                  <SettingsLoginPrompt isSignedIn={isSignedIn} />
-                )}
+                <Divider />
+                <Section className="py-3">
+                  <RefreshOgButton slug={data.slug} />
+                  <DeleteSiteButton slug={data.slug} />
+                </Section>
               </>
             )}
           </div>
-
-          <BottomTabBar tab={tab} onTabChange={switchTab} />
         </AppShell>
       </Watermark>
     </AccentProvider>
+  );
+}
+
+function VerifiedStatus({ verified, showEditor, onToggleEditor }: {
+  verified: boolean;
+  showEditor: boolean;
+  onToggleEditor: () => void;
+}) {
+  const { accent } = useAccent();
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-1.5">
+        {verified ? (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded-full">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            인증됨
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ color: accent, backgroundColor: `${accent}1a` }}>
+            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
+            인증 대기중
+          </span>
+        )}
+      </div>
+      {verified && (
+        <button
+          onClick={onToggleEditor}
+          className={`text-[11px] font-medium px-2.5 py-1 rounded-lg transition-colors ${
+            showEditor
+              ? "text-white"
+              : "text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+          }`}
+          style={showEditor ? { backgroundColor: accent } : undefined}
+        >
+          {showEditor ? "닫기" : "뱃지 수정"}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -244,6 +244,61 @@ function CumulativeCurveWithAccent({ daily, total, todayCount }: { daily: { date
 function GrassMapWithAccent({ daily }: { daily: { date: string; count: number }[] }) {
   const { accent, isDark } = useAccent();
   return <GrassMap data={daily} accent={accent} isDark={isDark} unit="명" />;
+}
+
+function SectionNav({ hasCoach, data }: { hasCoach: boolean; data: SiteData }) {
+  const { accent } = useAccent();
+  const hasCountries  = data.countries.filter((c) => c.country).length > 0;
+  const hasCities     = data.cities.length > 0;
+  const hasHourly     = data.hourly.length > 0;
+  const hasDevices    = data.devices.length > 0;
+  const hasBrowsersOs = data.browsers.filter((b) => b.browser).length > 0 || data.os.filter((o) => o.os).length > 0;
+  const hasReferers   = data.referers.length > 0;
+
+  const tabs = [
+    { id: "sec-coach",      label: "코치",     show: hasCoach },
+    { id: "sec-cumulative", label: "누적",     show: true },
+    { id: "sec-daily",      label: "데일리",   show: true },
+    { id: "sec-country",    label: "국가",     show: hasCountries },
+    { id: "sec-city",       label: "도시",     show: hasCities },
+    { id: "sec-hourly",     label: "시간대",   show: hasHourly },
+    { id: "sec-device",     label: "디바이스", show: hasDevices },
+    { id: "sec-browser",    label: "브라우저", show: hasBrowsersOs },
+    { id: "sec-referer",    label: "유입",     show: hasReferers },
+  ].filter((t) => t.show);
+
+  const navRef = useRef<HTMLDivElement>(null);
+
+  const scrollTo = useCallback((id: string) => {
+    const el = document.getElementById(id);
+    const nav = navRef.current;
+    if (!el || !nav) return;
+    // overflow-y-auto 스크롤 컨테이너 찾기
+    let container = nav.parentElement;
+    while (container && getComputedStyle(container).overflowY !== "auto") {
+      container = container.parentElement;
+    }
+    if (!container) return;
+    const navH = nav.offsetHeight;
+    const targetTop = el.offsetTop - container.offsetTop - navH;
+    container.scrollTo({ top: targetTop, behavior: "smooth" });
+  }, []);
+
+  return (
+    <div ref={navRef} className="sticky top-0 z-10 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-800">
+      <div className="flex gap-1 px-3 py-1.5 overflow-x-auto scrollbar-hide">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => scrollTo(t.id)}
+            className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-md text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function DashboardHeader({ url }: { url: string | null }) {
@@ -286,65 +341,3 @@ function DashboardHeader({ url }: { url: string | null }) {
   );
 }
 
-function BottomTabBar({ tab, onTabChange }: { tab: Tab; onTabChange: (t: Tab) => void }) {
-  const { accent } = useAccent();
-
-  const tabs: { id: Tab; label: string; icon: ReactNode }[] = [
-    {
-      id: "overview",
-      label: "개요",
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="7" />
-          <rect x="14" y="3" width="7" height="7" />
-          <rect x="14" y="14" width="7" height="7" />
-          <rect x="3" y="14" width="7" height="7" />
-        </svg>
-      ),
-    },
-    {
-      id: "analytics",
-      label: "분석",
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10" />
-          <line x1="12" y1="20" x2="12" y2="4" />
-          <line x1="6" y1="20" x2="6" y2="14" />
-        </svg>
-      ),
-    },
-    {
-      id: "settings",
-      label: "설정",
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3" />
-          <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-        </svg>
-      ),
-    },
-  ];
-
-  return (
-    <nav className="shrink-0 border-t border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md">
-      <div className="flex">
-        {tabs.map((t) => {
-          const active = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              onClick={() => onTabChange(t.id)}
-              className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-colors"
-              style={{ color: active ? accent : undefined }}
-            >
-              <span className={active ? "" : "text-zinc-400 dark:text-zinc-600"}>{t.icon}</span>
-              <span className={`text-[10px] font-semibold ${active ? "" : "text-zinc-400 dark:text-zinc-600"}`}>
-                {t.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </nav>
-  );
-}

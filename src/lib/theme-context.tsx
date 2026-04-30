@@ -23,9 +23,9 @@ interface AccentContextType {
 }
 
 const AccentContext = createContext<AccentContextType>({
-  accent: "#ec4899",
+  accent: "#18181b",
   setAccent: () => {},
-  accentRgb: "236, 72, 153",
+  accentRgb: "24, 24, 27",
   isDark: false,
 });
 
@@ -39,8 +39,8 @@ function hexToLuminance(hex: string): number {
 }
 
 export function AccentProvider({ initialAccent, children }: { initialAccent?: AccentHex; children: React.ReactNode }) {
-  const [accent, setAccent] = useState<AccentHex>(initialAccent ?? "#ec4899");
-  const accentRgb = ACCENT_COLORS[accent]?.light ?? "236, 72, 153";
+  const [accent, setAccent] = useState<AccentHex>(initialAccent ?? "#18181b");
+  const accentRgb = ACCENT_COLORS[accent]?.light ?? "24, 24, 27";
   const [isDark, setIsDark] = useState(() =>
     typeof document !== "undefined"
       ? document.documentElement.classList.contains("dark")
