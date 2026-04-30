@@ -1,9 +1,14 @@
 import { NextRequest } from "next/server";
-import { db } from "@/lib/db";
-import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats, dailyHourStats } from "@/lib/db/schema";
-import { eq, sql, and, gte } from "drizzle-orm";
 import { generateBadge } from "@/lib/badge";
 import { findSiteBySlug, recordMilestoneIfReached } from "@/lib/site-service";
+import {
+  bufferHit, getBufferedCount, getBufferedTotal,
+  getCachedSite, cacheSite, getCountSnapshot, queueVerify,
+  type CountSnapshot,
+} from "@/lib/hit-buffer";
+import { createHash } from "crypto";
+import { todayKST } from "@/lib/format";
+import type { Site } from "@/lib/site-service";
 
 const GOAL_TIERS = [
   { goal: 1_000, label: "1K" },
@@ -17,8 +22,6 @@ function getCurrentGoal(total: number) {
   }
   return GOAL_TIERS[GOAL_TIERS.length - 1];
 }
-import { createHash } from "crypto";
-import { todayKST } from "@/lib/format";
 
 export const runtime = "nodejs";
 
@@ -38,13 +41,14 @@ export async function GET(
     return new Response("Missing slug", { status: 400 });
   }
 
-  let site = await findSiteBySlug(slug);
-
+  // 1) site 조회: KV 캐시 → miss면 Neon fallback + 캐싱
+  let site = await getCachedSite<Site>(slug);
   if (!site) {
-    return new Response("Not found", { status: 404 });
+    site = (await findSiteBySlug(slug)) ?? null;
+    if (!site) return new Response("Not found", { status: 404 });
+    await cacheSite(slug, site);
   }
 
-  // ?view=true → 조회 전용 (카운트 안 올림)
   const urlObj = new URL(request.url);
   const viewOnly = urlObj.searchParams.get("view") === "true";
 
@@ -59,88 +63,54 @@ export async function GET(
       .update(`${ip}:${site.id}:${today}:${salt}`)
       .digest("hex");
 
-    const existing = await db.query.hitLogs.findFirst({
-      where: and(
-        eq(hitLogs.siteId, site.id),
-        eq(hitLogs.ipHash, ipHash)
-      ),
+    const country = request.headers.get("x-vercel-ip-country") || null;
+    const city = request.headers.get("x-vercel-ip-city") || null;
+
+    const ua = request.headers.get("user-agent") || "";
+    const device = /mobile|android|iphone/i.test(ua)
+      ? "mobile"
+      : /tablet|ipad/i.test(ua)
+        ? "tablet"
+        : "desktop";
+    const browser = parseBrowser(ua);
+    const os = parseOS(ua);
+    const referer = request.headers.get("referer") || null;
+
+    const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const hourKST = nowKST.getUTCHours();
+
+    const isNew = await bufferHit({
+      siteId: site.id, ipHash, country, city, device, browser, os, referer,
+      date: today, hourKST,
     });
 
-    if (!existing) {
-      const country = request.headers.get("x-vercel-ip-country") || null;
-      const city = request.headers.get("x-vercel-ip-city") || null;
-
-      const ua = request.headers.get("user-agent") || "";
-      const device = /mobile|android|iphone/i.test(ua)
-        ? "mobile"
-        : /tablet|ipad/i.test(ua)
-          ? "tablet"
-          : "desktop";
-      const browser = parseBrowser(ua);
-      const os = parseOS(ua);
-      const referer = request.headers.get("referer") || null;
-
-      // KST 기준 시간 (사전집계 테이블용)
-      const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
-      const hourKST = nowKST.getUTCHours();
-
-      // 모든 hit 기록 + 사전집계 업데이트를 단일 Promise.all로
-      await Promise.all([
-        db.insert(hitLogs).values({ siteId: site.id, ipHash, country, city, device, browser, os, referer }),
-        db.insert(hits).values({ siteId: site.id, date: today, count: 1 })
-          .onConflictDoUpdate({ target: [hits.siteId, hits.date], set: { count: sql`${hits.count} + 1` } }),
-        db.update(sites).set({ totalHits: sql`${sites.totalHits} + 1` }).where(eq(sites.id, site.id)),
-        db.insert(dailyGeoStats).values({ siteId: site.id, date: today, country: country ?? "", city: city ?? "" })
-          .onConflictDoUpdate({
-            target: [dailyGeoStats.siteId, dailyGeoStats.date, dailyGeoStats.country, dailyGeoStats.city],
-            set: { count: sql`${dailyGeoStats.count} + 1` },
-          }),
-        db.insert(dailyDeviceStats).values({ siteId: site.id, date: today, device, browser, os })
-          .onConflictDoUpdate({
-            target: [dailyDeviceStats.siteId, dailyDeviceStats.date, dailyDeviceStats.device, dailyDeviceStats.browser, dailyDeviceStats.os],
-            set: { count: sql`${dailyDeviceStats.count} + 1` },
-          }),
-        db.insert(dailyHourStats).values({ siteId: site.id, date: today, hour: hourKST })
-          .onConflictDoUpdate({
-            target: [dailyHourStats.siteId, dailyHourStats.date, dailyHourStats.hour],
-            set: { count: sql`${dailyHourStats.count} + 1` },
-          }),
-      ]);
-
-      // Referer가 등록된 사이트 도메인과 일치하면 → 인증 완료
-      if (!site.verified && referer && site.url) {
-        try {
-          const refererHost = new URL(referer).hostname;
-          const siteHost = new URL(site.url).hostname;
-          if (refererHost === siteHost || refererHost.endsWith(`.${siteHost}`)) {
-            await db.update(sites).set({ verified: true }).where(eq(sites.id, site.id));
-            site = { ...site, verified: true };
-          }
-        } catch (e) { console.error("[badge] verify check failed:", e); }
-      }
+    // verify 체크 → Neon 직접 안 치고 큐에 넣기
+    if (isNew && !site.verified && referer && site.url) {
+      try {
+        const refererHost = new URL(referer).hostname;
+        const siteHost = new URL(site.url).hostname;
+        if (refererHost === siteHost || refererHost.endsWith(`.${siteHost}`)) {
+          await queueVerify(site.id, slug);
+        }
+      } catch { /* ignore */ }
     }
   }
 
-  const now = new Date();
-  const todayStr = todayKST(now);
-
-  const weekAgo = new Date(now);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const monthAgo = new Date(now);
-  monthAgo.setDate(monthAgo.getDate() - 30);
-
-  // total은 사전집계된 sites.totalHits 사용 (SUM 쿼리 제거)
-  const [[todayR], [weeklyR], [monthlyR]] = await Promise.all([
-    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), eq(hits.date, todayStr))),
-    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(weekAgo)))),
-    db.select({ v: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site.id), gte(hits.date, todayKST(monthAgo)))),
+  // 2) 카운트: KV 스냅샷 + 버퍼 증분 (Neon 안 침)
+  const todayStr = todayKST();
+  const [snapshot, bufferedToday, bufferedTotal] = await Promise.all([
+    getCountSnapshot(site.id),
+    getBufferedCount(site.id, todayStr),
+    getBufferedTotal(site.id),
   ]);
 
+  const base: CountSnapshot = snapshot ?? { total: site.totalHits, today: 0, weekly: 0, monthly: 0, updatedAt: "" };
+
   const counts = {
-    total: site.totalHits,
-    today: Number(todayR.v),
-    weekly: Number(weeklyR.v),
-    monthly: Number(monthlyR.v),
+    total: base.total + bufferedTotal,
+    today: base.today + bufferedToday,
+    weekly: base.weekly + bufferedToday,
+    monthly: base.monthly + bufferedToday,
   };
 
   const rawType = urlObj.searchParams.get("type") ?? "total";
@@ -156,22 +126,19 @@ export async function GET(
     monthly: urlObj.searchParams.get("label") || "monthly",
   };
 
-  await recordMilestoneIfReached(site, counts.total);
-
   const currentGoal = getCurrentGoal(counts.total);
   const svg = generateBadge(displayCount, currentGoal.goal, {
     label: typeLabels[badgeType] || "m1k",
     color: urlObj.searchParams.get("color")
       ? `#${urlObj.searchParams.get("color")}`
-      : site.color || undefined,
+      : site.badgeColor ? `#${site.badgeColor}` : site.color || "#000000",
     labelColor: urlObj.searchParams.get("labelColor")
       ? `#${urlObj.searchParams.get("labelColor")}`
       : undefined,
-    style: (urlObj.searchParams.get("style") || site.badgeStyle || "flat") as "flat" | "flat-square" | "rounded" | "cyworld",
+    style: (urlObj.searchParams.get("style") || site.badgeStyle || "cyworld") as "flat" | "flat-square" | "rounded" | "cyworld",
     theme: isDark ? "dark" : "light",
   }, counts.today);
 
-  // 조회 전용은 30초 캐시, 카운트용은 5초
   const maxAge = viewOnly ? 30 : 5;
 
   return new Response(svg, {
