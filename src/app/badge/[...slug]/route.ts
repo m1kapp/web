@@ -84,13 +84,18 @@ export async function GET(
       date: today, hourKST,
     });
 
-    // verify 체크 → Neon 직접 안 치고 큐에 넣기
+    // verify 체크 → 사이트당 1회뿐이므로 즉시 처리
     if (isNew && !site.verified && referer && site.url) {
       try {
         const refererHost = new URL(referer).hostname;
         const siteHost = new URL(site.url).hostname;
         if (refererHost === siteHost || refererHost.endsWith(`.${siteHost}`)) {
-          await queueVerify(site.id, slug);
+          const { db } = await import("@/lib/db");
+          const { sites } = await import("@/lib/db/schema");
+          const { eq } = await import("drizzle-orm");
+          await db.update(sites).set({ verified: true }).where(eq(sites.id, site.id));
+          site = { ...site, verified: true };
+          await cacheSite(slug, site);
         }
       } catch { /* ignore */ }
     }
