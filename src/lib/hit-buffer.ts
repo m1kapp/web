@@ -273,7 +273,7 @@ export async function drainVerifyQueue(): Promise<{ siteId: number; slug: string
   try {
     const members = await redis.smembers(VERIFY_QUEUE_KEY);
     if (members.length > 0) await redis.del(VERIFY_QUEUE_KEY);
-    return members.map((m) => (typeof m === "string" ? JSON.parse(m) : m) as { siteId: number; slug: string });
+    return members.map((m: unknown) => (typeof m === "string" ? JSON.parse(m) : m) as { siteId: number; slug: string });
   } catch (e) {
     console.warn("[hit-buffer] Redis drainVerifyQueue failed:", e);
     return [];
