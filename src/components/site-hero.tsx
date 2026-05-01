@@ -343,6 +343,7 @@ export function SiteHero({ data, owner }: {
           <span className="text-[36px] font-black tabular-nums leading-none tracking-tight text-zinc-900 dark:text-white">
             {data.total.toLocaleString()}
           </span>
+          <span className="text-sm font-semibold text-zinc-300 dark:text-zinc-600 mb-1">명 방문</span>
           <div className="flex items-center gap-1 mb-0.5">
             {data.todayCount > 0 && (
               <span
