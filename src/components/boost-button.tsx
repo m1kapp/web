@@ -47,7 +47,7 @@ export function BoostButton({ slug, siteName, siteDescription, siteFaviconUrl, s
         </button>
       </div>
       <p className="text-[10px] text-zinc-400 dark:text-zinc-600 text-center mt-1.5">
-        응원 포인트는 방문자 수에 합산돼요
+        🚀 1포인트 = 방문자 1명으로 카운트
       </p>
 
       <BoostSendSheet
