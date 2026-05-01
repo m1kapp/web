@@ -32,7 +32,7 @@ function BuilderCard({ builder }: { builder: Builder }) {
       </div>
 
       {/* 앱 아이콘 목록 */}
-      <div className="flex gap-3 overflow-x-auto pb-0.5 pl-[49px]">
+      <div className="flex gap-3 overflow-x-auto pb-0.5 pl-[52px]">
         {topSites.map((site) => (
           <div
             key={site.slug}
