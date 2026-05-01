@@ -32,7 +32,7 @@ function BuilderCard({ builder }: { builder: Builder }) {
       </div>
 
       {/* 앱 아이콘 목록 */}
-      <div className="flex gap-3 overflow-x-auto pb-0.5 pl-[52px]">
+      <div className="flex gap-3 overflow-x-auto pb-0.5 pl-[49px]">
         {topSites.map((site) => (
           <div
             key={site.slug}
@@ -76,7 +76,7 @@ function BuilderCardSkeleton() {
           <div className="h-2.5 w-32 rounded bg-zinc-100 dark:bg-zinc-800" />
         </div>
       </div>
-      <div className="flex gap-3 pl-[52px]">
+      <div className="flex gap-3 pl-[49px]">
         {[0, 1, 2].map((i) => (
           <div key={i} className="shrink-0 flex flex-col items-center gap-1 w-[56px]">
             <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
