@@ -47,7 +47,7 @@ export function BoostButton({ slug, siteName, siteDescription, siteFaviconUrl, s
         </button>
       </div>
       <p className="text-[10px] text-zinc-400 dark:text-zinc-600 text-center mt-1.5">
-        응원은 1K 목표 달성을 앞당겨줘요<br />1포인트 = 카운터 +1
+        1포인트 응원 = 1K 목표 카운터 +1
       </p>
 
       <BoostSendSheet
