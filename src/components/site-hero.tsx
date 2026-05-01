@@ -340,7 +340,7 @@ export function SiteHero({ data, owner }: {
       {/* 히어로 숫자 */}
       <div className="mt-3 mb-0">
         <div className="flex items-end gap-1.5 flex-wrap">
-          <span className="text-[36px] font-black tabular-nums leading-none text-zinc-900 dark:text-white">
+          <span className="text-[36px] font-black tabular-nums leading-none tracking-tight text-zinc-900 dark:text-white">
             {data.total.toLocaleString()}
           </span>
           <div className="flex items-center gap-1 mb-0.5">
