@@ -345,7 +345,7 @@ export function SiteHero({ data, owner }: {
           </span>
           <span className="text-sm font-semibold text-zinc-300 dark:text-zinc-600 mb-1">명 방문</span>
         </div>
-        <div className="flex items-center gap-1.5 mt-1.5">
+        <div className="flex items-center gap-1.5 mt-2">
           {data.todayCount > 0 && (
             <span
               className="text-xs font-bold px-2 py-0.5 rounded-lg tabular-nums"
@@ -360,7 +360,7 @@ export function SiteHero({ data, owner }: {
             </span>
           )}
         </div>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 leading-relaxed">
+        <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 leading-relaxed">
           {contextLine}
         </p>
       </div>
