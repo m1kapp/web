@@ -62,9 +62,15 @@ export function SiteCardSkeleton({ count = 3 }: { count?: number }) {
             <div className="h-3.5 w-2/3 rounded bg-zinc-100 dark:bg-zinc-800" />
             <div className="h-2.5 w-1/2 rounded bg-zinc-50 dark:bg-zinc-800/50" />
           </div>
-          <div className="shrink-0 space-y-1">
-            <div className="h-2.5 w-12 rounded bg-zinc-100 dark:bg-zinc-800" />
-            <div className="h-2.5 w-12 rounded bg-zinc-100 dark:bg-zinc-800" />
+          <div className="shrink-0 space-y-1 w-[84px]">
+            <div className="flex items-center justify-between">
+              <div className="h-2 w-8 rounded bg-zinc-100 dark:bg-zinc-800" />
+              <div className="h-2.5 w-6 rounded bg-zinc-100 dark:bg-zinc-800" />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="h-2 w-8 rounded bg-zinc-100 dark:bg-zinc-800" />
+              <div className="h-2.5 w-6 rounded bg-zinc-100 dark:bg-zinc-800" />
+            </div>
           </div>
         </div>
       ))}

@@ -68,17 +68,20 @@ function BuilderCard({ builder }: { builder: Builder }) {
 
 function BuilderCardSkeleton() {
   return (
-    <div className="py-4 border-b border-zinc-100 dark:border-zinc-800 animate-pulse">
+    <div className="py-4 px-4 border-b border-zinc-200 dark:border-zinc-800 animate-pulse">
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-[49px] h-[49px] rounded-full bg-zinc-200 dark:bg-zinc-700 shrink-0" />
+        <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-700 shrink-0" />
         <div className="flex-1 space-y-1.5">
-          <div className="h-3.5 w-28 rounded bg-zinc-200 dark:bg-zinc-700" />
-          <div className="h-2.5 w-20 rounded bg-zinc-100 dark:bg-zinc-800" />
+          <div className="h-3.5 w-24 rounded bg-zinc-200 dark:bg-zinc-700" />
+          <div className="h-2.5 w-32 rounded bg-zinc-100 dark:bg-zinc-800" />
         </div>
       </div>
-      <div className="flex gap-3 pl-[49px]">
+      <div className="flex gap-3 pl-[52px]">
         {[0, 1, 2].map((i) => (
-          <div key={i} className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700 shrink-0" />
+          <div key={i} className="shrink-0 flex flex-col items-center gap-1 w-[56px]">
+            <div className="w-12 h-12 rounded-xl bg-zinc-200 dark:bg-zinc-700" />
+            <div className="w-10 h-2 rounded bg-zinc-100 dark:bg-zinc-800" />
+          </div>
         ))}
       </div>
     </div>
