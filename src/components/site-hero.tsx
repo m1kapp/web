@@ -339,26 +339,26 @@ export function SiteHero({ data, owner }: {
 
       {/* 히어로 숫자 */}
       <div className="mt-3 mb-0">
-        <div className="flex items-end gap-1.5 flex-wrap">
+        <div className="flex items-end gap-1.5">
           <span className="text-[36px] font-black tabular-nums leading-none tracking-tight text-zinc-900 dark:text-white">
             {data.total.toLocaleString()}
           </span>
           <span className="text-sm font-semibold text-zinc-300 dark:text-zinc-600 mb-1">명 방문</span>
-          <div className="flex items-center gap-1 mb-0.5">
-            {data.todayCount > 0 && (
-              <span
-                className="text-xs font-bold px-2 py-0.5 rounded-lg tabular-nums"
-                style={{ color: accent, backgroundColor: `${accent}1a` }}
-              >
-                +{data.todayCount.toLocaleString()} 오늘
-              </span>
-            )}
-            {streak > 0 && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-950/30 text-orange-500">
-                🔥 {streak}일
-              </span>
-            )}
-          </div>
+        </div>
+        <div className="flex items-center gap-1.5 mt-1.5">
+          {data.todayCount > 0 && (
+            <span
+              className="text-xs font-bold px-2 py-0.5 rounded-lg tabular-nums"
+              style={{ color: accent, backgroundColor: `${accent}1a` }}
+            >
+              +{data.todayCount.toLocaleString()} 오늘
+            </span>
+          )}
+          {streak > 0 && (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-950/30 text-orange-500">
+              🔥 {streak}일
+            </span>
+          )}
         </div>
         <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 leading-relaxed">
           {contextLine}
