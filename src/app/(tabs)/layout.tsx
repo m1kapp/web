@@ -89,15 +89,14 @@ function TabsShell({ children }: { children: React.ReactNode }) {
                 : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "my" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
             />
           </TabBar>
+          <ThemeDialog
+            open={themeOpen}
+            onClose={() => setThemeOpen(false)}
+            current={bgColor}
+            onSelect={setBgColor}
+          />
         </AppShell>
       </Watermark>
-
-      <ThemeDialog
-        open={themeOpen}
-        onClose={() => setThemeOpen(false)}
-        current={bgColor}
-        onSelect={setBgColor}
-      />
     </>
   );
 }
