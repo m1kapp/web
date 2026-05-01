@@ -43,7 +43,7 @@ function TabsShell({ children }: { children: React.ReactNode }) {
         <AppShell className="m-0">
           <AppShellHeader>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-black tracking-tighter" style={{ color: bgColor }}>
+              <span className={`font-black tracking-tighter ${headerTitle[tab] ? "text-lg" : "text-2xl"}`} style={{ color: headerTitle[tab] ? undefined : bgColor }}>
                 {headerTitle[tab] ?? "m1k"}
               </span>
               <Show when="signed-in">
