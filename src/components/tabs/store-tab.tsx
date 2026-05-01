@@ -30,12 +30,7 @@ export function StoreTab({
   const { data: sites, loading: searching } = useFetch<RecentSite[]>(`/api/sites/recent?${params}`);
 
   return (
-    <div className="px-4 py-5">
-      <div className="mb-4">
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-white">앱</h2>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">등록된 앱을 둘러보세요</p>
-      </div>
-
+    <div className="px-4 py-3">
       {/* 검색 */}
       <div className="mb-3">
         <input

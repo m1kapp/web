@@ -5,7 +5,7 @@ import type { Builder } from "@/app/api/builders/route";
 import { SiteThumbnail } from "@/components/site-preview-card";
 import { Avatar } from "@/components/avatar";
 import { useRouter } from "next/navigation";
-import { UsersRound } from "lucide-react";
+
 
 function BuilderCard({ builder }: { builder: Builder }) {
   const router = useRouter();
@@ -92,15 +92,7 @@ export function BuildersTab({ bgColor }: { bgColor: string }) {
   const { data: builders, loading } = useFetch<Builder[]>("/api/builders");
 
   return (
-    <div className="py-2">
-      <div className="mb-2 px-4 pt-3">
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
-          <UsersRound className="w-5 h-5" />
-          빌더
-        </h2>
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">m1k에서 만들고 있는 사람들</p>
-      </div>
-
+    <div className="py-0">
       {loading && (
         <div>{[0, 1, 2, 3, 4].map((i) => <BuilderCardSkeleton key={i} />)}</div>
       )}

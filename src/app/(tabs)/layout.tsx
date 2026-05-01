@@ -29,6 +29,11 @@ function TabsShell({ children }: { children: React.ReactNode }) {
 
   const tab = pathname === "/" ? "home" : pathname.slice(1).split("/")[0];
 
+  const headerTitle: Record<string, string> = {
+    store: "앱",
+    builder: "빌더",
+  };
+
   return (
     <>
       <Watermark
@@ -38,7 +43,9 @@ function TabsShell({ children }: { children: React.ReactNode }) {
         <AppShell className="m-0">
           <AppShellHeader>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-black tracking-tighter" style={{ color: bgColor }}>m1k</span>
+              <span className="text-2xl font-black tracking-tighter" style={{ color: bgColor }}>
+                {headerTitle[tab] ?? "m1k"}
+              </span>
               <Show when="signed-in">
                 <UserButton appearance={{ elements: { avatarBox: "w-6 h-6" } }} />
               </Show>
