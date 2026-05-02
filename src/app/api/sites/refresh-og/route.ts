@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { scrapeOg } from "@/lib/og";
+import { resolveFavicon, extractDominantColor } from "@/lib/favicon";
 import { auth } from "@clerk/nextjs/server";
 import { handler, ok, unauthorized, notFound, forbidden } from "@m1kapp/kit/server";
 
@@ -19,19 +20,25 @@ export const POST = handler(async (req) => {
   if (site!.userId !== userId) forbidden("권한이 없습니다");
 
   const rawUrl = (site!.url || slug).replace(/^https?:\/\//, "");
-  const og = await scrapeOg(rawUrl);
+  const fullUrl = rawUrl.startsWith("http") ? rawUrl : `https://${rawUrl}`;
 
-  if (og.title || og.image) {
-    await db
-      .update(sites)
-      .set({
-        title: og.title || site!.title,
-        ogTitle: og.title,
-        ogDescription: og.description,
-        ogImage: og.image,
-      })
-      .where(eq(sites.id, site!.id));
+  const [og, faviconUrl] = await Promise.all([
+    scrapeOg(rawUrl),
+    resolveFavicon(fullUrl),
+  ]);
+
+  const autoColor = faviconUrl ? await extractDominantColor(faviconUrl) : null;
+
+  const updates: Record<string, string | null> = {};
+  if (og.title) { updates.title = og.title; updates.ogTitle = og.title; }
+  if (og.description) updates.ogDescription = og.description;
+  if (og.image) updates.ogImage = og.image;
+  if (faviconUrl) updates.faviconUrl = faviconUrl;
+  if (autoColor && !site!.color) updates.color = autoColor;
+
+  if (Object.keys(updates).length > 0) {
+    await db.update(sites).set(updates).where(eq(sites.id, site!.id));
   }
 
-  return ok({ ok: true, og });
+  return ok({ ok: true, og, faviconUrl });
 });
