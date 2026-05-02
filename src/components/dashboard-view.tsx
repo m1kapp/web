@@ -105,26 +105,8 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
           <div className="flex-1 overflow-y-auto">
             <SiteHero data={data} owner={owner} />
 
-            {(isOwner || data.verified) && (
-              <Section className="pt-1 pb-1">
-                <VerifiedStatus
-                  verified={data.verified}
-                  showEditor={showBadgeEditor}
-                  onToggleEditor={() => setShowBadgeEditor((v) => !v)}
-                  isOwner={isOwner}
-                />
-              </Section>
-            )}
-
             {isOwner && !data.verified && (
               <BadgeEditor slug={data.slug} host={host} pending savedStyle={data.badgeStyle} savedColor={data.badgeColor} />
-            )}
-
-            {isOwner && data.verified && showBadgeEditor && (
-              <>
-                <BadgeEditor slug={data.slug} host={host} savedStyle={data.badgeStyle} savedColor={data.badgeColor} />
-                <Divider />
-              </>
             )}
 
             {(hasData || data.verified) && (
@@ -183,9 +165,26 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
             {isOwner && (
               <>
                 <Divider />
-                <Section className="py-3">
-                  <RefreshOgButton slug={data.slug} />
-                  <DeleteSiteButton slug={data.slug} />
+                <Section className="py-4">
+                  <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-3">관리</p>
+
+                  <VerifiedStatus
+                    verified={data.verified}
+                    showEditor={showBadgeEditor}
+                    onToggleEditor={() => setShowBadgeEditor((v) => !v)}
+                    isOwner
+                  />
+
+                  {data.verified && showBadgeEditor && (
+                    <div className="mt-3">
+                      <BadgeEditor slug={data.slug} host={host} savedStyle={data.badgeStyle} savedColor={data.badgeColor} />
+                    </div>
+                  )}
+
+                  <div className="mt-3 space-y-0">
+                    <RefreshOgButton slug={data.slug} />
+                    <DeleteSiteButton slug={data.slug} />
+                  </div>
                 </Section>
               </>
             )}
