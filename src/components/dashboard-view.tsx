@@ -105,12 +105,13 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
           <div className="flex-1 overflow-y-auto">
             <SiteHero data={data} owner={owner} />
 
-            {isOwner && (
+            {(isOwner || data.verified) && (
               <Section className="pt-1 pb-3">
                 <VerifiedStatus
                   verified={data.verified}
                   showEditor={showBadgeEditor}
                   onToggleEditor={() => setShowBadgeEditor((v) => !v)}
+                  isOwner={isOwner}
                 />
               </Section>
             )}
@@ -195,10 +196,11 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
   );
 }
 
-function VerifiedStatus({ verified, showEditor, onToggleEditor }: {
+function VerifiedStatus({ verified, showEditor, onToggleEditor, isOwner = false }: {
   verified: boolean;
   showEditor: boolean;
   onToggleEditor: () => void;
+  isOwner?: boolean;
 }) {
   const { accent } = useAccent();
 
@@ -217,7 +219,7 @@ function VerifiedStatus({ verified, showEditor, onToggleEditor }: {
           </span>
         )}
       </div>
-      {verified && (
+      {verified && isOwner && (
         <button
           onClick={onToggleEditor}
           className={`text-[11px] font-medium px-2.5 py-1 rounded-lg transition-colors ${
