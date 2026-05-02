@@ -62,7 +62,7 @@ export function BadgeEditor({ slug, host, pending = false, savedStyle, savedColo
       await fetch("/api/sites/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, badgeStyle: newStyle, badgeColor: newColor }),
+        body: JSON.stringify({ slug, badgeStyle: newStyle, badgeColor: newColor, color: `#${newColor}` }),
       });
     } catch {}
   }, [slug]);
