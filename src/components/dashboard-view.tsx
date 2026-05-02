@@ -106,7 +106,7 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
             <SiteHero data={data} owner={owner} />
 
             {(isOwner || data.verified) && (
-              <Section className="pt-1 pb-3">
+              <Section className="pt-1 pb-1">
                 <VerifiedStatus
                   verified={data.verified}
                   showEditor={showBadgeEditor}
