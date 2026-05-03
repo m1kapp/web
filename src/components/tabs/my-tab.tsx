@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
-import { GoogleLoginButton } from "@/components/google-login-button";
-import { GitHubLoginButton } from "@/components/github-login-button";
 import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { Divider, EmptyState, InAppSheet } from "@m1kapp/kit";
 import { BoostShop } from "@/components/boost-shop";
@@ -200,29 +198,13 @@ export function MyTab({
 
   const totalHits = sites.reduce((sum, s) => sum + Number(s.total), 0);
 
-  if (!isSignedIn) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 px-4">
-        <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-300">
-            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-        </div>
-        <p className="text-sm font-medium text-zinc-600 mb-1">나의 도전을 시작해보세요</p>
-        <p className="text-xs text-zinc-400 mb-5">로그인하면 사이트를 등록하고 관리할 수 있어요</p>
-        <div className="flex flex-col gap-2 w-full">
-          <GoogleLoginButton
-            className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-colors"
-            style={{ backgroundColor: bgColor }}
-          />
-          <GitHubLoginButton
-            className="flex items-center justify-center gap-2 w-full px-6 py-2.5 rounded-xl text-sm font-bold text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
-          />
-        </div>
-      </div>
-    );
-  }
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isSignedIn) router.replace("/sign-in?redirect=/my");
+  }, [isSignedIn, router]);
+
+  if (!isSignedIn) return null;
 
   return (
     <div className="relative min-h-full px-4 pt-2 pb-24">
