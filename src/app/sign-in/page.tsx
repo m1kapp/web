@@ -11,6 +11,7 @@ export default function SignInPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const redirect = searchParams.get("redirect") || "/my";
+  const isExternal = redirect.startsWith("http");
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -39,7 +40,7 @@ export default function SignInPage() {
           m1k
         </h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center mb-8">
-          방문자 1,000명을 향한 첫걸음
+          계속하려면 로그인하세요
         </p>
 
         {/* 로그인 버튼 */}
@@ -51,10 +52,6 @@ export default function SignInPage() {
             className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold text-white bg-zinc-700 dark:bg-zinc-800 dark:text-white transition-colors"
           />
         </div>
-
-        <p className="text-[11px] text-zinc-400 dark:text-zinc-600 text-center mt-6 leading-relaxed">
-          로그인하면 사이트를 등록하고<br />1K 도전을 시작할 수 있어요
-        </p>
       </div>
     </div>
   );
