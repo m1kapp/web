@@ -24,8 +24,13 @@ export const sites = pgTable("sites", {
   totalHits: integer("total_hits").default(0).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   reached1000At: timestamp("reached_1000_at", { withTimezone: true }),
+  // CLI 익명 등록 → 나중에 소유권 귀속(claim) 플로우용
+  createdVia: text("created_via").default("web").notNull(), // "web" | "cli"
+  claimToken: text("claim_token"), // 미claim 사이트의 귀속 비밀키 (claim 후 null)
+  claimedAt: timestamp("claimed_at", { withTimezone: true }),
 }, (table) => [
   index("idx_sites_user_id").on(table.userId),
+  index("idx_sites_claim_token").on(table.claimToken),
 ]);
 
 export const hits = pgTable(

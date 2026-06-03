@@ -4,7 +4,7 @@ import { eq, sql, and, gte, desc, ne } from "drizzle-orm";
 import { todayKST } from "@/lib/format";
 import { handler, ok, notFound } from "@m1kapp/kit/server";
 
-export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: string[] }> }) => {
+export const GET = handler(async (req: Request, ctx: { params: Promise<{ slug: string[] }> }) => {
   const { slug: slugParts } = await ctx.params;
   const slug = slugParts.join("/");
 
@@ -16,6 +16,19 @@ export const GET = handler(async (_req: Request, ctx: { params: Promise<{ slug: 
 
   const now = new Date();
   const todayStr = todayKST(now);
+
+  // 경량 공개 카운트 — kit PoweredByKit 푸터용. today/total만 반환하고 CORS 허용.
+  // (풀 통계는 same-origin 유지 → 국가·기기·리퍼러 등은 교차출처로 노출하지 않음)
+  if (new URL(req.url).searchParams.get("view") === "count") {
+    const [todayRow] = await db
+      .select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` })
+      .from(hits)
+      .where(and(eq(hits.siteId, site!.id), eq(hits.date, todayStr)));
+    const res = ok({ slug: site!.slug, today: Number(todayRow.total), total: site!.totalHits });
+    res.headers.set("Access-Control-Allow-Origin", "*");
+    return res;
+  }
+
   const weekAgo = new Date(now);
   weekAgo.setDate(weekAgo.getDate() - 7);
   const monthAgo = new Date(now);
