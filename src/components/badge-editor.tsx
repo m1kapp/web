@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { useAccent } from "@/lib/theme-context";
 import { Section } from "@m1kapp/kit";
-import { useCopy } from "@/lib/use-copy";
+import { useCopy } from "@m1kapp/kit";
 
 type BadgeStyle = "flat" | "flat-square" | "rounded" | "cyworld";
 type SnippetFormat = "markdown" | "html";

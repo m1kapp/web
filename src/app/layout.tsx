@@ -4,12 +4,15 @@ import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PaddleProvider } from "@/components/paddle-provider";
 import { THEME_SCRIPT, ToastProvider } from "@m1kapp/kit";
+import { KitStyles } from "@m1kapp/kit/pwa";
+import { createMetadata, titleTemplate, jsonLd } from "@m1kapp/kit/seo";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import "./globals.css";
+import "@m1kapp/kit/styles.css";
 
 // Inlined to prevent FOUC before the external stylesheet loads
 const CRITICAL_CSS = `
@@ -33,9 +36,21 @@ const getSelfSlug = unstable_cache(
 
 export { mobileViewport as viewport } from "@m1kapp/kit/pwa";
 
+const BASE_URL = "https://m1k.app";
+const TITLE = "m1k — 방문자 1,000명을 향한 첫걸음";
+const DESCRIPTION = "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.";
+
 export const metadata: Metadata = {
-  title: "m1k — 방문자 1,000명을 향한 첫걸음",
-  description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
+  ...createMetadata({
+    title: TITLE,
+    description: DESCRIPTION,
+    url: BASE_URL,
+    siteName: "m1k",
+    image: `${BASE_URL}/og`,
+    twitterSite: "@m1kapp",
+  }),
+  title: titleTemplate("m1k"),
+  metadataBase: new URL(BASE_URL),
   icons: {
     icon: [
       { url: "/favicon.ico", type: "image/x-icon" },
@@ -47,19 +62,8 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   openGraph: {
-    title: "m1k — 방문자 1,000명을 향한 첫걸음",
-    description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
-    url: "https://m1k.app",
-    siteName: "m1k",
+    ...(createMetadata({ title: TITLE, description: DESCRIPTION, url: BASE_URL, siteName: "m1k", image: `${BASE_URL}/og` }).openGraph as object),
     locale: "ko_KR",
-    type: "website",
-    images: [{ url: "https://m1k.app/og", width: 1200, height: 630, alt: "m1k" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "m1k — 방문자 1,000명을 향한 첫걸음",
-    description: "배지 하나로 방문자 추적. 1,000명 목표 달성까지의 여정을 한눈에.",
-    images: ["https://m1k.app/og"],
   },
 };
 
@@ -83,7 +87,12 @@ export default async function RootLayout({
       <head>
         <meta name="theme-color" content="#09090b" />
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
+        <KitStyles />
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLd.website({ name: "m1k", url: BASE_URL, description: DESCRIPTION }) }}
+        />
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css"

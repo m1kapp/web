@@ -1,9 +1,6 @@
-import type { MetadataRoute } from "next";
+import { nextRobots } from "@m1kapp/kit/seo";
 import { appHost } from "@/lib/utils";
 
-export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: { userAgent: "*", allow: "/" },
-    sitemap: `https://${appHost()}/sitemap.xml`,
-  };
+export default function robots() {
+  return nextRobots({ sitemap: `https://${appHost()}/sitemap.xml` });
 }

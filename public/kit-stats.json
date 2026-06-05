@@ -1,0 +1,110 @@
+{
+  "generatedAt": "2026-06-05T14:19:10.002Z",
+  "kitVersion": "0.0.27",
+  "source": {
+    "dir": "src",
+    "files": 90,
+    "totalLines": 8547,
+    "codeLines": 7275
+  },
+  "kit": {
+    "features": [
+      {
+        "name": "GrassMap",
+        "loc": 314,
+        "category": "component"
+      },
+      {
+        "name": "Watermark",
+        "loc": 239,
+        "category": "component"
+      },
+      {
+        "name": "ThemeButton",
+        "loc": 187,
+        "category": "component"
+      },
+      {
+        "name": "jsonLd",
+        "loc": 168,
+        "category": "util"
+      },
+      {
+        "name": "InAppSheet",
+        "loc": 168,
+        "category": "component"
+      },
+      {
+        "name": "Dialog",
+        "loc": 98,
+        "category": "component"
+      },
+      {
+        "name": "KitStyles",
+        "loc": 97,
+        "category": "component"
+      },
+      {
+        "name": "ToastProvider",
+        "loc": 93,
+        "category": "component"
+      },
+      {
+        "name": "AppShell",
+        "loc": 76,
+        "category": "component"
+      },
+      {
+        "name": "createMetadata",
+        "loc": 76,
+        "category": "util"
+      },
+      {
+        "name": "TabBar",
+        "loc": 37,
+        "category": "component"
+      },
+      {
+        "name": "EmptyState",
+        "loc": 19,
+        "category": "component"
+      },
+      {
+        "name": "Section",
+        "loc": 17,
+        "category": "component"
+      },
+      {
+        "name": "useDebounce",
+        "loc": 8,
+        "category": "hook"
+      },
+      {
+        "name": "Divider",
+        "loc": 3,
+        "category": "component"
+      }
+    ],
+    "savedLines": 1600,
+    "savedKB": 63,
+    "savedA4": 20,
+    "savedPercent": 18,
+    "usage": {
+      "component": {
+        "used": 17,
+        "total": 52,
+        "percent": 33
+      },
+      "hook": {
+        "used": 1,
+        "total": 13,
+        "percent": 8
+      },
+      "util": {
+        "used": 7,
+        "total": 22,
+        "percent": 32
+      }
+    }
+  }
+}
