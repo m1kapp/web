@@ -325,23 +325,24 @@ export function MyTab({
         onClose={() => setShowRegisterSheet(false)}
         className="rounded-t-2xl bg-white dark:bg-zinc-950 p-5 pb-8 shadow-2xl"
       >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <p className="text-sm font-bold text-zinc-900 dark:text-white">사이트 등록</p>
-            <p className="text-[11px] text-zinc-400 mt-1">프로필에 연결할 사이트 주소를 입력하세요.</p>
-          </div>
-          <button
-            onClick={() => setShowRegisterSheet(false)}
-            className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs"
-          >
-            ✕
-          </button>
+        <div className="mb-4">
+          <p className="text-sm font-bold text-zinc-900 dark:text-white">사이트 등록</p>
+          <p className="text-[11px] text-zinc-400 mt-1">프로필에 연결할 사이트 주소를 입력하세요.</p>
         </div>
         <RegisterForm
           bgColor={bgColor}
           onRegistered={onRegistered}
           onClose={() => setShowRegisterSheet(false)}
         />
+        <button
+          onClick={() => {
+            setShowRegisterSheet(false);
+            router.push("/connect");
+          }}
+          className="mt-3 w-full text-center text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+        >
+          ✨ AI(클로드)로 한 번에 연결하기 →
+        </button>
       </InAppSheet>
 
       <InAppSheet
@@ -349,14 +350,8 @@ export function MyTab({
         onClose={() => setShowBoostShop(false)}
         className="rounded-t-2xl bg-white dark:bg-zinc-950 p-5 pb-8 shadow-2xl"
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <span className="text-sm font-bold text-zinc-900 dark:text-white">부스트 충전</span>
-          <button
-            onClick={() => setShowBoostShop(false)}
-            className="w-6 h-6 flex items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-xs"
-          >
-            ✕
-          </button>
         </div>
         <BoostShop onPurchased={() => { refreshBalance(); setShowBoostShop(false); }} />
       </InAppSheet>

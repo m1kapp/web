@@ -33,6 +33,18 @@ export const sites = pgTable("sites", {
   index("idx_sites_claim_token").on(table.claimToken),
 ]);
 
+// 개인 API 토큰 — CLI/AI(클로드)가 내 계정으로 사이트를 바로 등록할 때 사용.
+// 평문은 발급 시 1회만 보여주고, DB엔 sha256 해시만 저장.
+export const apiTokens = pgTable("api_tokens", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().unique(), // 1인 1토큰 — 재발급 시 교체
+  tokenHash: text("token_hash").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+}, (table) => [
+  index("idx_api_tokens_hash").on(table.tokenHash),
+]);
+
 export const hits = pgTable(
   "hits",
   {
