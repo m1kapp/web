@@ -80,6 +80,13 @@ function TabsShell({ children }: { children: React.ReactNode }) {
               icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "builder" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3" /><path d="M7 21a5 5 0 0 1 10 0" /><circle cx="5" cy="10" r="2.5" /><path d="M2 21a3 3 0 0 1 6 0" /><circle cx="19" cy="10" r="2.5" /><path d="M16 21a3 3 0 0 1 6 0" /></svg>}
             />
             <Tab
+              active={tab === "connect"}
+              onClick={() => router.push("/connect")}
+              activeColor={bgColor}
+              label="연결"
+              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "connect" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 0 1 0 10h-2" /><line x1="8" y1="12" x2="16" y2="12" /></svg>}
+            />
+            <Tab
               active={tab === "my"}
               onClick={() => router.push("/my")}
               activeColor={bgColor}
