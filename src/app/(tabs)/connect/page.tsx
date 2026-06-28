@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { useAppTheme } from "../theme-context";
 
 function buildPrompt(token: string, origin: string): string {
   return `m1k.app 방문자 트래커를 내 사이트에 달아줘. 아래 순서대로 진행하면 돼.
@@ -60,9 +61,10 @@ function CopyButton({ text, label = "복사" }: { text: string; label?: string }
   );
 }
 
-function ConnectInner() {
+export default function ConnectPage() {
   const { isSignedIn, isLoaded } = useUser();
   const router = useRouter();
+  const { bgColor } = useAppTheme();
 
   const [exists, setExists] = useState<boolean | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -105,83 +107,69 @@ function ConnectInner() {
 
   if (!isLoaded || !isSignedIn) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-white dark:bg-zinc-950">
+      <div className="px-4 py-20 flex justify-center">
         <div className="w-6 h-6 rounded-full border-2 border-zinc-300 border-t-zinc-600 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6 py-12 bg-white dark:bg-zinc-950">
-      <div className="w-full max-w-[420px]">
-        <h1 className="text-3xl font-black tracking-tighter text-zinc-900 dark:text-white mb-1 text-center">m1k</h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-8 text-center">
-          AI(클로드)로 사이트 연결 + 추적 설정
+    <div className="px-4 pt-2 pb-24">
+      <div className="mb-6">
+        <h1 className="text-xl font-black tracking-tight text-zinc-900 dark:text-white">AI로 사이트 연결</h1>
+        <p className="text-[13px] text-zinc-500 dark:text-zinc-400 mt-1">
+          개인 토큰을 클로드에 붙여넣으면 등록·추적 설정까지 알아서 해줘요.
+          <br />
+          <span className="text-zinc-400">순수 HTML은 배지, @m1kapp/kit은 prop 설정으로 자동 분기.</span>
         </p>
-
-        {!token && (
-          <div className="flex flex-col items-center gap-5">
-            <p className="text-sm text-zinc-600 dark:text-zinc-300 text-center leading-relaxed">
-              개인 토큰을 발급받아 클로드에 붙여넣으면,
-              <br />
-              사이트 등록부터 추적 설정까지 알아서 해줘요.
-              <br />
-              <span className="text-zinc-400">(순수 HTML은 배지, @m1kapp/kit은 prop 설정으로 자동 분기)</span>
-            </p>
-            <button
-              onClick={issue}
-              disabled={loading}
-              className="w-full px-4 py-3 rounded-xl text-sm font-bold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 disabled:opacity-50"
-            >
-              {loading ? "발급 중…" : exists ? "토큰 재발급" : "토큰 발급하기"}
-            </button>
-            {exists && (
-              <p className="text-[11px] text-zinc-400 text-center">
-                이미 발급한 적이 있어요. 재발급하면 이전 토큰은 즉시 무효화됩니다.
-              </p>
-            )}
-          </div>
-        )}
-
-        {token && (
-          <div className="flex flex-col gap-6">
-            <div>
-              <p className="text-[11px] font-bold text-zinc-400 mb-2">내 토큰 — 한 번만 보여요</p>
-              <div className="flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
-                <code className="flex-1 text-xs text-zinc-700 dark:text-zinc-200 break-all">{token}</code>
-                <CopyButton text={token} />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[11px] font-bold text-zinc-400">클로드에 그대로 붙여넣기</p>
-                <CopyButton text={buildPrompt(token, origin)} label="프롬프트 복사" />
-              </div>
-              <pre className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-3 text-[11px] leading-relaxed text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap break-words max-h-72 overflow-auto">
-                {buildPrompt(token, origin)}
-              </pre>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => router.push("/my")}
-                className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800"
-              >
-                내 사이트
-              </button>
-            </div>
-          </div>
-        )}
       </div>
-    </div>
-  );
-}
 
-export default function ConnectPage() {
-  return (
-    <Suspense fallback={null}>
-      <ConnectInner />
-    </Suspense>
+      {!token && (
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={issue}
+            disabled={loading}
+            className="w-full px-4 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+            style={{ backgroundColor: bgColor }}
+          >
+            {loading ? "발급 중…" : exists ? "토큰 재발급" : "토큰 발급하기"}
+          </button>
+          {exists && (
+            <p className="text-[11px] text-zinc-400 text-center">
+              이미 발급한 적이 있어요. 재발급하면 이전 토큰은 즉시 무효화됩니다.
+            </p>
+          )}
+        </div>
+      )}
+
+      {token && (
+        <div className="flex flex-col gap-6">
+          <div>
+            <p className="text-[11px] font-bold text-zinc-400 mb-2">내 토큰 — 한 번만 보여요</p>
+            <div className="flex items-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2.5">
+              <code className="flex-1 text-xs text-zinc-700 dark:text-zinc-200 break-all">{token}</code>
+              <CopyButton text={token} />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[11px] font-bold text-zinc-400">클로드에 그대로 붙여넣기</p>
+              <CopyButton text={buildPrompt(token, origin)} label="프롬프트 복사" />
+            </div>
+            <pre className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 p-3 text-[11px] leading-relaxed text-zinc-700 dark:text-zinc-200 whitespace-pre-wrap break-words max-h-80 overflow-auto">
+              {buildPrompt(token, origin)}
+            </pre>
+          </div>
+
+          <button
+            onClick={() => router.push("/my")}
+            className="w-full px-4 py-2.5 rounded-xl text-sm font-bold text-zinc-700 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800"
+          >
+            내 사이트
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
