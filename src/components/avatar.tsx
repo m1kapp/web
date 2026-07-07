@@ -1,70 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useImageLoader } from "@m1kapp/kit";
 
 const RING_GRADIENT = "linear-gradient(135deg, #f9a825, #f06292, #ab47bc, #5c6bc0)";
-
-// ─── 이미지 로딩 훅 ──────────────────────────────────────────────
-
-type ImgState = { idx: number; status: "loading" | "loaded" | "failed" };
-
-/**
- * URL 배열을 받아 순서대로 시도, 성공하면 "loaded", 전부 실패하면 "failed".
- * 캐시된 이미지(img.complete)도 정상 처리.
- */
-function useImageLoader(urls: string[]) {
-  const key = urls.join("\0");
-
-  const [state, setState] = useState<ImgState & { _key: string }>(() => ({
-    idx: 0,
-    status: urls.length > 0 ? "loading" : "failed",
-    _key: key,
-  }));
-
-  // key가 바뀔 때 렌더 시점에서 리셋 (useEffect 대신 — ref callback과 경쟁 방지)
-  if (state._key !== key) {
-    setState({ idx: 0, status: urls.length > 0 ? "loading" : "failed", _key: key });
-  }
-
-  const url = state.idx < urls.length ? urls[state.idx] : null;
-
-  function tryNext() {
-    setState((prev) => {
-      if (prev.status !== "loading") return prev;
-      const next = prev.idx + 1;
-      return { ...prev, idx: next, status: next < urls.length ? "loading" : "failed" };
-    });
-  }
-
-  function markLoaded() {
-    setState((prev) => (prev.status === "loading" ? { ...prev, status: "loaded" } : prev));
-  }
-
-  function checkImg(img: HTMLImageElement) {
-    if (img.naturalWidth >= 8 && img.naturalHeight >= 8) markLoaded();
-    else tryNext();
-  }
-
-  function handleLoad(e: React.SyntheticEvent<HTMLImageElement>) {
-    checkImg(e.currentTarget);
-  }
-
-  // useCallback: url이 바뀔 때만 새 ref 콜백 생성 → 불필요한 null+element 호출 방지
-  const refCallback = useCallback((el: HTMLImageElement | null) => {
-    if (el && el.complete) {
-      if (el.naturalWidth >= 8 && el.naturalHeight >= 8) markLoaded();
-      else tryNext();
-    }
-  }, [url]);
-
-  return {
-    status: url ? state.status : ("failed" as const),
-    url,
-    refCallback,
-    handleLoad,
-    handleError: tryNext,
-  };
-}
 
 // ─── Avatar 컴포넌트 ─────────────────────────────────────────────
 

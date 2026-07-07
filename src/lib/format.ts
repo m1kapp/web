@@ -4,10 +4,7 @@ export function compactNumber(n: number): string {
   return String(n);
 }
 
-/** 현재 KST(UTC+9) 기준 날짜 문자열 (YYYY-MM-DD) */
-export function todayKST(base: Date = new Date()): string {
-  return new Date(base.getTime() + 9 * 60 * 60 * 1000).toISOString().split("T")[0];
-}
+export { todayKST } from "@m1kapp/kit/server";
 
 export function countryFlag(code: string | null): string {
   if (!code || code.length !== 2) return "🌍";
