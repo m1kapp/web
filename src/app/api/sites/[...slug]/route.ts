@@ -18,9 +18,41 @@ export const GET = handler(async (req: Request, ctx: { params: Promise<{ slug: s
   const now = new Date();
   const todayStr = todayKST(now);
 
+  const view = new URL(req.url).searchParams.get("view");
+
+  // 공개 통계 상세 — kit 푸터 카운터 클릭 시 시트용. 카운트 계열만 CORS 허용.
+  // (국가·기기·리퍼러는 여전히 same-origin 전용 — 교차출처로 노출하지 않음)
+  if (view === "public") {
+    const thirtyAgo = new Date(now);
+    thirtyAgo.setDate(thirtyAgo.getDate() - 30);
+    const [snapshot, bufferedToday, bufferedTotal, [weeklyResult], [monthlyResult], daily] = await Promise.all([
+      getCountSnapshot(site!.id),
+      getBufferedCount(site!.id, todayStr),
+      getBufferedTotal(site!.id),
+      db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(new Date(now.getTime() - 7 * 86400_000))))),
+      db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(thirtyAgo)))),
+      db.select({ date: hits.date, count: hits.count }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(thirtyAgo)))).orderBy(hits.date),
+    ]);
+    const base = snapshot ?? { total: site!.totalHits, today: 0 };
+    const total = base.total + bufferedTotal;
+    const res = ok({
+      slug: site!.slug,
+      title: site!.title,
+      today: base.today + bufferedToday,
+      weekly: Number(weeklyResult.total),
+      monthly: Number(monthlyResult.total),
+      total,
+      progress: Math.min(total / 1000, 1),
+      daily,
+      createdAt: site!.createdAt,
+    });
+    res.headers.set("Access-Control-Allow-Origin", "*");
+    return res;
+  }
+
   // 경량 공개 카운트 — kit PoweredByKit 푸터용. today/total만 반환하고 CORS 허용.
   // (풀 통계는 same-origin 유지 → 국가·기기·리퍼러 등은 교차출처로 노출하지 않음)
-  if (new URL(req.url).searchParams.get("view") === "count") {
+  if (view === "count") {
     // 실시간: DB 스냅샷 + Redis 버퍼 증분 합산 (flush 주기와 무관하게 today/total 최신)
     const [snapshot, bufferedToday, bufferedTotal] = await Promise.all([
       getCountSnapshot(site!.id),
