@@ -1,11 +1,24 @@
 {
-  "generatedAt": "2026-06-05T14:19:10.002Z",
-  "kitVersion": "0.0.27",
+  "generatedAt": "2026-07-08T12:26:13.049Z",
+  "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
-    "files": 90,
-    "totalLines": 8547,
-    "codeLines": 7275
+    "files": 94,
+    "totalLines": 8955,
+    "codeLines": 7625
+  },
+  "quality": {
+    "score": 61,
+    "grade": "C",
+    "branchDensity": 14.5,
+    "branches": 1109,
+    "functions": 595,
+    "avgFileLines": 81,
+    "longFiles": 8,
+    "maxFile": {
+      "path": "src/components/overview-insights.tsx",
+      "lines": 984
+    }
   },
   "kit": {
     "features": [
@@ -16,7 +29,7 @@
       },
       {
         "name": "Watermark",
-        "loc": 239,
+        "loc": 244,
         "category": "component"
       },
       {
@@ -60,13 +73,33 @@
         "category": "util"
       },
       {
+        "name": "FetchProgress",
+        "loc": 75,
+        "category": "component"
+      },
+      {
+        "name": "useImageLoader",
+        "loc": 68,
+        "category": "hook"
+      },
+      {
+        "name": "useCopy",
+        "loc": 67,
+        "category": "hook"
+      },
+      {
         "name": "TabBar",
-        "loc": 37,
+        "loc": 45,
         "category": "component"
       },
       {
         "name": "EmptyState",
         "loc": 19,
+        "category": "component"
+      },
+      {
+        "name": "Divider",
+        "loc": 18,
         "category": "component"
       },
       {
@@ -78,32 +111,27 @@
         "name": "useDebounce",
         "loc": 8,
         "category": "hook"
-      },
-      {
-        "name": "Divider",
-        "loc": 3,
-        "category": "component"
       }
     ],
-    "savedLines": 1600,
-    "savedKB": 63,
-    "savedA4": 20,
-    "savedPercent": 18,
+    "savedLines": 1838,
+    "savedKB": 72,
+    "savedA4": 23,
+    "savedPercent": 19,
     "usage": {
       "component": {
-        "used": 17,
-        "total": 52,
-        "percent": 33
+        "used": 18,
+        "total": 57,
+        "percent": 32
       },
       "hook": {
-        "used": 1,
+        "used": 3,
         "total": 13,
-        "percent": 8
+        "percent": 23
       },
       "util": {
         "used": 7,
-        "total": 22,
-        "percent": 32
+        "total": 23,
+        "percent": 30
       }
     }
   }
