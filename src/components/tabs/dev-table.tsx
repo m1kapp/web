@@ -12,8 +12,8 @@ const GRADE_COLORS: Record<string, string> = {
   D: "text-red-500",
 };
 
-// 스택바 색 — 프론트/백엔드/공용
-const BAR_COLORS = { frontend: "#3b82f6", backend: "#f97316", shared: "#a1a1aa" } as const;
+// 스택바 색 — 프론트/백엔드/공용. indigo·teal 동계열 + 중립 회색 (파랑/주황 보색 충돌 대신 톤 맞춤)
+const BAR_COLORS = { frontend: "#6366f1", backend: "#14b8a6", shared: "#a1a1aa" } as const;
 
 /** 파비콘 — 로드 실패 시 이니셜 원으로 폴백 (깨진 이미지 아이콘 방지) */
 function SiteLogo({ site }: { site: RecentSite }) {
@@ -52,8 +52,8 @@ function CodeBar({ s }: { s: SiteKitStats }) {
       ]
     : [{ key: "all", v: total, color: BAR_COLORS.shared }];
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="w-12 h-2 rounded-full overflow-hidden flex shrink-0 bg-zinc-100 dark:bg-zinc-800">
+    <div className="flex items-center gap-1">
+      <div className="w-10 h-2 rounded-full overflow-hidden flex shrink-0 bg-zinc-100 dark:bg-zinc-800">
         {segs.map((seg) => (
           <div key={seg.key} style={{ width: `${(seg.v / total) * 100}%`, backgroundColor: seg.color }} />
         ))}
@@ -79,16 +79,16 @@ export function DevTable({ sites, stats, latest }: {
 
   return (
     <div className="overflow-x-auto -mx-4 px-4">
-      <table className="text-[11px] font-mono border-collapse" style={{ width: "420px", tableLayout: "fixed" }}>
+      <table className="text-[11px] font-mono border-collapse" style={{ width: "400px", tableLayout: "fixed" }}>
         <thead>
           <tr className="text-[10px] text-zinc-400 dark:text-zinc-500 border-b border-zinc-100 dark:border-zinc-800">
-            <th className="text-left font-medium py-1.5 pr-3 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "120px" }}>사이트</th>
-            <th className="text-left font-medium py-1.5 pr-3" style={{ width: "50px" }}>파일</th>
-            <th className="text-left font-medium py-1.5 pr-3" style={{ width: "110px" }}>
+            <th className="text-left font-medium py-1.5 pr-2 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "140px" }}>사이트</th>
+            <th className="text-left font-medium py-1.5 pr-2" style={{ width: "40px" }}>파일</th>
+            <th className="text-left font-medium py-1.5 pr-2" style={{ width: "95px" }}>
               코드 <span style={{ color: BAR_COLORS.frontend }}>■</span><span style={{ color: BAR_COLORS.backend }}>■</span><span style={{ color: BAR_COLORS.shared }}>■</span>
             </th>
-            <th className="text-right font-medium py-1.5 pr-3" style={{ width: "45px" }}>kit</th>
-            <th className="text-right font-medium py-1.5" style={{ width: "60px" }}>health</th>
+            <th className="text-right font-medium py-1.5 pr-2" style={{ width: "40px" }}>kit</th>
+            <th className="text-right font-medium py-1.5" style={{ width: "55px" }}>health</th>
           </tr>
         </thead>
         <tbody>
@@ -97,7 +97,7 @@ export function DevTable({ sites, stats, latest }: {
             const behind = !!(latest && s.kitVersion !== latest);
             return (
               <tr key={site.slug} className="border-b border-zinc-50 dark:border-zinc-900">
-                <td className="py-2 pr-3 sticky left-0 bg-white dark:bg-zinc-950 overflow-hidden">
+                <td className="py-2 pr-2 sticky left-0 bg-white dark:bg-zinc-950 overflow-hidden">
                   <a href={`/${site.slug}`} className="flex items-center gap-2 min-w-0 overflow-hidden">
                     <SiteLogo site={site} />
                     <span className="min-w-0">
@@ -108,11 +108,11 @@ export function DevTable({ sites, stats, latest }: {
                     </span>
                   </a>
                 </td>
-                <td className="py-2 pr-3 tabular-nums text-zinc-500 dark:text-zinc-400">
+                <td className="py-2 pr-2 tabular-nums text-zinc-500 dark:text-zinc-400">
                   {s.files ?? "—"}
                 </td>
-                <td className="py-2 pr-3"><CodeBar s={s} /></td>
-                <td className="py-2 pr-3 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                <td className="py-2 pr-2"><CodeBar s={s} /></td>
+                <td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
                   {s.savedPercent != null ? `${s.savedPercent}%` : "—"}
                 </td>
                 <td className={`py-2 text-right font-bold whitespace-nowrap ${s.quality ? GRADE_COLORS[s.quality.grade] ?? "" : ""}`}>
