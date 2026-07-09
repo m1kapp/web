@@ -159,24 +159,24 @@ function buildBadgeArgs(
     : "total";
   const displayCount = counts[badgeType] ?? counts.total;
 
-  const typeLabels: Record<string, string> = {
-    total: urlObj.searchParams.get("label") || site.badgeLabel || "m1k",
-    today: urlObj.searchParams.get("label") || "today",
-    weekly: urlObj.searchParams.get("label") || "weekly",
-    monthly: urlObj.searchParams.get("label") || "monthly",
-  };
-
   const currentGoal = getCurrentGoal(counts.total);
+  const labelColorParam = urlObj.searchParams.get("labelColor");
 
   return [displayCount, currentGoal.goal, {
-    label: typeLabels[badgeType] || "m1k",
+    label: resolveBadgeLabel(urlObj, site, badgeType),
     color: resolveBadgeColor(urlObj, site),
-    labelColor: urlObj.searchParams.get("labelColor")
-      ? `#${urlObj.searchParams.get("labelColor")}`
-      : undefined,
+    labelColor: labelColorParam ? `#${labelColorParam}` : undefined,
     style: (urlObj.searchParams.get("style") || site.badgeStyle || "cyworld") as "flat" | "flat-square" | "rounded" | "cyworld",
     theme: isDark ? "dark" : "light",
   }, counts.today];
+}
+
+/** 우선순위: 쿼리 label → (total이면 site.badgeLabel) → 타입 기본 라벨 */
+function resolveBadgeLabel(urlObj: URL, site: Site, badgeType: BadgeType): string {
+  const queryLabel = urlObj.searchParams.get("label");
+  if (queryLabel) return queryLabel;
+  if (badgeType === "total") return site.badgeLabel || "m1k";
+  return badgeType; // today/weekly/monthly는 타입명 그대로
 }
 
 /** 우선순위: 쿼리 color → site.badgeColor → site.color → 검정 */

@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useUser, useClerk } from "@clerk/nextjs";
 import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { Divider, EmptyState, InAppSheet } from "@m1kapp/kit";
 import { BoostShop } from "@/components/boost-shop";
 import { BoostHistorySheet } from "@/components/boost-history-sheet";
 import type { RecentSite } from "@/lib/types";
-import { Avatar } from "@/components/avatar";
-import { RegisterForm, BoostedSiteCard, type BoostedSite } from "./my-tab-parts";
+import { RegisterForm, BoostedSiteCard, ProfileHeader, type BoostedSite } from "./my-tab-parts";
 
 
 export function MyTab({
@@ -25,8 +23,6 @@ export function MyTab({
   onRegistered: () => void;
   sitesLoading?: boolean;
 }) {
-  const { user } = useUser();
-  const { signOut } = useClerk();
   const [pointBalance, setPointBalance] = useState<number | null>(null);
   const [showBoostShop, setShowBoostShop] = useState(false);
   const [showRegisterSheet, setShowRegisterSheet] = useState(false);
@@ -73,45 +69,12 @@ export function MyTab({
 
   return (
     <div className="relative min-h-full px-4 pt-2 pb-24">
-      {/* 프로필 */}
-      <div className="flex items-center gap-3 mb-5 justify-between">
-        <div className="flex items-center gap-3">
-          <Avatar imageUrl={user?.imageUrl} name={user?.firstName || user?.username || "?"} size={44} />
-          <div>
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
-              {user?.firstName || user?.username || "나"}
-            </h2>
-            {(() => {
-              const handle = user?.username || user?.primaryEmailAddress?.emailAddress.split("@")[0];
-              return handle ? (
-                <a href={`/@${handle}`} className="text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
-                  @{handle}
-                </a>
-              ) : null;
-            })()}
-            <p className="text-xs text-zinc-400">
-              {sites.length}개 사이트 · 총 {totalHits.toLocaleString()}명 방문
-              {pointBalance !== null && (
-                <span className="ml-1.5 inline-flex items-center gap-1.5">
-                  · 🚀 <span className="font-semibold text-zinc-600 dark:text-zinc-300">{pointBalance.toLocaleString()}</span>
-                  <button
-                    onClick={() => setShowBoostShop(true)}
-                    className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-[9px] font-bold leading-none border border-zinc-200 dark:border-zinc-700"
-                  >
-                    충전
-                  </button>
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => signOut()}
-          className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors px-2 py-1"
-        >
-          로그아웃
-        </button>
-      </div>
+      <ProfileHeader
+        sitesCount={sites.length}
+        totalHits={totalHits}
+        pointBalance={pointBalance}
+        onOpenShop={() => setShowBoostShop(true)}
+      />
 
       {/* 섹션 탭 */}
       <div className="flex gap-1 mb-5 bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">

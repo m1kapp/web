@@ -35,54 +35,84 @@ function hoursToReach(daily: { date: string; count: number }[], target: number):
   return null;
 }
 
-function getContextLine(data: SiteData, streak: number): string {
-  const { total, todayCount, daily, verified } = data;
-  const remaining = 1_000 - total;
-  const hours1K = hoursToReach(daily, 1_000);
-  const activeDays = daily.filter((d) => d.count > 0).length;
+// 우선순위 순 컨텍스트 문구 규칙 — 첫 매치가 승리
+type HeroContext = { data: SiteData; streak: number; remaining: number; hours1K: number | null; activeDays: number };
 
-  if (streak >= 30) return `🏆 ${streak}일 연속 — 진짜 대단해요`;
-  if (streak >= 14) return `🔥 ${streak}일 연속 중 — 멈추면 안 돼요`;
-  if (streak >= 7)  return `🔥 ${streak}일 연속 — 불타고 있어요`;
-  if (total >= 1_000 && hours1K) {
+const CONTEXT_RULES: ((c: HeroContext) => string | null)[] = [
+  ({ streak }) => streak >= 30 ? `🏆 ${streak}일 연속 — 진짜 대단해요` : null,
+  ({ streak }) => streak >= 14 ? `🔥 ${streak}일 연속 중 — 멈추면 안 돼요` : null,
+  ({ streak }) => streak >= 7 ? `🔥 ${streak}일 연속 — 불타고 있어요` : null,
+  ({ data, hours1K }) => {
+    if (data.total < 1_000 || !hours1K) return null;
     const label = hours1K > 100 ? `${Math.round(hours1K / 24)}일` : `${hours1K}시간`;
     return `🚀 ${label} 만에 1K 달성 · 10K 가즈아`;
+  },
+  ({ remaining }) => remaining > 0 && remaining <= 50 ? `⚡ ${remaining}명만 더하면 1K!` : null,
+  ({ remaining }) => remaining > 0 && remaining <= 200 ? `💪 1K까지 ${remaining.toLocaleString()}명 남았어요` : null,
+  ({ data, streak }) => data.todayCount > 0 && streak > 1 ? `오늘도 ${data.todayCount.toLocaleString()}명 방문 중 · ${streak}일 연속` : null,
+  ({ data }) => data.todayCount > 0 ? `오늘 ${data.todayCount.toLocaleString()}명이 찾아왔어요` : null,
+  ({ activeDays }) => activeDays > 0 ? `방문자 트래커 달고 ${activeDays}일째 기록 중` : null,
+  ({ data }) => !data.verified ? `뱃지를 심으면 방문자 추적이 시작돼요` : null,
+];
+
+function getContextLine(data: SiteData, streak: number): string {
+  const ctx: HeroContext = {
+    data,
+    streak,
+    remaining: 1_000 - data.total,
+    hours1K: hoursToReach(data.daily, 1_000),
+    activeDays: data.daily.filter((d) => d.count > 0).length,
+  };
+  for (const rule of CONTEXT_RULES) {
+    const line = rule(ctx);
+    if (line) return line;
   }
-  if (remaining > 0 && remaining <= 50) return `⚡ ${remaining}명만 더하면 1K!`;
-  if (remaining > 0 && remaining <= 200) return `💪 1K까지 ${remaining.toLocaleString()}명 남았어요`;
-  if (todayCount > 0 && streak > 1) return `오늘도 ${todayCount.toLocaleString()}명 방문 중 · ${streak}일 연속`;
-  if (todayCount > 0) return `오늘 ${todayCount.toLocaleString()}명이 찾아왔어요`;
-  if (activeDays > 0) return `방문자 트래커 달고 ${activeDays}일째 기록 중`;
-  if (!verified) return `뱃지를 심으면 방문자 추적이 시작돼요`;
   return `트래커 설치 완료 — 첫 방문자를 기다리는 중`;
+}
+
+// 연속 방문 티어별 스타일 — legendary(30+) / hot(7+) / active(1+) / idle
+const STREAK_TIERS = {
+  legendary: {
+    bgClass: "bg-yellow-50 dark:bg-yellow-950/30",
+    labelColor: "text-yellow-500",
+    valueColor: "text-yellow-500",
+    glow: "0 0 16px #f59e0b33" as string | undefined,
+    label: "🏆 연속",
+  },
+  hot: {
+    bgClass: "bg-orange-50 dark:bg-orange-950/30",
+    labelColor: "text-orange-400",
+    valueColor: "text-orange-500",
+    glow: "0 0 12px #f9731633" as string | undefined,
+    label: "🔥 연속",
+  },
+  active: {
+    bgClass: "bg-zinc-50 dark:bg-zinc-900",
+    labelColor: "text-zinc-400",
+    valueColor: "text-zinc-900 dark:text-white",
+    glow: undefined as string | undefined,
+    label: "연속",
+  },
+  idle: {
+    bgClass: "bg-zinc-50 dark:bg-zinc-900",
+    labelColor: "text-zinc-400",
+    valueColor: "text-zinc-300 dark:text-zinc-600",
+    glow: undefined as string | undefined,
+    label: "연속",
+  },
+};
+
+function streakTier(streak: number): keyof typeof STREAK_TIERS {
+  if (streak >= 30) return "legendary";
+  if (streak >= 7) return "hot";
+  if (streak > 0) return "active";
+  return "idle";
 }
 
 export function StreakChip({ daily }: { daily: { date: string; count: number }[] }) {
   const streak = calcStreak(daily);
-  const legendary = streak >= 30;
-  const hot      = streak >= 7;
-  const active   = streak > 0;
-
-  const bgClass = legendary
-    ? "bg-yellow-50 dark:bg-yellow-950/30"
-    : hot
-    ? "bg-orange-50 dark:bg-orange-950/30"
-    : "bg-zinc-50 dark:bg-zinc-900";
-
-  const labelColor = legendary ? "text-yellow-500" : hot ? "text-orange-400" : "text-zinc-400";
-  const valueColor = legendary
-    ? "text-yellow-500"
-    : hot
-    ? "text-orange-500"
-    : active
-    ? "text-zinc-900 dark:text-white"
-    : "text-zinc-300 dark:text-zinc-600";
-
-  const glow = legendary
-    ? "0 0 16px #f59e0b33"
-    : hot
-    ? "0 0 12px #f9731633"
-    : undefined;
+  const active = streak > 0;
+  const { bgClass, labelColor, valueColor, glow, label } = STREAK_TIERS[streakTier(streak)];
 
   return (
     <div
@@ -90,7 +120,7 @@ export function StreakChip({ daily }: { daily: { date: string; count: number }[]
       style={glow ? { boxShadow: glow } : undefined}
     >
       <p className={`text-[10px] mb-0.5 font-medium ${labelColor}`}>
-        {legendary ? "🏆 연속" : hot ? "🔥 연속" : "연속"}
+        {label}
       </p>
       <p className={`text-lg font-black tabular-nums ${valueColor}`}>
         {active ? `${streak}일` : "–"}

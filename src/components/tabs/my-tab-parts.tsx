@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useUser, useClerk } from "@clerk/nextjs";
+import { Avatar } from "@/components/avatar";
 import { useRouter } from "next/navigation";
 import { SiteCard } from "@/components/site-card";
 import { BoostHistorySheet } from "@/components/boost-history-sheet";
@@ -140,5 +142,52 @@ export function BoostedSiteCard({ site }: { site: BoostedSite }) {
         site={{ slug: site.slug, name: name ?? site.slug, faviconUrl: site.faviconUrl, color: site.color, description: site.ogDescription }}
       />
     </>
+  );
+}
+
+/** 프로필 카드 — 아바타·핸들·사이트/방문 요약·부스트 잔액·로그아웃 */
+export function ProfileHeader({ sitesCount, totalHits, pointBalance, onOpenShop }: {
+  sitesCount: number; totalHits: number; pointBalance: number | null; onOpenShop: () => void;
+}) {
+  const { user } = useUser();
+  const { signOut } = useClerk();
+  const handle = user?.username || user?.primaryEmailAddress?.emailAddress.split("@")[0];
+
+  return (
+    <div className="flex items-center gap-3 mb-5 justify-between">
+      <div className="flex items-center gap-3">
+        <Avatar imageUrl={user?.imageUrl} name={user?.firstName || user?.username || "?"} size={44} />
+        <div>
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+            {user?.firstName || user?.username || "나"}
+          </h2>
+          {handle && (
+            <a href={`/@${handle}`} className="text-[11px] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors">
+              @{handle}
+            </a>
+          )}
+          <p className="text-xs text-zinc-400">
+            {sitesCount}개 사이트 · 총 {totalHits.toLocaleString()}명 방문
+            {pointBalance !== null && (
+              <span className="ml-1.5 inline-flex items-center gap-1.5">
+                · 🚀 <span className="font-semibold text-zinc-600 dark:text-zinc-300">{pointBalance.toLocaleString()}</span>
+                <button
+                  onClick={onOpenShop}
+                  className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-[9px] font-bold leading-none border border-zinc-200 dark:border-zinc-700"
+                >
+                  충전
+                </button>
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={() => signOut()}
+        className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors px-2 py-1"
+      >
+        로그아웃
+      </button>
+    </div>
   );
 }

@@ -19,28 +19,16 @@ interface AvatarProps {
   style?: React.CSSProperties;
 }
 
-export function Avatar({
-  imageUrl,
-  candidates,
-  name,
-  size = 40,
-  ring = true,
-  rounded = "rounded-full",
-  bg,
-  className = "",
-  style,
-}: AvatarProps) {
-  const inner = size - (ring ? 6 : 0);
-  const fontSize = inner < 28 ? "text-[10px]" : inner < 36 ? "text-xs" : "text-sm";
-
-  // imageUrl / candidates를 하나의 배열로 통합
-  const urls = candidates?.length ? candidates : imageUrl ? [imageUrl] : [];
+/** 이미지 + 로딩/실패 폴백 레이어 (이니셜) */
+function AvatarPhoto({ urls, name, rounded, fontSize, bg }: {
+  urls: string[]; name: string; rounded: string; fontSize: string; bg?: string;
+}) {
   const { status, url, refCallback, handleLoad, handleError } = useImageLoader(urls);
 
   const fallbackBg = bg ? "" : "bg-zinc-200 dark:bg-zinc-700";
   const fallbackText = bg ? "text-white/90 font-black" : "text-zinc-500 font-bold";
 
-  const photo = (
+  return (
     <div className={`relative w-full h-full ${rounded} overflow-hidden`}>
       {/* 폴백 레이어 */}
       {status === "failed" ? (
@@ -71,6 +59,26 @@ export function Avatar({
       )}
     </div>
   );
+}
+
+export function Avatar({
+  imageUrl,
+  candidates,
+  name,
+  size = 40,
+  ring = true,
+  rounded = "rounded-full",
+  bg,
+  className = "",
+  style,
+}: AvatarProps) {
+  const inner = size - (ring ? 6 : 0);
+  const fontSize = inner < 28 ? "text-[10px]" : inner < 36 ? "text-xs" : "text-sm";
+
+  // imageUrl / candidates를 하나의 배열로 통합
+  const urls = candidates?.length ? candidates : imageUrl ? [imageUrl] : [];
+
+  const photo = <AvatarPhoto urls={urls} name={name} rounded={rounded} fontSize={fontSize} bg={bg} />;
 
   if (!ring) {
     return (

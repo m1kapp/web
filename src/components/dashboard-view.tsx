@@ -1,18 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { GrassMap, Watermark, AppShell, Section, Divider, useFetch } from "@m1kapp/kit";
-import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
+import { Watermark, AppShell, Section, Divider, useFetch } from "@m1kapp/kit";
+import { AccentProvider, type AccentHex } from "@/lib/theme-context";
 import { SiteHero } from "./site-hero";
-import { CumulativeCurve } from "./cumulative-curve";
-import { OverviewInsights, CoachSection } from "./overview-insights";
 import { BoostButton } from "./boost-button";
-import { RefreshOgButton, DeleteSiteButton } from "./dashboard-settings";
+import { StatsSections, OwnerSection } from "./dashboard-sections";
 import { BadgeEditor } from "./badge-editor";
-import {
-  DashboardHeader, SectionNav, VerifiedStatus, KitCodeSection,
-  type KitStatsPayload,
-} from "./dashboard-chrome";
+import { DashboardHeader, KitCodeSection, type KitStatsPayload } from "./dashboard-chrome";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -57,9 +52,9 @@ interface DashboardViewProps {
   owner?: { handle: string; name: string; imageUrl: string } | null;
 }
 
-export function DashboardView({ data: initialData, host, isOwner = false, isSignedIn = false, owner }: DashboardViewProps) {
+/** 30초 폴링 + boost 완료 이벤트로 카운트 갱신. 값 변화 없으면 리렌더 안 함 */
+function useLiveCounts(initialData: SiteData): SiteData {
   const [data, setData] = useState(initialData);
-  const [showBadgeEditor, setShowBadgeEditor] = useState(false);
 
   const slugRef = useRef(data.slug);
   slugRef.current = data.slug;
@@ -70,23 +65,7 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
         const res = await fetch(`/api/sites/${slugRef.current}`);
         if (!res.ok) return;
         const fresh = await res.json();
-        setData((prev) => {
-          const next = {
-            total: fresh.total,
-            weekly: fresh.weekly ?? prev.weekly,
-            monthly: fresh.monthly ?? prev.monthly,
-            todayCount: fresh.todayCount ?? prev.todayCount,
-            boosted: fresh.boosted ?? prev.boosted,
-          };
-          if (
-            prev.total === next.total &&
-            prev.weekly === next.weekly &&
-            prev.monthly === next.monthly &&
-            prev.todayCount === next.todayCount &&
-            prev.boosted === next.boosted
-          ) return prev;
-          return { ...prev, ...next, daily: fresh.daily ?? prev.daily };
-        });
+        setData((prev) => mergeCounts(prev, fresh));
       } catch (e) { console.error("[dashboard] poll failed:", e); }
     }
 
@@ -97,6 +76,33 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
       window.removeEventListener("m1k:boost-completed", refresh);
     };
   }, []);
+
+  return data;
+}
+
+type FreshCounts = { total: number } & Partial<Pick<SiteData, "weekly" | "monthly" | "todayCount" | "boosted" | "daily">>;
+
+function mergeCounts(prev: SiteData, fresh: FreshCounts): SiteData {
+  const next = {
+    total: fresh.total,
+    weekly: fresh.weekly ?? prev.weekly,
+    monthly: fresh.monthly ?? prev.monthly,
+    todayCount: fresh.todayCount ?? prev.todayCount,
+    boosted: fresh.boosted ?? prev.boosted,
+  };
+  const unchanged =
+    prev.total === next.total &&
+    prev.weekly === next.weekly &&
+    prev.monthly === next.monthly &&
+    prev.todayCount === next.todayCount &&
+    prev.boosted === next.boosted;
+  if (unchanged) return prev;
+  return { ...prev, ...next, daily: fresh.daily ?? prev.daily };
+}
+
+export function DashboardView({ data: initialData, host, isOwner = false, isSignedIn = false, owner }: DashboardViewProps) {
+  const data = useLiveCounts(initialData);
+  const [showBadgeEditor, setShowBadgeEditor] = useState(false);
 
   const hasData = data.total > 0;
 
@@ -133,44 +139,7 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
               </Section>
             )}
 
-            {hasData && (
-              <>
-                {/* 섹션 탭 네비게이션 */}
-                <SectionNav hasCoach={data.daily.length >= 3} data={data} hasCode={!!kitSite} />
-
-                {data.daily.length >= 3 && (
-                  <div id="sec-coach">
-                    <Section className="py-5">
-                      <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2.5">1K 코치</p>
-                      <CoachSection data={data} />
-                    </Section>
-                    <Divider />
-                  </div>
-                )}
-
-                <div id="sec-cumulative">
-                  <Section className="py-5">
-                    <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2">방문자 누적</p>
-                    <CumulativeCurveWithAccent daily={data.daily} total={data.total} todayCount={data.todayCount} />
-                  </Section>
-                </div>
-
-                <Divider />
-
-                <div id="sec-daily">
-                  <Section className="py-5">
-                    <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-2">방문자 데일리</p>
-                    <GrassMapWithAccent daily={data.daily} />
-                  </Section>
-                </div>
-
-                <Divider />
-
-                <Section className="py-3">
-                  <OverviewInsights data={data} />
-                </Section>
-              </>
-            )}
+            {hasData && <StatsSections data={data} hasCode={!!kitSite} />}
 
             {kitSite && (
               <>
@@ -184,43 +153,16 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
             )}
 
             {isOwner && (
-              <>
-                <Divider />
-                <Section className="py-4">
-                  <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 mb-3">관리</p>
-
-                  <VerifiedStatus
-                    verified={data.verified}
-                    showEditor={showBadgeEditor}
-                    onToggleEditor={() => setShowBadgeEditor((v) => !v)}
-                    isOwner
-                  />
-
-                  {data.verified && showBadgeEditor && (
-                    <div className="mt-3">
-                      <BadgeEditor slug={data.slug} host={host} savedStyle={data.badgeStyle} savedColor={data.badgeColor} />
-                    </div>
-                  )}
-
-                  <div className="mt-3 space-y-0">
-                    <RefreshOgButton slug={data.slug} />
-                    <DeleteSiteButton slug={data.slug} />
-                  </div>
-                </Section>
-              </>
+              <OwnerSection
+                data={data}
+                host={host}
+                showBadgeEditor={showBadgeEditor}
+                onToggleEditor={() => setShowBadgeEditor((v) => !v)}
+              />
             )}
           </div>
         </AppShell>
       </Watermark>
     </AccentProvider>
   );
-}
-function CumulativeCurveWithAccent({ daily, total, todayCount }: { daily: { date: string; count: number }[]; total: number; todayCount: number }) {
-  const { accent } = useAccent();
-  return <CumulativeCurve daily={daily} total={total} todayCount={todayCount} accent={accent} />;
-}
-
-function GrassMapWithAccent({ daily }: { daily: { date: string; count: number }[] }) {
-  const { accent, isDark } = useAccent();
-  return <GrassMap data={daily} accent={accent} isDark={isDark} unit="명" />;
 }

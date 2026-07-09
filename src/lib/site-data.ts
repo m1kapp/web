@@ -84,6 +84,16 @@ function toSiteData(site: SiteRow, queryResult: Awaited<ReturnType<typeof fetchS
     os,
     cities,
     hourly,
+    ...siteMetaFields(site),
+    todayCount: Number(todayResult.total),
+    verified: site.verified,
+    boosted: Number(boostResult.total),
+  };
+}
+
+/** site 행의 nullable 메타 필드를 null 기본값으로 정규화 */
+function siteMetaFields(site: SiteRow) {
+  return {
     createdAt: site.createdAt?.toISOString() ?? null,
     color: site.color ?? null,
     ogTitle: site.ogTitle ?? null,
@@ -93,10 +103,7 @@ function toSiteData(site: SiteRow, queryResult: Awaited<ReturnType<typeof fetchS
     badgeStyle: site.badgeStyle ?? null,
     badgeColor: site.badgeColor ?? null,
     userId: site.userId ?? null,
-    todayCount: Number(todayResult.total),
-    verified: site.verified,
     parentId: site.parentId ?? null,
-    boosted: Number(boostResult.total),
     ownerHandle: site.ownerHandle ?? null,
     ownerName: site.ownerName ?? null,
     ownerImageUrl: site.ownerImageUrl ?? null,

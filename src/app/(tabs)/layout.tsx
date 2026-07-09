@@ -10,6 +10,30 @@ import { useFetch } from "@m1kapp/kit";
 import { ThemeProvider, useAppTheme } from "./theme-context";
 import { useState, useEffect } from "react";
 
+// 하단 탭 정의 — icon은 활성 여부에 따른 strokeWidth를 받는다
+const TAB_ITEMS: { id: string; href: string; label: string; icon: (sw: number) => React.ReactNode }[] = [
+  {
+    id: "home", href: "/", label: "홈",
+    icon: (sw) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M3 12l9-9 9 9" /><path d="M5 10v10a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V10" /></svg>,
+  },
+  {
+    id: "store", href: "/store", label: "앱",
+    icon: (sw) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>,
+  },
+  {
+    id: "builder", href: "/builder", label: "빌더",
+    icon: (sw) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3" /><path d="M7 21a5 5 0 0 1 10 0" /><circle cx="5" cy="10" r="2.5" /><path d="M2 21a3 3 0 0 1 6 0" /><circle cx="19" cy="10" r="2.5" /><path d="M16 21a3 3 0 0 1 6 0" /></svg>,
+  },
+  {
+    id: "connect", href: "/connect", label: "연결",
+    icon: (sw) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 0 1 0 10h-2" /><line x1="8" y1="12" x2="16" y2="12" /></svg>,
+  },
+  {
+    id: "my", href: "/my", label: "프로필",
+    icon: (sw) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>,
+  },
+];
+
 function TabsShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user } = useUser();
@@ -61,43 +85,22 @@ function TabsShell({ children }: { children: React.ReactNode }) {
           </AppShellContent>
 
           <TabBar>
-            <Tab
-              active={tab === "home"}
-              render={(p) => <Link href="/" prefetch {...p} />}
-              activeColor={bgColor}
-              label="홈"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "home" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M3 12l9-9 9 9" /><path d="M5 10v10a1 1 0 001 1h3v-6h6v6h3a1 1 0 001-1V10" /></svg>}
-            />
-            <Tab
-              active={tab === "store"}
-              render={(p) => <Link href="/store" prefetch {...p} />}
-              activeColor={bgColor}
-              label="앱"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "store" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>}
-            />
-            <Tab
-              active={tab === "builder"}
-              render={(p) => <Link href="/builder" prefetch {...p} />}
-              activeColor={bgColor}
-              label="빌더"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "builder" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3" /><path d="M7 21a5 5 0 0 1 10 0" /><circle cx="5" cy="10" r="2.5" /><path d="M2 21a3 3 0 0 1 6 0" /><circle cx="19" cy="10" r="2.5" /><path d="M16 21a3 3 0 0 1 6 0" /></svg>}
-            />
-            <Tab
-              active={tab === "connect"}
-              render={(p) => <Link href="/connect" prefetch {...p} />}
-              activeColor={bgColor}
-              label="연결"
-              icon={<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "connect" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 0 1 0 10h-2" /><line x1="8" y1="12" x2="16" y2="12" /></svg>}
-            />
-            <Tab
-              active={tab === "my"}
-              render={(p) => <Link href="/my" prefetch {...p} />}
-              activeColor={bgColor}
-              label="프로필"
-              icon={user
-                ? <Avatar imageUrl={user.imageUrl} name={user.firstName || user.username || "?"} size={20} ring={false} className={`transition-all ${tab === "my" ? "ring-2 ring-offset-1" : "opacity-70"}`} style={{ "--tw-ring-color": bgColor } as React.CSSProperties} />
-                : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={tab === "my" ? 2.5 : 2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>}
-            />
+            {TAB_ITEMS.map((t) => {
+              const active = tab === t.id;
+              const icon = t.id === "my" && user
+                ? <Avatar imageUrl={user.imageUrl} name={user.firstName || user.username || "?"} size={20} ring={false} className={`transition-all ${active ? "ring-2 ring-offset-1" : "opacity-70"}`} style={{ "--tw-ring-color": bgColor } as React.CSSProperties} />
+                : t.icon(active ? 2.5 : 2);
+              return (
+                <Tab
+                  key={t.id}
+                  active={active}
+                  render={(p) => <Link href={t.href} prefetch {...p} />}
+                  activeColor={bgColor}
+                  label={t.label}
+                  icon={icon}
+                />
+              );
+            })}
           </TabBar>
           <ThemeDialog
             open={themeOpen}

@@ -20,10 +20,8 @@ interface BoostSendSheetProps {
   onSuccess: (injected: number) => void;
 }
 
-export function BoostSendSheet({
-  open, onClose, slug, siteName, siteDescription, siteFaviconUrl, siteColor, onSuccess,
-}: BoostSendSheetProps) {
-  const { accent } = useAccent();
+/** 응원 전송 상태 머신 — 잔액 조회·검증·전송·결과 토스트 */
+function useBoostSend({ open, onClose, slug, onSuccess }: Pick<BoostSendSheetProps, "open" | "onClose" | "slug" | "onSuccess">) {
   const [amount, setAmount] = useState("10");
   const [comment, setComment] = useState("");
   const [balance, setBalance] = useState<number | null>(null);
@@ -68,6 +66,18 @@ export function BoostSendSheet({
       setLoading(false);
     }
   }
+
+  return { amount, setAmount, comment, setComment, balance, loading, result, num, overBalance, canSubmit, handleInject };
+}
+
+export function BoostSendSheet({
+  open, onClose, slug, siteName, siteDescription, siteFaviconUrl, siteColor, onSuccess,
+}: BoostSendSheetProps) {
+  const { accent } = useAccent();
+  const {
+    amount, setAmount, comment, setComment, balance,
+    loading, result, num, overBalance, canSubmit, handleInject,
+  } = useBoostSend({ open, onClose, slug, onSuccess });
 
   if (!open) return null;
 

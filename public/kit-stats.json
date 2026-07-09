@@ -1,78 +1,78 @@
 {
-  "generatedAt": "2026-07-09T02:51:05.057Z",
+  "generatedAt": "2026-07-09T05:12:59.896Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
-    "files": 109,
-    "totalLines": 9254,
-    "codeLines": 7865,
+    "files": 110,
+    "totalLines": 9362,
+    "codeLines": 7946,
     "breakdown": {
       "frontend": {
-        "files": 62,
-        "codeLines": 5187
+        "files": 63,
+        "codeLines": 5264
       },
       "backend": {
         "files": 23,
-        "codeLines": 1332
+        "codeLines": 1331
       },
       "shared": {
         "files": 24,
-        "codeLines": 1346
+        "codeLines": 1351
       }
     }
   },
   "quality": {
     "engine": "ast",
-    "score": 84,
-    "grade": "A",
+    "score": 91,
+    "grade": "A+",
     "cc": {
-      "functions": 625,
-      "avg": 2.7,
+      "functions": 647,
+      "avg": 2.6,
       "p90": 6,
-      "max": 17,
-      "over10": 26,
+      "max": 15,
+      "over10": 19,
       "over20": 0,
       "worst": [
-        {
-          "name": "BoostSendSheet",
-          "cc": 17,
-          "file": "src/components/boost-send-sheet.tsx",
-          "line": 23
-        },
-        {
-          "name": "DashboardView",
-          "cc": 17,
-          "file": "src/components/dashboard-view.tsx",
-          "line": 60
-        },
-        {
-          "name": "TabsShell",
-          "cc": 16,
-          "file": "src/app/(tabs)/layout.tsx",
-          "line": 13
-        },
-        {
-          "name": "getContextLine",
-          "cc": 16,
-          "file": "src/components/site-hero.tsx",
-          "line": 38
-        },
         {
           "name": "BadgeEditor",
           "cc": 15,
           "file": "src/components/badge-editor.tsx",
           "line": 20
+        },
+        {
+          "name": "(anonymous)",
+          "cc": 14,
+          "file": "src/app/api/sites/refresh-og/route.ts",
+          "line": 9
+        },
+        {
+          "name": "BoostSendSheet",
+          "cc": 14,
+          "file": "src/components/boost-send-sheet.tsx",
+          "line": 73
+        },
+        {
+          "name": "DashboardView",
+          "cc": 14,
+          "file": "src/components/dashboard-view.tsx",
+          "line": 103
+        },
+        {
+          "name": "cyworldBadge",
+          "cc": 14,
+          "file": "src/lib/badge.ts",
+          "line": 107
         }
       ]
     },
-    "branchDensity": 14.4,
-    "branches": 1129,
-    "functions": 641,
+    "branchDensity": 14,
+    "branches": 1112,
+    "functions": 667,
     "avgFileLines": 72,
-    "longFiles": 1,
+    "longFiles": 0,
     "maxFile": {
-      "path": "src/components/tabs/my-tab.tsx",
-      "lines": 207
+      "path": "src/components/boost-send-sheet.tsx",
+      "lines": 184
     }
   },
   "kit": {

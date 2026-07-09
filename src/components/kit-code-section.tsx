@@ -30,11 +30,14 @@ export function KitCodeSection({ s, latest }: { s: KitSiteStats; latest: string 
   const { accent } = useAccent();
   const b = s.breakdown;
 
+  const BUCKETS = [["프론트", "frontend"], ["백엔드", "backend"], ["공용", "shared"]] as const;
   const cols: { label: string; lines: number | null; files: number | null; kit?: boolean }[] = [
     { label: "총", lines: s.codeLines, files: s.files },
-    { label: "프론트", lines: b?.frontend.codeLines ?? null, files: b?.frontend.files ?? null },
-    { label: "백엔드", lines: b?.backend.codeLines ?? null, files: b?.backend.files ?? null },
-    { label: "공용", lines: b?.shared.codeLines ?? null, files: b?.shared.files ?? null },
+    ...BUCKETS.map(([label, key]) => ({
+      label,
+      lines: b ? b[key].codeLines : null,
+      files: b ? b[key].files : null,
+    })),
     { label: "kit 절약", lines: s.savedLines, files: s.savedFiles, kit: true },
   ];
 
