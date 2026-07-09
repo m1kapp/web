@@ -69,7 +69,13 @@ export function DevTable({ sites, stats, latest }: {
   stats: Record<string, SiteKitStats> | undefined;
   latest: string | null;
 }) {
-  const withStats = sites.map((site) => ({ site, s: stats?.[site.slug] }));
+  const withStats = sites
+    .map((site) => ({ site, s: stats?.[site.slug] }))
+    .filter((x): x is { site: RecentSite; s: SiteKitStats } => !!x.s);
+
+  if (withStats.length === 0) {
+    return <p className="text-xs text-zinc-400 dark:text-zinc-500 py-6 text-center">kit-stats가 있는 사이트가 없어요</p>;
+  }
 
   return (
     <div className="overflow-x-auto -mx-4 px-4">
@@ -88,7 +94,7 @@ export function DevTable({ sites, stats, latest }: {
         <tbody>
           {withStats.map(({ site, s }) => {
             const name = site.ogTitle || site.title || site.slug;
-            const behind = !!(s && latest && s.kitVersion !== latest);
+            const behind = !!(latest && s.kitVersion !== latest);
             return (
               <tr key={site.slug} className="border-b border-zinc-50 dark:border-zinc-900">
                 <td className="py-2 pr-3 sticky left-0 bg-white dark:bg-zinc-950 overflow-hidden">
@@ -96,30 +102,22 @@ export function DevTable({ sites, stats, latest }: {
                     <SiteLogo site={site} />
                     <span className="min-w-0">
                       <span className="block truncate font-sans font-medium text-zinc-700 dark:text-zinc-200">{name}</span>
-                      {s && (
-                        <span className={`block text-[9px] tabular-nums whitespace-nowrap ${behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}`}>
-                          v{s.kitVersion}
-                        </span>
-                      )}
+                      <span className={`block text-[9px] tabular-nums whitespace-nowrap ${behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}`}>
+                        v{s.kitVersion}
+                      </span>
                     </span>
                   </a>
                 </td>
-                {s ? (
-                  <>
-                    <td className="py-2 pr-3 tabular-nums text-zinc-500 dark:text-zinc-400">
-                      {s.files ?? "—"}
-                    </td>
-                    <td className="py-2 pr-3"><CodeBar s={s} /></td>
-                    <td className="py-2 pr-3 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
-                      {s.savedPercent != null ? `${s.savedPercent}%` : "—"}
-                    </td>
-                    <td className={`py-2 text-right font-bold whitespace-nowrap ${s.quality ? GRADE_COLORS[s.quality.grade] ?? "" : ""}`}>
-                      {s.quality ? `${s.quality.grade} ${s.quality.score}` : "—"}
-                    </td>
-                  </>
-                ) : (
-                  <td colSpan={4} className="py-2 text-zinc-300 dark:text-zinc-600">kit-stats 없음</td>
-                )}
+                <td className="py-2 pr-3 tabular-nums text-zinc-500 dark:text-zinc-400">
+                  {s.files ?? "—"}
+                </td>
+                <td className="py-2 pr-3"><CodeBar s={s} /></td>
+                <td className="py-2 pr-3 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                  {s.savedPercent != null ? `${s.savedPercent}%` : "—"}
+                </td>
+                <td className={`py-2 text-right font-bold whitespace-nowrap ${s.quality ? GRADE_COLORS[s.quality.grade] ?? "" : ""}`}>
+                  {s.quality ? `${s.quality.grade} ${s.quality.score}` : "—"}
+                </td>
               </tr>
             );
           })}

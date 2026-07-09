@@ -56,31 +56,19 @@ export function StoreTab({
 
   return (
     <div className="px-4 py-3">
-      {/* 검색 + dev 토글 */}
-      <div className="mb-3 flex items-center gap-2">
+      {/* 검색 */}
+      <div className="mb-3">
         <input
           type="text"
           placeholder="사이트 검색..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-600"
+          className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:focus:ring-zinc-600"
         />
-        <button
-          onClick={() => setDevMode((v) => !v)}
-          title="dev 모드 — 사이트별 kit 버전·규모·청결도 비교"
-          className={`shrink-0 px-2.5 py-2 rounded-lg text-xs font-mono font-semibold transition-colors border ${
-            devMode
-              ? "text-white border-transparent"
-              : "bg-zinc-50 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700"
-          }`}
-          style={devMode ? { background: bgColor } : undefined}
-        >
-          {"</>"}
-        </button>
       </div>
 
-      {/* 정렬 */}
-      <div className="flex gap-1.5 mb-4">
+      {/* 정렬 + dev 토글 */}
+      <div className="flex items-center gap-1.5 mb-4">
         {SORTS.map((s) => (
           <button
             key={s.value}
@@ -94,12 +82,25 @@ export function StoreTab({
             {s.label}
           </button>
         ))}
-        {searching && <span className="text-xs text-zinc-300 self-center ml-auto">검색 중...</span>}
+        {searching && <span className="text-xs text-zinc-300 self-center ml-2">검색 중...</span>}
+        <span className="flex-1" />
         {devMode && kitStats?.latestKitVersion && (
-          <span className="text-[10px] font-mono text-zinc-400 self-center ml-auto">
+          <span className="text-[10px] font-mono text-zinc-400 self-center">
             latest v{kitStats.latestKitVersion}
           </span>
         )}
+        <button
+          onClick={() => setDevMode((v) => !v)}
+          title="dev 모드 — 사이트별 kit 버전·규모·청결도 비교"
+          className={`shrink-0 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold transition-colors border ${
+            devMode
+              ? "text-white border-transparent"
+              : "bg-zinc-50 dark:bg-zinc-900 text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-700"
+          }`}
+          style={devMode ? { background: bgColor } : undefined}
+        >
+          kit
+        </button>
       </div>
 
       {/* 목록 */}
