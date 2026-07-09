@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-07-09T02:24:39.113Z",
+  "generatedAt": "2026-07-09T02:31:25.023Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
     "files": 94,
-    "totalLines": 9088,
-    "codeLines": 7743,
+    "totalLines": 9114,
+    "codeLines": 7770,
     "breakdown": {
       "frontend": {
         "files": 51,
-        "codeLines": 5409
+        "codeLines": 5411
       },
       "backend": {
         "files": 23,
-        "codeLines": 1291
+        "codeLines": 1316
       },
       "shared": {
         "files": 20,
@@ -23,34 +23,16 @@
   },
   "quality": {
     "engine": "ast",
-    "score": 47,
-    "grade": "D",
+    "score": 62,
+    "grade": "C",
     "cc": {
-      "functions": 587,
+      "functions": 615,
       "avg": 2.8,
       "p90": 6,
-      "max": 41,
-      "over10": 28,
-      "over20": 4,
+      "max": 23,
+      "over10": 27,
+      "over20": 1,
       "worst": [
-        {
-          "name": "GET",
-          "cc": 41,
-          "file": "src/app/badge/[...slug]/route.ts",
-          "line": 31
-        },
-        {
-          "name": "GET",
-          "cc": 31,
-          "file": "src/app/api/cron/flush-hits/route.ts",
-          "line": 14
-        },
-        {
-          "name": "generateTips",
-          "cc": 26,
-          "file": "src/components/overview-insights.tsx",
-          "line": 939
-        },
         {
           "name": "(anonymous)",
           "cc": 23,
@@ -62,17 +44,35 @@
           "cc": 18,
           "file": "src/components/site-hero.tsx",
           "line": 109
+        },
+        {
+          "name": "getSiteData",
+          "cc": 17,
+          "file": "src/app/[...slug]/page.tsx",
+          "line": 17
+        },
+        {
+          "name": "buildBadgeArgs",
+          "cc": 17,
+          "file": "src/app/badge/[...slug]/route.ts",
+          "line": 150
+        },
+        {
+          "name": "BoostSendSheet",
+          "cc": 17,
+          "file": "src/components/boost-send-sheet.tsx",
+          "line": 23
         }
       ]
     },
-    "branchDensity": 14.7,
-    "branches": 1135,
-    "functions": 599,
-    "avgFileLines": 82,
+    "branchDensity": 14.5,
+    "branches": 1126,
+    "functions": 630,
+    "avgFileLines": 83,
     "longFiles": 8,
     "maxFile": {
       "path": "src/components/overview-insights.tsx",
-      "lines": 984
+      "lines": 986
     }
   },
   "kit": {
