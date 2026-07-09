@@ -5,6 +5,7 @@ import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { EmptyState } from "@m1kapp/kit";
 import { useFetch, useDebounce } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
+import { DevTable } from "./dev-table";
 
 type Sort = "total" | "today" | "boosted";
 
@@ -14,12 +15,12 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: "boosted", label: "부스트순" },
 ];
 
-interface Bucket {
+export interface Bucket {
   files: number;
   codeLines: number;
 }
 
-interface SiteKitStats {
+export interface SiteKitStats {
   kitVersion: string;
   files: number | null;
   codeLines: number | null;
@@ -31,42 +32,6 @@ interface SiteKitStats {
 interface KitStatsPayload {
   latestKitVersion: string | null;
   stats: Record<string, SiteKitStats>;
-}
-
-function versionBehind(v: string, latest: string | null): boolean {
-  if (!latest) return false;
-  const a = v.split(".").map(Number);
-  const b = latest.split(".").map(Number);
-  for (let i = 0; i < 3; i++) {
-    if ((a[i] ?? 0) < (b[i] ?? 0)) return true;
-    if ((a[i] ?? 0) > (b[i] ?? 0)) return false;
-  }
-  return false;
-}
-
-/** dev 모드에서 사이트 카드 아래 붙는 kit 지표 스트립 */
-function DevStrip({ s, latest }: { s: SiteKitStats | undefined; latest: string | null }) {
-  if (!s) {
-    return <p className="text-[10px] text-zinc-300 dark:text-zinc-600 pl-[52px] -mt-1 pb-1 font-mono">kit-stats 없음</p>;
-  }
-  const behind = versionBehind(s.kitVersion, latest);
-  return (
-    <p className="text-[10px] pl-[52px] -mt-1 pb-1 font-mono text-zinc-400 dark:text-zinc-500 truncate">
-      <span className={behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}>
-        v{s.kitVersion}{behind && `→${latest}`}
-      </span>
-      {s.codeLines != null && <> · {s.codeLines.toLocaleString()}줄</>}
-      {s.breakdown && (
-        <span className="text-zinc-300 dark:text-zinc-600">
-          (F{s.breakdown.frontend.codeLines.toLocaleString()}/B{s.breakdown.backend.codeLines.toLocaleString()}
-          {s.breakdown.shared.codeLines > 0 && `/공${s.breakdown.shared.codeLines.toLocaleString()}`})
-        </span>
-      )}
-      {s.files != null && <> · {s.files}파일</>}
-      {s.savedPercent != null && <> · kit {s.savedPercent}%</>}
-      {s.quality && <> · 청결 {s.quality.grade}({s.quality.score})</>}
-    </p>
-  );
 }
 
 export function StoreTab({
@@ -141,16 +106,15 @@ export function StoreTab({
       {!sites ? (
         <SiteCardSkeleton count={4} />
       ) : sites.length > 0 ? (
+        devMode ? (
+          <DevTable sites={sites} stats={kitStats?.stats} latest={kitStats?.latestKitVersion ?? null} />
+        ) : (
         <div className="space-y-0">
           {sites.map((site) => (
-            <div key={site.slug}>
-              <SiteCard site={site} />
-              {devMode && (
-                <DevStrip s={kitStats?.stats?.[site.slug]} latest={kitStats?.latestKitVersion ?? null} />
-              )}
-            </div>
+            <SiteCard key={site.slug} site={site} />
           ))}
         </div>
+        )
       ) : (
         <EmptyState message="아직 등록된 사이트가 없어요" />
       )}
