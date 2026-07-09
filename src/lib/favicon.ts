@@ -34,6 +34,48 @@ export async function resolveFavicon(siteUrl: string): Promise<string | null> {
   return null;
 }
 
+/** 배경·무채색 픽셀 제외 (흰색·검정·저채도 회색·반투명) */
+function isSkippablePixel(r: number, g: number, b: number, a: number): boolean {
+  if (a < 128) return true;
+  if (r > 230 && g > 230 && b > 230) return true;
+  if (r < 25 && g < 25 && b < 25) return true;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  return max - min < 20 && max < 200; // 회색 계열 (채도 낮은)
+}
+
+/** RGBA 픽셀을 5-bit 양자화 버킷으로 집계해 최다 버킷의 평균색 반환 */
+function dominantFromPixels(data: Buffer): { r: number; g: number; b: number } | null {
+  const buckets = new Map<string, { r: number; g: number; b: number; count: number }>();
+
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+    if (isSkippablePixel(r, g, b, a)) continue;
+
+    const key = `${(r >> 3) << 3},${(g >> 3) << 3},${(b >> 3) << 3}`;
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.r += r;
+      existing.g += g;
+      existing.b += b;
+      existing.count++;
+    } else {
+      buckets.set(key, { r, g, b, count: 1 });
+    }
+  }
+
+  let best: { r: number; g: number; b: number; count: number } | null = null;
+  for (const bucket of buckets.values()) {
+    if (!best || bucket.count > best.count) best = bucket;
+  }
+  if (!best) return null;
+
+  return {
+    r: Math.round(best.r / best.count),
+    g: Math.round(best.g / best.count),
+    b: Math.round(best.b / best.count),
+  };
+}
+
 /** 이미지 URL에서 dominant color를 추출해 hex 반환. 실패 시 null */
 export async function extractDominantColor(imageUrl: string): Promise<string | null> {
   try {
@@ -46,59 +88,17 @@ export async function extractDominantColor(imageUrl: string): Promise<string | n
     const buf = Buffer.from(await res.arrayBuffer());
 
     // 16x16으로 축소 → raw RGBA 픽셀
-    const { data, info } = await sharp(buf)
+    const { data } = await sharp(buf)
       .resize(16, 16, { fit: "cover" })
       .ensureAlpha()
       .raw()
       .toBuffer({ resolveWithObject: true });
 
-    // 5-bit 양자화 (32단계) → 버킷별 집계
-    const buckets = new Map<string, { r: number; g: number; b: number; count: number }>();
+    const color = dominantFromPixels(data);
+    if (!color) return null;
 
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
-
-      // 투명/반투명 건너뜀
-      if (a < 128) continue;
-
-      // 너무 밝은 색 (흰색 계열) 건너뜀
-      if (r > 230 && g > 230 && b > 230) continue;
-
-      // 너무 어두운 색 (검정 계열) 건너뜀
-      if (r < 25 && g < 25 && b < 25) continue;
-
-      // 회색 계열 건너뜀 (채도 낮은)
-      const max = Math.max(r, g, b), min = Math.min(r, g, b);
-      if (max - min < 20 && max < 200) continue;
-
-      const qr = (r >> 3) << 3, qg = (g >> 3) << 3, qb = (b >> 3) << 3;
-      const key = `${qr},${qg},${qb}`;
-
-      const existing = buckets.get(key);
-      if (existing) {
-        existing.r += r;
-        existing.g += g;
-        existing.b += b;
-        existing.count++;
-      } else {
-        buckets.set(key, { r, g, b, count: 1 });
-      }
-    }
-
-    if (buckets.size === 0) return null;
-
-    // 가장 많은 버킷
-    let best = { r: 0, g: 0, b: 0, count: 0 };
-    for (const bucket of buckets.values()) {
-      if (bucket.count > best.count) best = bucket;
-    }
-
-    // 평균 색상
-    const avgR = Math.round(best.r / best.count);
-    const avgG = Math.round(best.g / best.count);
-    const avgB = Math.round(best.b / best.count);
-
-    return `#${avgR.toString(16).padStart(2, "0")}${avgG.toString(16).padStart(2, "0")}${avgB.toString(16).padStart(2, "0")}`;
+    const hex = (v: number) => v.toString(16).padStart(2, "0");
+    return `#${hex(color.r)}${hex(color.g)}${hex(color.b)}`;
   } catch {
     return null;
   }

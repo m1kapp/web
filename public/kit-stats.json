@@ -1,50 +1,38 @@
 {
-  "generatedAt": "2026-07-09T02:33:36.147Z",
+  "generatedAt": "2026-07-09T02:35:55.884Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
     "files": 94,
-    "totalLines": 9135,
-    "codeLines": 7780,
+    "totalLines": 9152,
+    "codeLines": 7800,
     "breakdown": {
       "frontend": {
         "files": 51,
-        "codeLines": 5409
+        "codeLines": 5416
       },
       "backend": {
         "files": 23,
-        "codeLines": 1328
+        "codeLines": 1332
       },
       "shared": {
         "files": 20,
-        "codeLines": 1043
+        "codeLines": 1052
       }
     }
   },
   "quality": {
     "engine": "ast",
-    "score": 69,
-    "grade": "C",
+    "score": 70,
+    "grade": "B",
     "cc": {
-      "functions": 619,
+      "functions": 625,
       "avg": 2.7,
       "p90": 6,
       "max": 17,
-      "over10": 27,
+      "over10": 26,
       "over20": 0,
       "worst": [
-        {
-          "name": "getSiteData",
-          "cc": 17,
-          "file": "src/app/[...slug]/page.tsx",
-          "line": 17
-        },
-        {
-          "name": "buildBadgeArgs",
-          "cc": 17,
-          "file": "src/app/badge/[...slug]/route.ts",
-          "line": 150
-        },
         {
           "name": "BoostSendSheet",
           "cc": 17,
@@ -58,16 +46,28 @@
           "line": 77
         },
         {
-          "name": "extractDominantColor",
-          "cc": 17,
-          "file": "src/lib/favicon.ts",
-          "line": 38
+          "name": "TabsShell",
+          "cc": 16,
+          "file": "src/app/(tabs)/layout.tsx",
+          "line": 13
+        },
+        {
+          "name": "getContextLine",
+          "cc": 16,
+          "file": "src/components/site-hero.tsx",
+          "line": 45
+        },
+        {
+          "name": "BadgeEditor",
+          "cc": 15,
+          "file": "src/components/badge-editor.tsx",
+          "line": 52
         }
       ]
     },
     "branchDensity": 14.5,
-    "branches": 1127,
-    "functions": 635,
+    "branches": 1129,
+    "functions": 641,
     "avgFileLines": 83,
     "longFiles": 8,
     "maxFile": {

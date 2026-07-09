@@ -170,15 +170,21 @@ function buildBadgeArgs(
 
   return [displayCount, currentGoal.goal, {
     label: typeLabels[badgeType] || "m1k",
-    color: urlObj.searchParams.get("color")
-      ? `#${urlObj.searchParams.get("color")}`
-      : site.badgeColor ? `#${site.badgeColor}` : site.color || "#000000",
+    color: resolveBadgeColor(urlObj, site),
     labelColor: urlObj.searchParams.get("labelColor")
       ? `#${urlObj.searchParams.get("labelColor")}`
       : undefined,
     style: (urlObj.searchParams.get("style") || site.badgeStyle || "cyworld") as "flat" | "flat-square" | "rounded" | "cyworld",
     theme: isDark ? "dark" : "light",
   }, counts.today];
+}
+
+/** 우선순위: 쿼리 color → site.badgeColor → site.color → 검정 */
+function resolveBadgeColor(urlObj: URL, site: Site): string {
+  const queryColor = urlObj.searchParams.get("color");
+  if (queryColor) return `#${queryColor}`;
+  if (site.badgeColor) return `#${site.badgeColor}`;
+  return site.color || "#000000";
 }
 
 function parseDevice(ua: string): string {
