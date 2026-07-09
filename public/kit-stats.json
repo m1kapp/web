@@ -1,29 +1,29 @@
 {
-  "generatedAt": "2026-07-09T06:14:29.417Z",
+  "generatedAt": "2026-07-09T06:22:07.835Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
-    "files": 110,
-    "totalLines": 9362,
-    "codeLines": 7946,
+    "files": 109,
+    "totalLines": 9284,
+    "codeLines": 7865,
     "breakdown": {
       "frontend": {
-        "files": 63,
-        "codeLines": 5264
+        "files": 62,
+        "codeLines": 5182
       },
       "backend": {
         "files": 23,
-        "codeLines": 1331
+        "codeLines": 1336
       },
       "shared": {
         "files": 24,
-        "codeLines": 1351
+        "codeLines": 1347
       }
     }
   },
   "quality": {
     "engine": "ast2",
-    "score": 91,
+    "score": 96,
     "grade": "A+",
     "cognitive": {
       "avg": 1.5,
@@ -70,45 +70,45 @@
       ]
     },
     "duplication": {
-      "percent": 6.6,
-      "dupTokens": 2360,
-      "totalTokens": 35839,
-      "blocks": 395,
+      "percent": 4.4,
+      "dupTokens": 1553,
+      "totalTokens": 35288,
+      "blocks": 151,
       "worstFiles": [
         {
           "file": "src/components/overview/kr-maps.tsx",
           "dupTokens": 303
         },
         {
-          "file": "src/components/github-login-button.tsx",
-          "dupTokens": 203
+          "file": "src/components/overview/world-maps.tsx",
+          "dupTokens": 185
         },
         {
-          "file": "src/components/google-login-button.tsx",
-          "dupTokens": 203
+          "file": "src/app/api/points/inject/route.ts",
+          "dupTokens": 122
         }
       ],
       "worstBlocks": [
         [
-          "src/app/(tabs)/my/loading.tsx:25",
-          "src/app/(tabs)/my/page.tsx:43",
-          "src/app/(tabs)/store/loading.tsx:24"
+          "src/app/[...slug]/page.tsx:20",
+          "src/app/api/builders/route.ts:31",
+          "src/app/api/points/boosted-sites/route.ts:12"
         ],
         [
-          "src/app/(tabs)/my/loading.tsx:25",
-          "src/app/(tabs)/my/page.tsx:43",
-          "src/app/(tabs)/store/loading.tsx:24"
+          "src/app/[...slug]/page.tsx:21",
+          "src/app/api/builders/route.ts:32",
+          "src/app/api/points/boosted-sites/route.ts:13"
         ],
         [
-          "src/app/(tabs)/my/loading.tsx:25",
-          "src/app/(tabs)/my/page.tsx:43",
-          "src/app/(tabs)/store/loading.tsx:24"
+          "src/app/[...slug]/page.tsx:21",
+          "src/app/api/builders/route.ts:32",
+          "src/app/api/points/boosted-sites/route.ts:13"
         ]
       ]
     },
     "cc": {
-      "functions": 647,
-      "avg": 2.6,
+      "functions": 640,
+      "avg": 2.7,
       "p90": 6,
       "max": 15,
       "over10": 19,
@@ -146,21 +146,14 @@
         }
       ]
     },
-    "branchDensity": 14,
-    "branches": 1112,
-    "functions": 667,
+    "branchDensity": 14.1,
+    "branches": 1107,
+    "functions": 660,
     "avgFileLines": 72,
     "longFiles": 0,
     "maxFile": {
       "path": "src/components/boost-send-sheet.tsx",
       "lines": 184
-    },
-    "llm": {
-      "model": "haiku",
-      "naming": 80,
-      "cohesion": 65,
-      "essential": false,
-      "advice": "불필요한 state 정리 후 저장·URL생성 로직 분리로 응집도를 높일 수 있음."
     }
   },
   "kit": {

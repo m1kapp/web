@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
-import { GoogleLoginButton } from "@/components/google-login-button";
-import { GitHubLoginButton } from "@/components/github-login-button";
+import { OAuthLoginButton } from "@/components/oauth-login-button";
 
 export default function SignInPage() {
   const { isSignedIn, isLoaded } = useUser();
@@ -45,10 +44,10 @@ export default function SignInPage() {
 
         {/* 로그인 버튼 */}
         <div className="flex flex-col gap-2.5">
-          <GoogleLoginButton
+          <OAuthLoginButton provider="google"
             className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 transition-colors"
           />
-          <GitHubLoginButton
+          <OAuthLoginButton provider="github"
             className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold text-white bg-zinc-700 dark:bg-zinc-800 dark:text-white transition-colors"
           />
         </div>

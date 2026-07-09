@@ -28,7 +28,13 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 2. 버퍼 로그 drain → 집계 테이블 반영 ─────────────────────────
-  const entries = await drainLogs(1000);
+  // 배치가 가득 차면 백로그가 남은 것 — 다 빌 때까지 반복 (크론 하루 1회라 캡 걸면 영구 누적)
+  const entries: HitEntry[] = [];
+  for (let round = 0; round < 20; round++) {
+    const batch = await drainLogs(1000);
+    entries.push(...batch);
+    if (batch.length < 1000) break;
+  }
   if (entries.length === 0 && verifyItems.length === 0) {
     return Response.json({ flushed: 0, verified: 0 });
   }
@@ -36,6 +42,8 @@ export async function GET(request: NextRequest) {
   if (entries.length > 0) {
     await flushEntries(entries);
   }
+  // NOTE: hitLogs 보존정책(90일 삭제)은 referer 통계가 hitLogs 풀스캔에 의존하는 동안 불가 —
+  // dailyRefererStats 사전집계 테이블 도입 후에 켤 것
 
   // ── 3. 카운트 스냅샷 갱신 + milestone 체크 ────────────────────────
   const affectedSiteIds = [...new Set(entries.map((e) => e.siteId))];

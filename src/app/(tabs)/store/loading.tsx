@@ -1,3 +1,5 @@
+import { SiteCardSkeleton } from "@/components/site-card";
+
 export default function StoreLoading() {
   return (
     <div className="px-4 py-5 animate-pulse">
@@ -20,27 +22,7 @@ export default function StoreLoading() {
       </div>
 
       {/* 사이트 카드 목록 */}
-      <div className="space-y-0">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 py-2">
-            <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 shrink-0" />
-            <div className="flex-1 min-w-0 space-y-1.5">
-              <div className="h-3.5 w-2/3 rounded bg-zinc-100 dark:bg-zinc-800" />
-              <div className="h-2.5 w-1/2 rounded bg-zinc-50 dark:bg-zinc-800/50" />
-            </div>
-            <div className="shrink-0 space-y-1 w-[84px]">
-              <div className="flex items-center justify-between">
-                <div className="h-2 w-8 rounded bg-zinc-100 dark:bg-zinc-800" />
-                <div className="h-2.5 w-6 rounded bg-zinc-100 dark:bg-zinc-800" />
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="h-2 w-8 rounded bg-zinc-100 dark:bg-zinc-800" />
-                <div className="h-2.5 w-6 rounded bg-zinc-100 dark:bg-zinc-800" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <SiteCardSkeleton count={5} />
     </div>
   );
 }

@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { generateBadge } from "@/lib/badge";
-import { findSiteBySlug, recordMilestoneIfReached } from "@/lib/site-service";
+import { findSiteBySlug } from "@/lib/site-service";
 import {
   bufferHit, getBufferedCount, getBufferedTotal,
-  getCachedSite, cacheSite, getCountSnapshot, queueVerify,
+  getCachedSite, cacheSite, getCountSnapshot,
   type CountSnapshot,
 } from "@/lib/hit-buffer";
 import { createHash } from "crypto";

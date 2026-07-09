@@ -85,16 +85,12 @@ export async function getBufferedTotal(siteId: number): Promise<number> {
   return 0; // Neon 폴백 시 데이터가 이미 DB에 있으므로 0
 }
 
-/** flush: 로그 전부 꺼내기 (최대 batchSize개) */
+/** flush: 로그 전부 꺼내기 (최대 batchSize개) — count 인자로 한 번에 배치 팝 (왕복 1회) */
 export async function drainLogs(batchSize = 500): Promise<HitEntry[]> {
   if (!redis) return [];
   try {
-    const raw: string[] = [];
-    for (let i = 0; i < batchSize; i++) {
-      const item = await redis.rpop<string>(LOG_LIST_KEY);
-      if (!item) break;
-      raw.push(item);
-    }
+    const raw = await redis.rpop<string[]>(LOG_LIST_KEY, batchSize);
+    if (!raw) return [];
     return raw.map((r) => (typeof r === "string" ? JSON.parse(r) : r) as HitEntry);
   } catch (e) {
     console.warn("[hit-buffer] Redis drainLogs failed:", e);
@@ -150,7 +146,9 @@ export async function cacheSite<T>(slug: string, site: T): Promise<void> {
 export async function saveCountSnapshot(siteId: number, snapshot: CountSnapshot): Promise<void> {
   if (!redis) return;
   try {
-    await redis.set(COUNT_SNAPSHOT_KEY(siteId), snapshot, { ex: 7200 });
+    // TTL 25h — flush 크론이 하루 1회(vercel.json)라 2h TTL이면 하루 대부분 스냅샷이
+    // 만료돼 weekly/monthly가 부정확해짐. 크론 주기 + 여유 1h
+    await redis.set(COUNT_SNAPSHOT_KEY(siteId), snapshot, { ex: 90_000 });
   } catch (e) {
     console.warn("[hit-buffer] Redis saveCountSnapshot failed:", e);
   }
