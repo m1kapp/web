@@ -79,15 +79,15 @@ export function DevTable({ sites, stats, latest }: {
 
   return (
     <div className="overflow-x-auto -mx-4 px-4">
-      <table className="text-[11px] font-mono border-collapse" style={{ width: "400px", tableLayout: "fixed" }}>
+      <table className="text-[11px] font-mono border-collapse" style={{ width: "415px", tableLayout: "fixed" }}>
         <thead>
           <tr className="text-[10px] text-zinc-400 dark:text-zinc-500 border-b border-zinc-100 dark:border-zinc-800">
-            <th className="text-left font-medium py-1.5 pr-2 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "140px" }}>사이트</th>
-            <th className="text-left font-medium py-1.5 pr-2" style={{ width: "40px" }}>파일</th>
-            <th className="text-left font-medium py-1.5 pr-2" style={{ width: "95px" }}>
-              코드 <span style={{ color: BAR_COLORS.frontend }}>F</span><span style={{ color: BAR_COLORS.backend }}>B</span><span style={{ color: BAR_COLORS.shared }}>S</span>
+            <th className="text-left font-medium py-1.5 pr-2 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "135px" }}>사이트</th>
+            <th className="text-left font-medium py-1.5 pr-2" style={{ width: "35px" }}>파일</th>
+            <th className="text-left font-medium py-1.5 pr-2" style={{ width: "115px" }}>
+              코드 <span style={{ color: BAR_COLORS.frontend }}>FE</span>/<span style={{ color: BAR_COLORS.backend }}>BE</span>/<span style={{ color: BAR_COLORS.shared }}>공용</span>
             </th>
-            <th className="text-right font-medium py-1.5 pr-2" style={{ width: "40px" }}>kit</th>
+            <th className="text-right font-medium py-1.5 pr-2" style={{ width: "35px" }}>kit</th>
             <th className="text-right font-medium py-1.5" style={{ width: "55px" }}>health</th>
           </tr>
         </thead>
