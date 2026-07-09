@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-07-09T02:31:25.023Z",
+  "generatedAt": "2026-07-09T02:33:36.147Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
     "files": 94,
-    "totalLines": 9114,
-    "codeLines": 7770,
+    "totalLines": 9135,
+    "codeLines": 7780,
     "breakdown": {
       "frontend": {
         "files": 51,
-        "codeLines": 5411
+        "codeLines": 5409
       },
       "backend": {
         "files": 23,
-        "codeLines": 1316
+        "codeLines": 1328
       },
       "shared": {
         "files": 20,
@@ -23,28 +23,16 @@
   },
   "quality": {
     "engine": "ast",
-    "score": 62,
+    "score": 69,
     "grade": "C",
     "cc": {
-      "functions": 615,
-      "avg": 2.8,
+      "functions": 619,
+      "avg": 2.7,
       "p90": 6,
-      "max": 23,
+      "max": 17,
       "over10": 27,
-      "over20": 1,
+      "over20": 0,
       "worst": [
-        {
-          "name": "(anonymous)",
-          "cc": 23,
-          "file": "src/app/api/sites/cli/route.ts",
-          "line": 22
-        },
-        {
-          "name": "CumulativeCurve",
-          "cc": 18,
-          "file": "src/components/site-hero.tsx",
-          "line": 109
-        },
         {
           "name": "getSiteData",
           "cc": 17,
@@ -62,12 +50,24 @@
           "cc": 17,
           "file": "src/components/boost-send-sheet.tsx",
           "line": 23
+        },
+        {
+          "name": "DashboardView",
+          "cc": 17,
+          "file": "src/components/dashboard-view.tsx",
+          "line": 77
+        },
+        {
+          "name": "extractDominantColor",
+          "cc": 17,
+          "file": "src/lib/favicon.ts",
+          "line": 38
         }
       ]
     },
     "branchDensity": 14.5,
-    "branches": 1126,
-    "functions": 630,
+    "branches": 1127,
+    "functions": 635,
     "avgFileLines": 83,
     "longFiles": 8,
     "maxFile": {

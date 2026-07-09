@@ -106,66 +106,49 @@ export function StreakChip({ daily }: { daily: { date: string; count: number }[]
   );
 }
 
-export function CumulativeCurve({ daily, total, todayCount, accent }: {
-  daily: { date: string; count: number }[];
-  total: number;
-  todayCount: number;
-  accent: string;
-}) {
+const CURVE_W = 300;
+const CURVE_PAD_LEFT = 34; // Y축 라벨 공간
+const CURVE_CHART_H = 90;
+const CURVE_LABEL_H = 18;
+
+function fmtCurveY(v: number): string {
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(v >= 10_000 ? 0 : 1)}K`;
+  return Math.round(v).toString();
+}
+
+/** 누적 곡선 SVG 지오메트리 — 레이아웃·경로·눈금·milestone 교차점 계산 (순수 함수) */
+function buildCurveGeometry(daily: { date: string; count: number }[], total: number) {
   const cumulative: number[] = [];
   let sum = 0;
   for (const d of daily) {
     sum += d.count;
     cumulative.push(sum);
   }
-
-  if (cumulative.length === 0 || total === 0) {
-    return (
-      <div className="h-24 flex items-center justify-center">
-        <p className="text-[12px] text-zinc-300 dark:text-zinc-700 text-center leading-relaxed">
-          트래커를 사이트에 달면<br />여기에 성장 곡선이 그려져요
-        </p>
-      </div>
-    );
-  }
+  if (cumulative.length === 0 || total === 0) return null;
 
   const n = cumulative.length;
-  const W = 300;
-  const PAD_LEFT = 34; // Y축 라벨 공간
-  const CHART_W = W - PAD_LEFT;
-  const CHART_H = 90;
-  const LABEL_H = 18;
+  const CHART_W = CURVE_W - CURVE_PAD_LEFT;
 
   // milestone 달성 여부에 따라 위 여백 결정
   const hasCrossing = MILESTONES.some((m) => total >= m.value);
   const PAD_TOP = hasCrossing ? 28 : 8;
-  const H = PAD_TOP + CHART_H + LABEL_H;
-  const baseY = PAD_TOP + CHART_H;
+  const H = PAD_TOP + CURVE_CHART_H + CURVE_LABEL_H;
+  const baseY = PAD_TOP + CURVE_CHART_H;
 
   // Y축: 현재 데이터 기준 스케일
   const dataMax = Math.max(...cumulative);
   const yAxisMax = dataMax * 1.25;
-  const goalMax = yAxisMax;
 
   // 다음 milestone이 Y축 범위 안에 들어오면 가이드라인 표시
   const nextMs = MILESTONES.find((m) => total < m.value);
-  const showGoalLine = nextMs && nextMs.value <= yAxisMax * 1.05;
+  const showGoalLine = !!nextMs && nextMs.value <= yAxisMax * 1.05;
 
-  function fmtY(v: number): string {
-    if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
-    if (v >= 1_000) return `${(v / 1_000).toFixed(v >= 10_000 ? 0 : 1)}K`;
-    return Math.round(v).toString();
-  }
-
-  function xOf(i: number) {
-    return PAD_LEFT + (n === 1 ? CHART_W / 2 : (i / (n - 1)) * CHART_W);
-  }
-  function yOf(val: number) {
-    return PAD_TOP + CHART_H - Math.min(val / goalMax, 1) * CHART_H;
-  }
+  const xOf = (i: number) => CURVE_PAD_LEFT + (n === 1 ? CHART_W / 2 : (i / (n - 1)) * CHART_W);
+  const yOf = (val: number) => PAD_TOP + CURVE_CHART_H - Math.min(val / yAxisMax, 1) * CURVE_CHART_H;
 
   // Y축 눈금: 0, mid, top
-  const yTicks = [dataMax, dataMax / 2].map((v) => ({ val: v, y: yOf(v), label: fmtY(v) }));
+  const yTicks = [dataMax, dataMax / 2].map((v) => ({ val: v, y: yOf(v), label: fmtCurveY(v) }));
 
   const pts = cumulative.map((v, i) => ({ x: xOf(i), y: yOf(v) }));
 
@@ -179,24 +162,45 @@ export function CumulativeCurve({ daily, total, todayCount, accent }: {
   const areaPath = `${linePath} L ${pts[pts.length - 1].x.toFixed(1)} ${baseY} L ${pts[0].x.toFixed(1)} ${baseY} Z`;
 
   // milestone 교차점
-  type Crossing = { x: number; y: number; label: string };
-  const crossings: Crossing[] = [];
+  const crossings: { x: number; y: number; label: string }[] = [];
   for (const ms of MILESTONES) {
     if (total < ms.value) break;
-    for (let i = 0; i < cumulative.length; i++) {
-      if (cumulative[i] >= ms.value) {
-        crossings.push({ x: xOf(i), y: yOf(cumulative[i]), label: ms.label });
-        break;
-      }
-    }
+    const i = cumulative.findIndex((v) => v >= ms.value);
+    if (i >= 0) crossings.push({ x: xOf(i), y: yOf(cumulative[i]), label: ms.label });
   }
+
+  // X 레이블
+  const labelIdxs = [...new Set([0, n > 6 ? Math.round(n / 2) : -1, n - 1].filter((i) => i >= 0 && i < n))];
+
+  return { n, H, baseY, nextMs, showGoalLine, yOf, yTicks, pts, linePath, areaPath, crossings, labelIdxs };
+}
+
+export function CumulativeCurve({ daily, total, todayCount, accent }: {
+  daily: { date: string; count: number }[];
+  total: number;
+  todayCount: number;
+  accent: string;
+}) {
+  const geo = buildCurveGeometry(daily, total);
+
+  if (!geo) {
+    return (
+      <div className="h-24 flex items-center justify-center">
+        <p className="text-[12px] text-zinc-300 dark:text-zinc-700 text-center leading-relaxed">
+          트래커를 사이트에 달면<br />여기에 성장 곡선이 그려져요
+        </p>
+      </div>
+    );
+  }
+
+  const { n, H, baseY, nextMs, showGoalLine, yOf, yTicks, pts, linePath, areaPath, crossings, labelIdxs } = geo;
+  const W = CURVE_W;
+  const PAD_LEFT = CURVE_PAD_LEFT;
 
   // 오늘 라이브 dot
   const lastPt = pts[pts.length - 1];
   const showLive = todayCount > 0;
 
-  // X 레이블
-  const labelIdxs = [...new Set([0, n > 6 ? Math.round(n / 2) : -1, n - 1].filter((i) => i >= 0 && i < n))];
   const gradId = `ccg${accent.replace(/[^a-f0-9]/gi, "")}`;
 
   return (
@@ -287,7 +291,7 @@ export function CumulativeCurve({ daily, total, todayCount, accent }: {
 
       {/* X 레이블 */}
       {labelIdxs.map((i) => {
-        const x = xOf(i);
+        const x = pts[i].x;
         const anchor = i === 0 ? "start" : i === n - 1 ? "end" : "middle";
         return (
           <text key={i} x={x.toFixed(1)} y={H - 3}

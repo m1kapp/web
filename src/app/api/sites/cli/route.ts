@@ -54,71 +54,11 @@ export const POST = handler(async (req) => {
   // 이미 등록된 URL 처리
   const existing = await db.query.sites.findFirst({ where: eq(sites.url, fullUrl) });
   if (existing) {
-    // 내 토큰으로 이미 내 사이트면 → 그대로 snippet 다시 안내
-    if (tokenUserId && existing.userId === tokenUserId) {
-      return ok({ ...respond(existing.slug), alreadyOwned: true }, 200);
-    }
-    // 익명 등록 상태인데 내 토큰이 있으면 → 토큰 소유자로 바로 귀속
-    if (tokenUserId && !existing.userId) {
-      const owner = await getUserById(tokenUserId);
-      const [claimed] = await db
-        .update(sites)
-        .set({
-          userId: tokenUserId,
-          claimToken: null,
-          claimedAt: new Date(),
-          ownerHandle: owner?.handle ?? null,
-          ownerName: owner?.name ?? null,
-          ownerImageUrl: owner?.imageUrl ?? null,
-        })
-        .where(eq(sites.id, existing.id))
-        .returning();
-      return ok({ ...respond(claimed.slug), claimed: true }, 200);
-    }
-    // 누군가 이미 귀속함
-    if (existing.userId) conflict("이미 등록·귀속된 사이트예요. 로그인 후 확인하세요");
-    // 익명 상태 + 토큰 없음 → 토큰 재발급 안 함(보안). 최초 claim 토큰으로 귀속해야 함.
-    return ok(
-      {
-        ...respond(existing.slug),
-        alreadyRegistered: true,
-        message: "이미 등록된(미귀속) 사이트예요. 최초 발급된 claim 토큰으로 귀속하세요.",
-      },
-      200,
-    );
+    return respondForExisting(existing, tokenUserId, respond);
   }
 
   // 신규 등록 (+ OG/favicon 수집)
-  const [og, faviconUrl] = await Promise.all([scrapeOg(rawUrl!), resolveFavicon(fullUrl)]);
-  const autoColor = faviconUrl ? await extractDominantColor(faviconUrl) : null;
-
-  // 토큰이 있으면 owner 정보까지 채워 바로 내 소유로
-  const owner = tokenUserId ? await getUserById(tokenUserId) : null;
-  const claimToken = tokenUserId ? null : randomBytes(24).toString("base64url");
-
-  const [site] = await db
-    .insert(sites)
-    .values({
-      slug: "tmp",
-      userId: tokenUserId ?? null,
-      createdVia: "cli",
-      claimToken,
-      claimedAt: tokenUserId ? new Date() : null,
-      title: og.title || rawUrl!,
-      url: fullUrl,
-      ogTitle: og.title,
-      ogDescription: og.description,
-      ogImage: og.image,
-      faviconUrl: faviconUrl ?? null,
-      color: autoColor,
-      ownerHandle: owner?.handle ?? null,
-      ownerName: owner?.name ?? null,
-      ownerImageUrl: owner?.imageUrl ?? null,
-    })
-    .returning();
-
-  const slug = idToSlug(site.id);
-  await db.update(sites).set({ slug }).where(eq(sites.id, site.id));
+  const { slug, claimToken } = await createSite(rawUrl!, fullUrl, tokenUserId);
 
   // 토큰 등록 → 바로 내 소유, claim 안내 불필요
   if (tokenUserId) {
@@ -135,3 +75,80 @@ export const POST = handler(async (req) => {
     201,
   );
 });
+
+type Existing = NonNullable<Awaited<ReturnType<typeof db.query.sites.findFirst>>>;
+
+/** 이미 등록된 URL — 소유 상태·토큰 유무에 따라 분기 */
+async function respondForExisting(
+  existing: Existing,
+  tokenUserId: string | null,
+  respond: (slug: string) => Record<string, string>,
+) {
+  // 내 토큰으로 이미 내 사이트면 → 그대로 snippet 다시 안내
+  if (tokenUserId && existing.userId === tokenUserId) {
+    return ok({ ...respond(existing.slug), alreadyOwned: true }, 200);
+  }
+  // 익명 등록 상태인데 내 토큰이 있으면 → 토큰 소유자로 바로 귀속
+  if (tokenUserId && !existing.userId) {
+    const owner = await getUserById(tokenUserId);
+    const [claimed] = await db
+      .update(sites)
+      .set({
+        userId: tokenUserId,
+        claimToken: null,
+        claimedAt: new Date(),
+        ownerHandle: owner?.handle ?? null,
+        ownerName: owner?.name ?? null,
+        ownerImageUrl: owner?.imageUrl ?? null,
+      })
+      .where(eq(sites.id, existing.id))
+      .returning();
+    return ok({ ...respond(claimed.slug), claimed: true }, 200);
+  }
+  // 누군가 이미 귀속함
+  if (existing.userId) conflict("이미 등록·귀속된 사이트예요. 로그인 후 확인하세요");
+  // 익명 상태 + 토큰 없음 → 토큰 재발급 안 함(보안). 최초 claim 토큰으로 귀속해야 함.
+  return ok(
+    {
+      ...respond(existing.slug),
+      alreadyRegistered: true,
+      message: "이미 등록된(미귀속) 사이트예요. 최초 발급된 claim 토큰으로 귀속하세요.",
+    },
+    200,
+  );
+}
+
+/** 신규 사이트 insert (OG/favicon 수집 포함) — slug와 claimToken 반환 */
+async function createSite(rawUrl: string, fullUrl: string, tokenUserId: string | null) {
+  const [og, faviconUrl] = await Promise.all([scrapeOg(rawUrl), resolveFavicon(fullUrl)]);
+  const autoColor = faviconUrl ? await extractDominantColor(faviconUrl) : null;
+
+  // 토큰이 있으면 owner 정보까지 채워 바로 내 소유로
+  const owner = tokenUserId ? await getUserById(tokenUserId) : null;
+  const claimToken = tokenUserId ? null : randomBytes(24).toString("base64url");
+
+  const [site] = await db
+    .insert(sites)
+    .values({
+      slug: "tmp",
+      userId: tokenUserId ?? null,
+      createdVia: "cli",
+      claimToken,
+      claimedAt: tokenUserId ? new Date() : null,
+      title: og.title || rawUrl,
+      url: fullUrl,
+      ogTitle: og.title,
+      ogDescription: og.description,
+      ogImage: og.image,
+      faviconUrl: faviconUrl ?? null,
+      color: autoColor,
+      ownerHandle: owner?.handle ?? null,
+      ownerName: owner?.name ?? null,
+      ownerImageUrl: owner?.imageUrl ?? null,
+    })
+    .returning();
+
+  const slug = idToSlug(site.id);
+  await db.update(sites).set({ slug }).where(eq(sites.id, site.id));
+  return { slug, claimToken };
+}
