@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-07-09T06:51:37.133Z",
+  "generatedAt": "2026-07-09T12:48:13.212Z",
   "kitVersion": "0.0.31",
   "source": {
     "dir": "src",
-    "files": 109,
-    "totalLines": 9284,
-    "codeLines": 7865,
+    "files": 110,
+    "totalLines": 9383,
+    "codeLines": 7952,
     "breakdown": {
       "frontend": {
-        "files": 62,
-        "codeLines": 5182
+        "files": 63,
+        "codeLines": 5269
       },
       "backend": {
         "files": 23,
@@ -70,10 +70,10 @@
       ]
     },
     "duplication": {
-      "percent": 4.4,
-      "dupTokens": 1553,
-      "totalTokens": 35288,
-      "blocks": 151,
+      "percent": 4.6,
+      "dupTokens": 1627,
+      "totalTokens": 35446,
+      "blocks": 160,
       "worstFiles": [
         {
           "file": "src/components/overview/kr-maps.tsx",
@@ -107,11 +107,11 @@
       ]
     },
     "cc": {
-      "functions": 640,
-      "avg": 2.7,
+      "functions": 650,
+      "avg": 2.6,
       "p90": 6,
       "max": 15,
-      "over10": 19,
+      "over10": 20,
       "over20": 0,
       "worst": [
         {
@@ -127,12 +127,6 @@
           "line": 9
         },
         {
-          "name": "BoostSendSheet",
-          "cc": 14,
-          "file": "src/components/boost-send-sheet.tsx",
-          "line": 73
-        },
-        {
           "name": "DashboardView",
           "cc": 14,
           "file": "src/components/dashboard-view.tsx",
@@ -143,17 +137,23 @@
           "cc": 14,
           "file": "src/lib/badge.ts",
           "line": 107
+        },
+        {
+          "name": "siteMetaFields",
+          "cc": 14,
+          "file": "src/lib/site-data.ts",
+          "line": 95
         }
       ]
     },
-    "branchDensity": 14.1,
-    "branches": 1107,
-    "functions": 660,
+    "branchDensity": 13.9,
+    "branches": 1106,
+    "functions": 670,
     "avgFileLines": 72,
     "longFiles": 0,
     "maxFile": {
-      "path": "src/components/boost-send-sheet.tsx",
-      "lines": 184
+      "path": "src/components/site-hero.tsx",
+      "lines": 182
     }
   },
   "kit": {
@@ -229,6 +229,16 @@
         "category": "component"
       },
       {
+        "name": "useFormSubmit",
+        "loc": 43,
+        "category": "hook"
+      },
+      {
+        "name": "useLocalStorage",
+        "loc": 33,
+        "category": "hook"
+      },
+      {
         "name": "EmptyState",
         "loc": 19,
         "category": "component"
@@ -249,9 +259,9 @@
         "category": "hook"
       }
     ],
-    "savedLines": 1670,
-    "savedKB": 65,
-    "savedA4": 21,
+    "savedLines": 1746,
+    "savedKB": 68,
+    "savedA4": 22,
     "savedPercent": 18,
     "usage": {
       "component": {
@@ -260,9 +270,9 @@
         "percent": 31
       },
       "hook": {
-        "used": 3,
+        "used": 6,
         "total": 13,
-        "percent": 23
+        "percent": 46
       },
       "util": {
         "used": 7,

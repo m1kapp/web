@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useAccent } from "@/lib/theme-context";
-import { InAppSheet } from "@m1kapp/kit";
+import { InAppSheet, useToast, cn } from "@m1kapp/kit";
 import Link from "next/link";
 import { SitePreviewCard } from "./site-preview-card";
 
 const BOOST_PRESETS = [10, 50, 100] as const;
-const BOOST_RESULT_DISMISS_MS = 3_000;
+const BOOST_CLOSE_DELAY_MS = 1_200;
 
 interface BoostSendSheetProps {
   open: boolean;
@@ -20,13 +20,13 @@ interface BoostSendSheetProps {
   onSuccess: (injected: number) => void;
 }
 
-/** 응원 전송 상태 머신 — 잔액 조회·검증·전송·결과 토스트 */
+/** 응원 전송 상태 머신 — 잔액 조회·검증·전송, 결과는 전역 토스트로 */
 function useBoostSend({ open, onClose, slug, onSuccess }: Pick<BoostSendSheetProps, "open" | "onClose" | "slug" | "onSuccess">) {
+  const toast = useToast();
   const [amount, setAmount] = useState("10");
   const [comment, setComment] = useState("");
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ message: string; ok: boolean } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -43,7 +43,6 @@ function useBoostSend({ open, onClose, slug, onSuccess }: Pick<BoostSendSheetPro
   async function handleInject() {
     if (!canSubmit) return;
     setLoading(true);
-    setResult(null);
     try {
       const res = await fetch("/api/points/inject", {
         method: "POST",
@@ -56,18 +55,18 @@ function useBoostSend({ open, onClose, slug, onSuccess }: Pick<BoostSendSheetPro
         setBalance((prev) => prev !== null ? prev - (data.injected as number) : null);
         setAmount("10");
         setComment("");
-        setResult({ message: `🚀 +${(data.injected as number).toLocaleString()} 응원 완료!`, ok: true });
-        setTimeout(() => { setResult(null); onClose(); }, BOOST_RESULT_DISMISS_MS);
+        toast(`🚀 +${(data.injected as number).toLocaleString()} 응원 완료!`, { variant: "success" });
+        setTimeout(onClose, BOOST_CLOSE_DELAY_MS);
         window.dispatchEvent(new CustomEvent("m1k:boost-completed"));
       } else {
-        setResult({ message: data.error || "실패", ok: false });
+        toast(data.error || "실패", { variant: "error" });
       }
     } finally {
       setLoading(false);
     }
   }
 
-  return { amount, setAmount, comment, setComment, balance, loading, result, num, overBalance, canSubmit, handleInject };
+  return { amount, setAmount, comment, setComment, balance, loading, num, overBalance, canSubmit, handleInject };
 }
 
 export function BoostSendSheet({
@@ -76,7 +75,7 @@ export function BoostSendSheet({
   const { accent } = useAccent();
   const {
     amount, setAmount, comment, setComment, balance,
-    loading, result, num, overBalance, canSubmit, handleInject,
+    loading, num, overBalance, canSubmit, handleInject,
   } = useBoostSend({ open, onClose, slug, onSuccess });
 
   if (!open) return null;
@@ -119,11 +118,11 @@ export function BoostSendSheet({
             <span className="text-xs font-semibold text-zinc-500">응원 포인트</span>
             {balance !== null && (
               <span className="text-xs text-zinc-400">
-                보유 <span className={`font-bold tabular-nums ${overBalance ? "text-red-500" : "text-zinc-700 dark:text-zinc-300"}`}>{balance.toLocaleString()}</span>
+                보유 <span className={cn("font-bold tabular-nums", overBalance ? "text-red-500" : "text-zinc-700 dark:text-zinc-300")}>{balance.toLocaleString()}</span>
                 {num >= 1 && (
                   <>
                     <span className="mx-1">→</span>
-                    <span className={`font-bold tabular-nums ${overBalance ? "text-red-500" : "text-zinc-700 dark:text-zinc-300"}`}>
+                    <span className={cn("font-bold tabular-nums", overBalance ? "text-red-500" : "text-zinc-700 dark:text-zinc-300")}>
                       {(balance - num).toLocaleString()}
                     </span>
                   </>
@@ -141,9 +140,10 @@ export function BoostSendSheet({
                   key={v}
                   onClick={() => setAmount(String(v))}
                   disabled={exceeds}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-30 ${
+                  className={cn(
+                    "flex-1 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-30",
                     selected ? "text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                  }`}
+                  )}
                   style={selected && !exceeds ? { backgroundColor: accent } : undefined}
                 >
                   +{v}
@@ -159,9 +159,10 @@ export function BoostSendSheet({
               max={balance ?? undefined}
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className={`flex-1 rounded-lg border bg-transparent px-3 py-2 text-sm focus:outline-none tabular-nums text-zinc-900 dark:text-white ${
+              className={cn(
+                "flex-1 rounded-lg border bg-transparent px-3 py-2 text-sm focus:outline-none tabular-nums text-zinc-900 dark:text-white",
                 overBalance ? "border-red-400 dark:border-red-500" : "border-zinc-200 dark:border-zinc-700"
-              }`}
+              )}
               placeholder="직접 입력"
             />
             <button
@@ -177,12 +178,6 @@ export function BoostSendSheet({
           {overBalance && (
             <p className="text-xs font-semibold text-red-500 text-center">
               보유 부스트({balance!.toLocaleString()})를 초과했어요
-            </p>
-          )}
-
-          {result && (
-            <p className={`text-xs font-semibold text-center ${result.ok ? "text-green-500" : "text-red-500"}`}>
-              {result.message}
             </p>
           )}
 

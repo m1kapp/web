@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { EmptyState } from "@m1kapp/kit";
-import { useFetch, useDebounce } from "@m1kapp/kit";
+import { useFetch, useDebounce, useLocalStorage } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
 import { DevTable } from "./dev-table";
 
@@ -41,7 +41,7 @@ export function StoreTab({
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<Sort>("total");
-  const [devMode, setDevMode] = useState(false);
+  const [devMode, setDevMode] = useLocalStorage("m1k:store-dev-mode", false);
   const debouncedQuery = useDebounce(searchQuery, 300);
 
   const params = new URLSearchParams();

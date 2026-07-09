@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { SiteCard } from "@/components/site-card";
 import { BoostHistorySheet } from "@/components/boost-history-sheet";
 import type { RecentSite } from "@/lib/types";
+import { useFormSubmit } from "@m1kapp/kit";
 
 export type BoostedSite = {
   slug: string;
@@ -30,17 +31,37 @@ export function RegisterForm({
   onClose: () => void;
 }) {
   const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [validationError, setValidationError] = useState("");
   const router = useRouter();
 
   function isValidDomain(str: string): boolean {
     return /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9-]{1,})*\.[a-zA-Z]{2,}([/][^\s]*)?$/.test(str);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  const { submit, loading, error: submitError } = useFormSubmit<{ slug: string }, string>(
+    async (normalized) => {
+      const res = await fetch("/api/sites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: normalized }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "등록에 실패했어요");
+      return data;
+    },
+    {
+      onSuccess: (data) => {
+        setUrl("");
+        onRegistered();
+        onClose();
+        router.push(`/${data.slug}`);
+      },
+    }
+  );
+
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setValidationError("");
     const normalized = url
       .trim()
       .replace(/^https?:\/\//i, "")
@@ -48,35 +69,17 @@ export function RegisterForm({
       .replace(/\/+$/, "");
 
     if (!normalized) {
-      setError("URL을 입력해주세요");
+      setValidationError("URL을 입력해주세요");
       return;
     }
-
     if (!isValidDomain(normalized)) {
-      setError("올바른 도메인을 입력해주세요 (예: blog.naver.com/dellose)");
+      setValidationError("올바른 도메인을 입력해주세요 (예: blog.naver.com/dellose)");
       return;
     }
-
-    setLoading(true);
-    try {
-      const res = await fetch("/api/sites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: normalized }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setUrl("");
-        onRegistered();
-        onClose();
-        router.push(`/${data.slug}`);
-      } else {
-        setError(data.error || "등록에 실패했어요");
-      }
-    } finally {
-      setLoading(false);
-    }
+    submit(normalized);
   }
+
+  const error = validationError || submitError?.message;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
@@ -85,7 +88,7 @@ export function RegisterForm({
           type="text"
           placeholder="https://blog.naver.com/dellose"
           value={url}
-          onChange={(e) => { setUrl(e.target.value); setError(""); }}
+          onChange={(e) => { setUrl(e.target.value); setValidationError(""); }}
           className="w-full bg-transparent text-sm text-zinc-900 placeholder:text-zinc-300 focus:outline-none"
           required
         />
