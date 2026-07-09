@@ -73,11 +73,10 @@ export function DevTable({ sites, stats, latest }: {
 
   return (
     <div className="overflow-x-auto -mx-4 px-4">
-      <table className="text-[11px] font-mono border-collapse" style={{ minWidth: "560px" }}>
+      <table className="text-[11px] font-mono border-collapse" style={{ minWidth: "420px" }}>
         <thead>
           <tr className="text-[10px] text-zinc-400 dark:text-zinc-500 border-b border-zinc-100 dark:border-zinc-800">
-            <th className="text-left font-medium py-1.5 pr-3 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "160px" }}>사이트</th>
-            <th className="text-left font-medium py-1.5 pr-3" style={{ width: "70px" }}>버전</th>
+            <th className="text-left font-medium py-1.5 pr-3 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "90px" }}>사이트</th>
             <th className="text-left font-medium py-1.5 pr-3" style={{ width: "50px" }}>파일</th>
             <th className="text-left font-medium py-1.5 pr-3" style={{ width: "110px" }}>
               코드 <span style={{ color: BAR_COLORS.frontend }}>■</span><span style={{ color: BAR_COLORS.backend }}>■</span><span style={{ color: BAR_COLORS.shared }}>■</span>
@@ -95,14 +94,18 @@ export function DevTable({ sites, stats, latest }: {
                 <td className="py-2 pr-3 sticky left-0 bg-white dark:bg-zinc-950">
                   <a href={`/${site.slug}`} className="flex items-center gap-2 min-w-0">
                     <SiteLogo site={site} />
-                    <span className="truncate font-sans font-medium text-zinc-700 dark:text-zinc-200">{name}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-sans font-medium text-zinc-700 dark:text-zinc-200">{name}</span>
+                      {s && (
+                        <span className={`block text-[9px] tabular-nums whitespace-nowrap ${behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}`}>
+                          v{s.kitVersion}
+                        </span>
+                      )}
+                    </span>
                   </a>
                 </td>
                 {s ? (
                   <>
-                    <td className={`py-2 pr-3 tabular-nums whitespace-nowrap ${behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}`}>
-                      {s.kitVersion}
-                    </td>
                     <td className="py-2 pr-3 tabular-nums text-zinc-500 dark:text-zinc-400">
                       {s.files ?? "—"}
                     </td>
@@ -115,7 +118,7 @@ export function DevTable({ sites, stats, latest }: {
                     </td>
                   </>
                 ) : (
-                  <td colSpan={5} className="py-2 text-zinc-300 dark:text-zinc-600">kit-stats 없음</td>
+                  <td colSpan={4} className="py-2 text-zinc-300 dark:text-zinc-600">kit-stats 없음</td>
                 )}
               </tr>
             );
