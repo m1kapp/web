@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-09T05:12:59.896Z",
+  "generatedAt": "2026-07-09T06:14:29.417Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
@@ -22,9 +22,90 @@
     }
   },
   "quality": {
-    "engine": "ast",
+    "engine": "ast2",
     "score": 91,
     "grade": "A+",
+    "cognitive": {
+      "avg": 1.5,
+      "p90": 5,
+      "max": 18,
+      "over15": 1,
+      "over25": 0,
+      "worst": [
+        {
+          "name": "BadgeEditor",
+          "cog": 18,
+          "cc": 15,
+          "file": "src/components/badge-editor.tsx",
+          "line": 20
+        },
+        {
+          "name": "(anonymous)",
+          "cog": 15,
+          "cc": 11,
+          "file": "src/app/api/paddle/webhook/route.ts",
+          "line": 37
+        },
+        {
+          "name": "(anonymous)",
+          "cog": 13,
+          "cc": 14,
+          "file": "src/app/api/sites/refresh-og/route.ts",
+          "line": 9
+        },
+        {
+          "name": "MyTab",
+          "cog": 13,
+          "cc": 10,
+          "file": "src/components/tabs/my-tab.tsx",
+          "line": 13
+        },
+        {
+          "name": "cyworldBadge",
+          "cog": 13,
+          "cc": 14,
+          "file": "src/lib/badge.ts",
+          "line": 107
+        }
+      ]
+    },
+    "duplication": {
+      "percent": 6.6,
+      "dupTokens": 2360,
+      "totalTokens": 35839,
+      "blocks": 395,
+      "worstFiles": [
+        {
+          "file": "src/components/overview/kr-maps.tsx",
+          "dupTokens": 303
+        },
+        {
+          "file": "src/components/github-login-button.tsx",
+          "dupTokens": 203
+        },
+        {
+          "file": "src/components/google-login-button.tsx",
+          "dupTokens": 203
+        }
+      ],
+      "worstBlocks": [
+        [
+          "src/app/(tabs)/my/loading.tsx:25",
+          "src/app/(tabs)/my/page.tsx:43",
+          "src/app/(tabs)/store/loading.tsx:24"
+        ],
+        [
+          "src/app/(tabs)/my/loading.tsx:25",
+          "src/app/(tabs)/my/page.tsx:43",
+          "src/app/(tabs)/store/loading.tsx:24"
+        ],
+        [
+          "src/app/(tabs)/my/loading.tsx:25",
+          "src/app/(tabs)/my/page.tsx:43",
+          "src/app/(tabs)/store/loading.tsx:24"
+        ]
+      ]
+    },
     "cc": {
       "functions": 647,
       "avg": 2.6,
@@ -73,6 +154,13 @@
     "maxFile": {
       "path": "src/components/boost-send-sheet.tsx",
       "lines": 184
+    },
+    "llm": {
+      "model": "haiku",
+      "naming": 80,
+      "cohesion": 65,
+      "essential": false,
+      "advice": "불필요한 state 정리 후 저장·URL생성 로직 분리로 응집도를 높일 수 있음."
     }
   },
   "kit": {
