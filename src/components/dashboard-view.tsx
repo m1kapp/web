@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { GrassMap, Watermark, AppShell, Section, Divider } from "@m1kapp/kit";
+import { GrassMap, Watermark, AppShell, Section, Divider, useFetch } from "@m1kapp/kit";
 import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
 import Link from "next/link";
 import { SiteHero, CumulativeCurve } from "./site-hero";
@@ -43,6 +43,27 @@ export interface SiteData {
   ownerHandle: string | null;
   ownerName: string | null;
   ownerImageUrl: string | null;
+}
+
+interface KitBucket {
+  files: number;
+  codeLines: number;
+}
+
+interface KitSiteStats {
+  kitVersion: string;
+  files: number | null;
+  codeLines: number | null;
+  breakdown: { frontend: KitBucket; backend: KitBucket; shared: KitBucket } | null;
+  savedPercent: number | null;
+  savedLines: number | null;
+  savedFiles: number | null;
+  quality: { score: number; grade: string } | null;
+}
+
+interface KitStatsPayload {
+  latestKitVersion: string | null;
+  stats: Record<string, KitSiteStats>;
 }
 
 interface DashboardViewProps {
@@ -96,6 +117,12 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
 
   const hasData = data.total > 0;
 
+  // kit 쓰는 사이트면 코드 규모·절약 섹션 노출 (서버가 Redis 1h 캐시라 부담 없음)
+  const { data: kitStats } = useFetch<KitStatsPayload>("/api/sites/kit-stats", {
+    staleTime: 5 * 60 * 1000,
+  });
+  const kitSite = kitStats?.stats?.[data.slug];
+
   return (
     <AccentProvider initialAccent={(data.color as AccentHex) ?? undefined}>
       <Watermark sponsor={data.url ? { name: data.title ?? data.slug, url: data.url } : undefined}>
@@ -126,7 +153,7 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
             {hasData && (
               <>
                 {/* 섹션 탭 네비게이션 */}
-                <SectionNav hasCoach={data.daily.length >= 3} data={data} />
+                <SectionNav hasCoach={data.daily.length >= 3} data={data} hasCode={!!kitSite} />
 
                 {data.daily.length >= 3 && (
                   <div id="sec-coach">
@@ -159,6 +186,17 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
                 <Section className="py-3">
                   <OverviewInsights data={data} />
                 </Section>
+              </>
+            )}
+
+            {kitSite && (
+              <>
+                <Divider />
+                <div id="sec-code">
+                  <Section className="py-5">
+                    <KitCodeSection s={kitSite} latest={kitStats?.latestKitVersion ?? null} />
+                  </Section>
+                </div>
               </>
             )}
 
@@ -248,7 +286,78 @@ function GrassMapWithAccent({ daily }: { daily: { date: string; count: number }[
   return <GrassMap data={daily} accent={accent} isDark={isDark} unit="명" />;
 }
 
-function SectionNav({ hasCoach, data }: { hasCoach: boolean; data: SiteData }) {
+/** 코드 규모 — 총|프론트|백엔드|공용 + m1kkit 절약 예상 테이블 */
+function KitCodeSection({ s, latest }: { s: KitSiteStats; latest: string | null }) {
+  const { accent } = useAccent();
+  const b = s.breakdown;
+
+  const cols: { label: string; lines: number | null; files: number | null; kit?: boolean }[] = [
+    { label: "총", lines: s.codeLines, files: s.files },
+    { label: "프론트", lines: b?.frontend.codeLines ?? null, files: b?.frontend.files ?? null },
+    { label: "백엔드", lines: b?.backend.codeLines ?? null, files: b?.backend.files ?? null },
+    { label: "공용", lines: b?.shared.codeLines ?? null, files: b?.shared.files ?? null },
+    { label: "kit 절약", lines: s.savedLines, files: s.savedFiles, kit: true },
+  ];
+
+  const behind = latest && s.kitVersion !== latest;
+
+  return (
+    <div>
+      <div className="flex items-baseline justify-between mb-2.5">
+        <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">코드 규모</p>
+        <p className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">
+          @m1kapp/kit{" "}
+          <span className={behind ? "text-amber-500 font-semibold" : ""} style={behind ? undefined : { color: accent }}>
+            v{s.kitVersion}
+          </span>
+          {behind && <span className="text-zinc-400"> (latest v{latest})</span>}
+          {s.quality && <> · 청결 {s.quality.grade}({s.quality.score})</>}
+        </p>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs font-mono">
+          <thead>
+            <tr className="text-[10px] text-zinc-400 dark:text-zinc-500">
+              <th className="text-left font-medium py-1 pr-2" />
+              {cols.map((c) => (
+                <th key={c.label} className="text-right font-medium py-1 pl-3" style={c.kit ? { color: accent } : undefined}>
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="text-zinc-700 dark:text-zinc-300">
+            <tr className="border-t border-zinc-100 dark:border-zinc-800">
+              <td className="py-1.5 pr-2 text-[10px] text-zinc-400 dark:text-zinc-500">줄</td>
+              {cols.map((c) => (
+                <td key={c.label} className="text-right py-1.5 pl-3" style={c.kit ? { color: accent } : undefined}>
+                  {c.lines != null ? `${c.kit ? "+" : ""}${c.lines.toLocaleString()}` : "–"}
+                </td>
+              ))}
+            </tr>
+            <tr className="border-t border-zinc-100 dark:border-zinc-800">
+              <td className="py-1.5 pr-2 text-[10px] text-zinc-400 dark:text-zinc-500">파일</td>
+              {cols.map((c) => (
+                <td key={c.label} className="text-right py-1.5 pl-3" style={c.kit ? { color: accent } : undefined}>
+                  {c.files != null ? `${c.kit ? "+" : ""}${c.files.toLocaleString()}` : "–"}
+                </td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {s.savedPercent != null && (
+        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5">
+          kit이 없었다면 약 <span style={{ color: accent }}>{s.savedLines?.toLocaleString()}줄·{s.savedFiles}파일</span>을 직접 만들었을 것 (전체의 {s.savedPercent}%)
+        </p>
+      )}
+    </div>
+  );
+}
+
+function SectionNav({ hasCoach, data, hasCode }: { hasCoach: boolean; data: SiteData; hasCode: boolean }) {
   const { accent } = useAccent();
   const hasCountries  = data.countries.filter((c) => c.country).length > 0;
   const hasCities     = data.cities.length > 0;
@@ -267,6 +376,7 @@ function SectionNav({ hasCoach, data }: { hasCoach: boolean; data: SiteData }) {
     { id: "sec-device",     label: "디바이스", show: hasDevices },
     { id: "sec-browser",    label: "브라우저", show: hasBrowsersOs },
     { id: "sec-referer",    label: "유입",     show: hasReferers },
+    { id: "sec-code",       label: "코드",     show: hasCode },
   ].filter((t) => t.show);
 
   const navRef = useRef<HTMLDivElement>(null);

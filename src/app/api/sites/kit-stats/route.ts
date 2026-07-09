@@ -14,11 +14,13 @@ export interface SiteKitStats {
   codeLines: number | null;
   breakdown: { frontend: Bucket; backend: Bucket; shared: Bucket } | null;
   savedPercent: number | null;
+  savedLines: number | null;
+  savedFiles: number | null; // kit 요소 소스 파일 수 = 안 썼으면 직접 만들었을 파일 근사치
   quality: { score: number; grade: string; branchDensity: number } | null;
   generatedAt: string | null;
 }
 
-const CACHE_KEY = "kit-stats:v2"; // v2: source.breakdown 추가
+const CACHE_KEY = "kit-stats:v3"; // v2: source.breakdown / v3: savedLines·savedFiles 추가
 const CACHE_TTL = 3600; // 1h — 각 사이트의 정적 kit-stats.json이라 잦은 갱신 불필요
 
 // 등록 사이트들의 /kit-stats.json을 수집해 kit 버전·규모·청결도를 한 번에 반환.
@@ -58,6 +60,8 @@ export const GET = handler(async (req) => {
         codeLines: j.source?.codeLines ?? null,
         breakdown: j.source?.breakdown ?? null,
         savedPercent: j.kit?.savedPercent ?? null,
+        savedLines: j.kit?.savedLines ?? null,
+        savedFiles: Array.isArray(j.kit?.features) ? j.kit.features.length : null,
         quality: j.quality
           ? { score: j.quality.score, grade: j.quality.grade, branchDensity: j.quality.branchDensity }
           : null,
