@@ -1,8 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type { SiteData } from "./dashboard-view";
-import { CountryBars, CityMapSection } from "./overview/city-map-section";
+import { CountryBars } from "./overview/city-map-section";
 import { HourlyAreaChart, DeviceBar, BrowserOsBar, RefererList } from "./overview/usage-charts";
+
+// d3-geo + choropleth 지도 3종은 "도시" 섹션 열 때만 필요 — 대시보드 첫 로드 번들에서 제외
+const CityMapSection = dynamic(
+  () => import("./overview/city-map-section").then((m) => ({ default: m.CityMapSection })),
+  { ssr: false, loading: () => <div className="h-52 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" /> }
+);
 
 export { CoachSection } from "./overview/coach";
 
