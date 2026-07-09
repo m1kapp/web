@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-07-09T01:18:13.875Z",
+  "generatedAt": "2026-07-09T02:24:39.113Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
     "files": 94,
-    "totalLines": 8955,
-    "codeLines": 7625,
+    "totalLines": 9088,
+    "codeLines": 7743,
     "breakdown": {
       "frontend": {
         "files": 51,
-        "codeLines": 5301
+        "codeLines": 5409
       },
       "backend": {
         "files": 23,
-        "codeLines": 1281
+        "codeLines": 1291
       },
       "shared": {
         "files": 20,
@@ -22,12 +22,53 @@
     }
   },
   "quality": {
-    "score": 61,
-    "grade": "C",
-    "branchDensity": 14.5,
-    "branches": 1109,
-    "functions": 595,
-    "avgFileLines": 81,
+    "engine": "ast",
+    "score": 47,
+    "grade": "D",
+    "cc": {
+      "functions": 587,
+      "avg": 2.8,
+      "p90": 6,
+      "max": 41,
+      "over10": 28,
+      "over20": 4,
+      "worst": [
+        {
+          "name": "GET",
+          "cc": 41,
+          "file": "src/app/badge/[...slug]/route.ts",
+          "line": 31
+        },
+        {
+          "name": "GET",
+          "cc": 31,
+          "file": "src/app/api/cron/flush-hits/route.ts",
+          "line": 14
+        },
+        {
+          "name": "generateTips",
+          "cc": 26,
+          "file": "src/components/overview-insights.tsx",
+          "line": 939
+        },
+        {
+          "name": "(anonymous)",
+          "cc": 23,
+          "file": "src/app/api/sites/cli/route.ts",
+          "line": 22
+        },
+        {
+          "name": "CumulativeCurve",
+          "cc": 18,
+          "file": "src/components/site-hero.tsx",
+          "line": 109
+        }
+      ]
+    },
+    "branchDensity": 14.7,
+    "branches": 1135,
+    "functions": 599,
+    "avgFileLines": 82,
     "longFiles": 8,
     "maxFile": {
       "path": "src/components/overview-insights.tsx",
