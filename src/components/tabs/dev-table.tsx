@@ -85,7 +85,7 @@ export function DevTable({ sites, stats, latest }: {
             <th className="text-left font-medium py-1.5 pr-2 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "140px" }}>사이트</th>
             <th className="text-left font-medium py-1.5 pr-2" style={{ width: "40px" }}>파일</th>
             <th className="text-left font-medium py-1.5 pr-2" style={{ width: "95px" }}>
-              코드 <span style={{ color: BAR_COLORS.frontend }}>■</span><span style={{ color: BAR_COLORS.backend }}>■</span><span style={{ color: BAR_COLORS.shared }}>■</span>
+              코드 <span style={{ color: BAR_COLORS.frontend }}>F</span><span style={{ color: BAR_COLORS.backend }}>B</span><span style={{ color: BAR_COLORS.shared }}>S</span>
             </th>
             <th className="text-right font-medium py-1.5 pr-2" style={{ width: "40px" }}>kit</th>
             <th className="text-right font-medium py-1.5" style={{ width: "55px" }}>health</th>
