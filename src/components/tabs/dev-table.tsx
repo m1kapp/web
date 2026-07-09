@@ -76,7 +76,7 @@ export function DevTable({ sites, stats, latest }: {
       <table className="text-[11px] font-mono border-collapse" style={{ minWidth: "420px" }}>
         <thead>
           <tr className="text-[10px] text-zinc-400 dark:text-zinc-500 border-b border-zinc-100 dark:border-zinc-800">
-            <th className="text-left font-medium py-1.5 pr-3 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "90px" }}>사이트</th>
+            <th className="text-left font-medium py-1.5 pr-3 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "120px" }}>사이트</th>
             <th className="text-left font-medium py-1.5 pr-3" style={{ width: "50px" }}>파일</th>
             <th className="text-left font-medium py-1.5 pr-3" style={{ width: "110px" }}>
               코드 <span style={{ color: BAR_COLORS.frontend }}>■</span><span style={{ color: BAR_COLORS.backend }}>■</span><span style={{ color: BAR_COLORS.shared }}>■</span>
