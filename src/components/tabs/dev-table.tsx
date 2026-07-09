@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { RecentSite } from "@/lib/types";
 import type { SiteKitStats } from "./store-tab";
 
@@ -14,11 +15,34 @@ const GRADE_COLORS: Record<string, string> = {
 // 스택바 색 — 프론트/백엔드/공용
 const BAR_COLORS = { frontend: "#3b82f6", backend: "#f97316", shared: "#a1a1aa" } as const;
 
-/** 행 하단 얇은 스택바 — 코드 구성(F/B/공) × 규모(전체 최대 대비 폭) */
-function CodeBar({ s, max }: { s: SiteKitStats; max: number }) {
+/** 파비콘 — 로드 실패 시 이니셜 원으로 폴백 (깨진 이미지 아이콘 방지) */
+function SiteLogo({ site }: { site: RecentSite }) {
+  const [failed, setFailed] = useState(false);
+  const name = site.ogTitle || site.title || site.slug;
+  if (!site.faviconUrl || failed) {
+    return (
+      <span className="w-7 h-7 rounded-lg bg-zinc-200 dark:bg-zinc-700 shrink-0 flex items-center justify-center text-[11px] font-bold text-zinc-500 dark:text-zinc-400">
+        {name[0]?.toUpperCase()}
+      </span>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={site.faviconUrl}
+      alt=""
+      width={28}
+      height={28}
+      className="rounded-lg shrink-0 w-7 h-7 object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+/** 코드 구성 스택바 — F/B/공 비율, 폭 고정(60px) */
+function CodeBar({ s }: { s: SiteKitStats }) {
   const total = s.codeLines ?? 0;
-  if (!total) return null;
-  const width = Math.max((total / max) * 100, 5);
+  if (!total) return <span className="text-zinc-300 dark:text-zinc-600">—</span>;
   const b = s.breakdown;
   const segs = b
     ? [
@@ -28,93 +52,76 @@ function CodeBar({ s, max }: { s: SiteKitStats; max: number }) {
       ]
     : [{ key: "all", v: total, color: BAR_COLORS.shared }];
   return (
-    <div className="h-[3px] rounded-full overflow-hidden flex mt-1.5" style={{ width: `${width}%` }}>
-      {segs.map((seg) => (
-        <div key={seg.key} style={{ width: `${(seg.v / total) * 100}%`, backgroundColor: seg.color }} />
-      ))}
+    <div className="flex items-center gap-1.5">
+      <div className="w-12 h-2 rounded-full overflow-hidden flex shrink-0 bg-zinc-100 dark:bg-zinc-800">
+        {segs.map((seg) => (
+          <div key={seg.key} style={{ width: `${(seg.v / total) * 100}%`, backgroundColor: seg.color }} />
+        ))}
+      </div>
+      <span className="tabular-nums whitespace-nowrap">{total.toLocaleString()}</span>
     </div>
   );
 }
 
-function SiteLogo({ site }: { site: RecentSite }) {
-  if (site.faviconUrl) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={site.faviconUrl} alt="" width={28} height={28} className="rounded-lg shrink-0" />;
-  }
-  return <span className="w-7 h-7 rounded-lg bg-zinc-200 dark:bg-zinc-700 shrink-0" />;
-}
-
-/** dev 모드 비교 뷰 — 2줄 레이아웃:
- *  [로고] 이름      파일수   kit%
- *         버전      줄수     code health
- *  + 하단 F/B/공 스택바 (폭 = 규모) */
+/** dev 모드 비교 테이블 — 고정폭 열 + 가로 스크롤 (좁은 화면에서도 안 찌그러짐) */
 export function DevTable({ sites, stats, latest }: {
   sites: RecentSite[];
   stats: Record<string, SiteKitStats> | undefined;
   latest: string | null;
 }) {
   const withStats = sites.map((site) => ({ site, s: stats?.[site.slug] }));
-  const maxLines = Math.max(...withStats.map(({ s }) => s?.codeLines ?? 0), 1);
 
   return (
-    <div>
-      {/* 범례 */}
-      <div className="flex justify-end gap-2 text-[9px] font-mono text-zinc-400 dark:text-zinc-500 mb-1">
-        <span><span style={{ color: BAR_COLORS.frontend }}>■</span> front</span>
-        <span><span style={{ color: BAR_COLORS.backend }}>■</span> back</span>
-        <span><span style={{ color: BAR_COLORS.shared }}>■</span> shared</span>
-      </div>
-
-      <div className="space-y-0">
-        {withStats.map(({ site, s }) => {
-          const name = site.ogTitle || site.title || site.slug;
-          const behind = !!(s && latest && s.kitVersion !== latest);
-          return (
-            <a
-              key={site.slug}
-              href={`/${site.slug}`}
-              className="flex gap-3 py-2.5 border-b border-zinc-50 dark:border-zinc-900"
-            >
-              <SiteLogo site={site} />
-              <div className="flex-1 min-w-0 font-mono text-[11px]">
-                {/* 1줄: 이름 · 파일수 · kit% */}
-                <div className="flex items-baseline gap-3">
-                  <span className="flex-1 min-w-0 truncate font-sans text-[13px] font-semibold text-zinc-800 dark:text-zinc-100">
-                    {name}
-                  </span>
-                  {s ? (
-                    <>
-                      <span className="tabular-nums text-zinc-400 dark:text-zinc-500 shrink-0 w-14 text-right">
-                        {s.files != null ? `${s.files}파일` : "—"}
-                      </span>
-                      <span className="tabular-nums text-zinc-500 dark:text-zinc-400 shrink-0 w-14 text-right">
-                        {s.savedPercent != null ? `kit ${s.savedPercent}%` : "—"}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-[10px] text-zinc-300 dark:text-zinc-600 shrink-0">kit-stats 없음</span>
-                  )}
-                </div>
-                {/* 2줄: 버전 · 줄수 · code health */}
-                {s && (
-                  <div className="flex items-baseline gap-3 mt-0.5">
-                    <span className={`flex-1 min-w-0 truncate tabular-nums ${behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}`}>
-                      v{s.kitVersion}{behind && ` → ${latest}`}
-                    </span>
-                    <span className="tabular-nums text-zinc-400 dark:text-zinc-500 shrink-0 w-14 text-right">
-                      {s.codeLines != null ? `${s.codeLines.toLocaleString()}줄` : "—"}
-                    </span>
-                    <span className={`tabular-nums font-bold shrink-0 w-14 text-right ${s.quality ? GRADE_COLORS[s.quality.grade] ?? "" : "text-zinc-300"}`}>
+    <div className="overflow-x-auto -mx-4 px-4">
+      <table className="text-[11px] font-mono border-collapse" style={{ minWidth: "560px" }}>
+        <thead>
+          <tr className="text-[10px] text-zinc-400 dark:text-zinc-500 border-b border-zinc-100 dark:border-zinc-800">
+            <th className="text-left font-medium py-1.5 pr-3 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: "160px" }}>사이트</th>
+            <th className="text-left font-medium py-1.5 pr-3" style={{ width: "70px" }}>버전</th>
+            <th className="text-left font-medium py-1.5 pr-3" style={{ width: "50px" }}>파일</th>
+            <th className="text-left font-medium py-1.5 pr-3" style={{ width: "110px" }}>
+              코드 <span style={{ color: BAR_COLORS.frontend }}>■</span><span style={{ color: BAR_COLORS.backend }}>■</span><span style={{ color: BAR_COLORS.shared }}>■</span>
+            </th>
+            <th className="text-right font-medium py-1.5 pr-3" style={{ width: "45px" }}>kit</th>
+            <th className="text-right font-medium py-1.5" style={{ width: "60px" }}>health</th>
+          </tr>
+        </thead>
+        <tbody>
+          {withStats.map(({ site, s }) => {
+            const name = site.ogTitle || site.title || site.slug;
+            const behind = !!(s && latest && s.kitVersion !== latest);
+            return (
+              <tr key={site.slug} className="border-b border-zinc-50 dark:border-zinc-900">
+                <td className="py-2 pr-3 sticky left-0 bg-white dark:bg-zinc-950">
+                  <a href={`/${site.slug}`} className="flex items-center gap-2 min-w-0">
+                    <SiteLogo site={site} />
+                    <span className="truncate font-sans font-medium text-zinc-700 dark:text-zinc-200">{name}</span>
+                  </a>
+                </td>
+                {s ? (
+                  <>
+                    <td className={`py-2 pr-3 tabular-nums whitespace-nowrap ${behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}`}>
+                      {s.kitVersion}
+                    </td>
+                    <td className="py-2 pr-3 tabular-nums text-zinc-500 dark:text-zinc-400">
+                      {s.files ?? "—"}
+                    </td>
+                    <td className="py-2 pr-3"><CodeBar s={s} /></td>
+                    <td className="py-2 pr-3 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                      {s.savedPercent != null ? `${s.savedPercent}%` : "—"}
+                    </td>
+                    <td className={`py-2 text-right font-bold whitespace-nowrap ${s.quality ? GRADE_COLORS[s.quality.grade] ?? "" : ""}`}>
                       {s.quality ? `${s.quality.grade} ${s.quality.score}` : "—"}
-                    </span>
-                  </div>
+                    </td>
+                  </>
+                ) : (
+                  <td colSpan={5} className="py-2 text-zinc-300 dark:text-zinc-600">kit-stats 없음</td>
                 )}
-                {s && <CodeBar s={s} max={maxLines} />}
-              </div>
-            </a>
-          );
-        })}
-      </div>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
