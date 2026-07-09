@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { GrassMap, Watermark, AppShell, Section, Divider, useFetch } from "@m1kapp/kit";
 import { AccentProvider, useAccent, type AccentHex } from "@/lib/theme-context";
-import Link from "next/link";
-import { SiteHero, CumulativeCurve } from "./site-hero";
+import { SiteHero } from "./site-hero";
+import { CumulativeCurve } from "./cumulative-curve";
 import { OverviewInsights, CoachSection } from "./overview-insights";
 import { BoostButton } from "./boost-button";
 import { RefreshOgButton, DeleteSiteButton } from "./dashboard-settings";
 import { BadgeEditor } from "./badge-editor";
+import {
+  DashboardHeader, SectionNav, VerifiedStatus, KitCodeSection,
+  type KitStatsPayload,
+} from "./dashboard-chrome";
 
 const POLL_INTERVAL_MS = 30_000;
 
@@ -43,27 +47,6 @@ export interface SiteData {
   ownerHandle: string | null;
   ownerName: string | null;
   ownerImageUrl: string | null;
-}
-
-interface KitBucket {
-  files: number;
-  codeLines: number;
-}
-
-interface KitSiteStats {
-  kitVersion: string;
-  files: number | null;
-  codeLines: number | null;
-  breakdown: { frontend: KitBucket; backend: KitBucket; shared: KitBucket } | null;
-  savedPercent: number | null;
-  savedLines: number | null;
-  savedFiles: number | null;
-  quality: { score: number; grade: string } | null;
-}
-
-interface KitStatsPayload {
-  latestKitVersion: string | null;
-  stats: Record<string, KitSiteStats>;
 }
 
 interface DashboardViewProps {
@@ -232,50 +215,6 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
     </AccentProvider>
   );
 }
-
-function VerifiedStatus({ verified, showEditor, onToggleEditor, isOwner = false }: {
-  verified: boolean;
-  showEditor: boolean;
-  onToggleEditor: () => void;
-  isOwner?: boolean;
-}) {
-  const { accent } = useAccent();
-
-  return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-1.5">
-        {verified ? (
-          <span
-            className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg border"
-            style={{ color: accent, borderColor: `${accent}33`, backgroundColor: `${accent}0a` }}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 5.8L21 9l-4.5 4.4 1.1 6.3L12 16.8l-5.6 2.9 1.1-6.3L3 9l6.1-1.2z"/></svg>
-            인증됨
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ color: accent, backgroundColor: `${accent}1a` }}>
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
-            인증 대기중
-          </span>
-        )}
-      </div>
-      {verified && isOwner && (
-        <button
-          onClick={onToggleEditor}
-          className={`text-[11px] font-medium px-2.5 py-1 rounded-lg transition-colors ${
-            showEditor
-              ? "text-white"
-              : "text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-          }`}
-          style={showEditor ? { backgroundColor: accent } : undefined}
-        >
-          {showEditor ? "닫기" : "뱃지 수정"}
-        </button>
-      )}
-    </div>
-  );
-}
-
 function CumulativeCurveWithAccent({ daily, total, todayCount }: { daily: { date: string; count: number }[]; total: number; todayCount: number }) {
   const { accent } = useAccent();
   return <CumulativeCurve daily={daily} total={total} todayCount={todayCount} accent={accent} />;
@@ -285,171 +224,3 @@ function GrassMapWithAccent({ daily }: { daily: { date: string; count: number }[
   const { accent, isDark } = useAccent();
   return <GrassMap data={daily} accent={accent} isDark={isDark} unit="명" />;
 }
-
-/** 코드 규모 — 총|프론트|백엔드|공용 + m1kkit 절약 예상 테이블 */
-function KitCodeSection({ s, latest }: { s: KitSiteStats; latest: string | null }) {
-  const { accent } = useAccent();
-  const b = s.breakdown;
-
-  const cols: { label: string; lines: number | null; files: number | null; kit?: boolean }[] = [
-    { label: "총", lines: s.codeLines, files: s.files },
-    { label: "프론트", lines: b?.frontend.codeLines ?? null, files: b?.frontend.files ?? null },
-    { label: "백엔드", lines: b?.backend.codeLines ?? null, files: b?.backend.files ?? null },
-    { label: "공용", lines: b?.shared.codeLines ?? null, files: b?.shared.files ?? null },
-    { label: "kit 절약", lines: s.savedLines, files: s.savedFiles, kit: true },
-  ];
-
-  const behind = latest && s.kitVersion !== latest;
-
-  return (
-    <div>
-      <div className="flex items-baseline justify-between mb-2.5">
-        <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">코드 규모</p>
-        <p className="text-[10px] font-mono text-zinc-400 dark:text-zinc-500">
-          @m1kapp/kit{" "}
-          <span className={behind ? "text-amber-500 font-semibold" : ""} style={behind ? undefined : { color: accent }}>
-            v{s.kitVersion}
-          </span>
-          {behind && <span className="text-zinc-400"> (latest v{latest})</span>}
-          {s.quality && <> · 청결 {s.quality.grade}({s.quality.score})</>}
-        </p>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs font-mono">
-          <thead>
-            <tr className="text-[10px] text-zinc-400 dark:text-zinc-500">
-              <th className="text-left font-medium py-1 pr-2" />
-              {cols.map((c) => (
-                <th key={c.label} className="text-right font-medium py-1 pl-3" style={c.kit ? { color: accent } : undefined}>
-                  {c.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="text-zinc-700 dark:text-zinc-300">
-            <tr className="border-t border-zinc-100 dark:border-zinc-800">
-              <td className="py-1.5 pr-2 text-[10px] text-zinc-400 dark:text-zinc-500">줄</td>
-              {cols.map((c) => (
-                <td key={c.label} className="text-right py-1.5 pl-3" style={c.kit ? { color: accent } : undefined}>
-                  {c.lines != null ? `${c.kit ? "+" : ""}${c.lines.toLocaleString()}` : "–"}
-                </td>
-              ))}
-            </tr>
-            <tr className="border-t border-zinc-100 dark:border-zinc-800">
-              <td className="py-1.5 pr-2 text-[10px] text-zinc-400 dark:text-zinc-500">파일</td>
-              {cols.map((c) => (
-                <td key={c.label} className="text-right py-1.5 pl-3" style={c.kit ? { color: accent } : undefined}>
-                  {c.files != null ? `${c.kit ? "+" : ""}${c.files.toLocaleString()}` : "–"}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {s.savedPercent != null && (
-        <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5">
-          kit이 없었다면 약 <span style={{ color: accent }}>{s.savedLines?.toLocaleString()}줄·{s.savedFiles}파일</span>을 직접 만들었을 것 (전체의 {s.savedPercent}%)
-        </p>
-      )}
-    </div>
-  );
-}
-
-function SectionNav({ hasCoach, data, hasCode }: { hasCoach: boolean; data: SiteData; hasCode: boolean }) {
-  const { accent } = useAccent();
-  const hasCountries  = data.countries.filter((c) => c.country).length > 0;
-  const hasCities     = data.cities.length > 0;
-  const hasHourly     = data.hourly.length > 0;
-  const hasDevices    = data.devices.length > 0;
-  const hasBrowsersOs = data.browsers.filter((b) => b.browser).length > 0 || data.os.filter((o) => o.os).length > 0;
-  const hasReferers   = data.referers.length > 0;
-
-  const tabs = [
-    { id: "sec-coach",      label: "코치",     show: hasCoach },
-    { id: "sec-cumulative", label: "누적",     show: true },
-    { id: "sec-daily",      label: "데일리",   show: true },
-    { id: "sec-country",    label: "국가",     show: hasCountries },
-    { id: "sec-city",       label: "도시",     show: hasCities },
-    { id: "sec-hourly",     label: "시간대",   show: hasHourly },
-    { id: "sec-device",     label: "디바이스", show: hasDevices },
-    { id: "sec-browser",    label: "브라우저", show: hasBrowsersOs },
-    { id: "sec-referer",    label: "유입",     show: hasReferers },
-    { id: "sec-code",       label: "코드",     show: hasCode },
-  ].filter((t) => t.show);
-
-  const navRef = useRef<HTMLDivElement>(null);
-
-  const scrollTo = useCallback((id: string) => {
-    const el = document.getElementById(id);
-    const nav = navRef.current;
-    if (!el || !nav) return;
-    // overflow-y-auto 스크롤 컨테이너 찾기
-    let container = nav.parentElement;
-    while (container && getComputedStyle(container).overflowY !== "auto") {
-      container = container.parentElement;
-    }
-    if (!container) return;
-    const navH = nav.offsetHeight;
-    const targetTop = el.offsetTop - container.offsetTop - navH;
-    container.scrollTo({ top: targetTop, behavior: "smooth" });
-  }, []);
-
-  return (
-    <div ref={navRef} className="sticky top-0 z-10 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md border-b border-zinc-100 dark:border-zinc-800">
-      <div className="flex gap-1 px-3 py-1.5 overflow-x-auto scrollbar-hide">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => scrollTo(t.id)}
-            className="shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-md text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DashboardHeader({ url }: { url: string | null }) {
-  const { accent } = useAccent();
-
-  return (
-    <header className="sticky top-0 z-20 border-b border-zinc-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md h-14 shrink-0">
-      <div className="flex items-center justify-between px-4 h-full">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/"
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500 dark:text-zinc-400">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </Link>
-          <Link href="/" className="text-xl font-black tracking-tighter" style={{ color: accent }}>
-            m1k
-          </Link>
-        </div>
-
-        {url && (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-xs font-medium border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors px-3 py-1.5 rounded-full"
-          >
-            <span>사이트 보러가기</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-          </a>
-        )}
-      </div>
-    </header>
-  );
-}
-

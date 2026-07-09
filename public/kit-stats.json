@@ -1,30 +1,30 @@
 {
-  "generatedAt": "2026-07-09T02:35:55.884Z",
+  "generatedAt": "2026-07-09T02:51:05.057Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
-    "files": 94,
-    "totalLines": 9152,
-    "codeLines": 7800,
+    "files": 109,
+    "totalLines": 9254,
+    "codeLines": 7865,
     "breakdown": {
       "frontend": {
-        "files": 51,
-        "codeLines": 5416
+        "files": 62,
+        "codeLines": 5187
       },
       "backend": {
         "files": 23,
         "codeLines": 1332
       },
       "shared": {
-        "files": 20,
-        "codeLines": 1052
+        "files": 24,
+        "codeLines": 1346
       }
     }
   },
   "quality": {
     "engine": "ast",
-    "score": 70,
-    "grade": "B",
+    "score": 84,
+    "grade": "A",
     "cc": {
       "functions": 625,
       "avg": 2.7,
@@ -43,7 +43,7 @@
           "name": "DashboardView",
           "cc": 17,
           "file": "src/components/dashboard-view.tsx",
-          "line": 77
+          "line": 60
         },
         {
           "name": "TabsShell",
@@ -55,24 +55,24 @@
           "name": "getContextLine",
           "cc": 16,
           "file": "src/components/site-hero.tsx",
-          "line": 45
+          "line": 38
         },
         {
           "name": "BadgeEditor",
           "cc": 15,
           "file": "src/components/badge-editor.tsx",
-          "line": 52
+          "line": 20
         }
       ]
     },
-    "branchDensity": 14.5,
+    "branchDensity": 14.4,
     "branches": 1129,
     "functions": 641,
-    "avgFileLines": 83,
-    "longFiles": 8,
+    "avgFileLines": 72,
+    "longFiles": 1,
     "maxFile": {
-      "path": "src/components/overview-insights.tsx",
-      "lines": 986
+      "path": "src/components/tabs/my-tab.tsx",
+      "lines": 207
     }
   },
   "kit": {
