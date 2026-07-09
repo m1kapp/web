@@ -14,10 +14,16 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: "boosted", label: "부스트순" },
 ];
 
+interface Bucket {
+  files: number;
+  codeLines: number;
+}
+
 interface SiteKitStats {
   kitVersion: string;
   files: number | null;
   codeLines: number | null;
+  breakdown: { frontend: Bucket; backend: Bucket; shared: Bucket } | null;
   savedPercent: number | null;
   quality: { score: number; grade: string; branchDensity: number } | null;
 }
@@ -50,6 +56,12 @@ function DevStrip({ s, latest }: { s: SiteKitStats | undefined; latest: string |
         v{s.kitVersion}{behind && `→${latest}`}
       </span>
       {s.codeLines != null && <> · {s.codeLines.toLocaleString()}줄</>}
+      {s.breakdown && (
+        <span className="text-zinc-300 dark:text-zinc-600">
+          (F{s.breakdown.frontend.codeLines.toLocaleString()}/B{s.breakdown.backend.codeLines.toLocaleString()}
+          {s.breakdown.shared.codeLines > 0 && `/공${s.breakdown.shared.codeLines.toLocaleString()}`})
+        </span>
+      )}
       {s.files != null && <> · {s.files}파일</>}
       {s.savedPercent != null && <> · kit {s.savedPercent}%</>}
       {s.quality && <> · 청결 {s.quality.grade}({s.quality.score})</>}

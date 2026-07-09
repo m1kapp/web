@@ -2,17 +2,23 @@ import { fetchRecentSites } from "@/lib/site-service";
 import { redis } from "@/lib/redis";
 import { handler, ok } from "@m1kapp/kit/server";
 
+interface Bucket {
+  files: number;
+  codeLines: number;
+}
+
 export interface SiteKitStats {
   slug: string;
   kitVersion: string;
   files: number | null;
   codeLines: number | null;
+  breakdown: { frontend: Bucket; backend: Bucket; shared: Bucket } | null;
   savedPercent: number | null;
   quality: { score: number; grade: string; branchDensity: number } | null;
   generatedAt: string | null;
 }
 
-const CACHE_KEY = "kit-stats:v1";
+const CACHE_KEY = "kit-stats:v2"; // v2: source.breakdown 추가
 const CACHE_TTL = 3600; // 1h — 각 사이트의 정적 kit-stats.json이라 잦은 갱신 불필요
 
 // 등록 사이트들의 /kit-stats.json을 수집해 kit 버전·규모·청결도를 한 번에 반환.
@@ -50,6 +56,7 @@ export const GET = handler(async (req) => {
         kitVersion: j.kitVersion,
         files: j.source?.files ?? null,
         codeLines: j.source?.codeLines ?? null,
+        breakdown: j.source?.breakdown ?? null,
         savedPercent: j.kit?.savedPercent ?? null,
         quality: j.quality
           ? { score: j.quality.score, grade: j.quality.grade, branchDensity: j.quality.branchDensity }

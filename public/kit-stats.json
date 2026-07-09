@@ -1,11 +1,25 @@
 {
-  "generatedAt": "2026-07-08T12:26:13.049Z",
+  "generatedAt": "2026-07-09T01:18:13.875Z",
   "kitVersion": "0.0.30",
   "source": {
     "dir": "src",
     "files": 94,
     "totalLines": 8955,
-    "codeLines": 7625
+    "codeLines": 7625,
+    "breakdown": {
+      "frontend": {
+        "files": 51,
+        "codeLines": 5301
+      },
+      "backend": {
+        "files": 23,
+        "codeLines": 1281
+      },
+      "shared": {
+        "files": 20,
+        "codeLines": 1043
+      }
+    }
   },
   "quality": {
     "score": 61,
