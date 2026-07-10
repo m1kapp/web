@@ -85,6 +85,30 @@ export async function getBufferedTotal(siteId: number): Promise<number> {
   return 0; // Neon 폴백 시 데이터가 이미 DB에 있으므로 0
 }
 
+/** 여러 사이트의 버퍼된 today/total을 파이프라인 1왕복으로 조회.
+ *  flush 크론 주기 전에 생긴 신규 hit은 Postgres hits 테이블엔 아직 없고
+ *  Redis 버퍼에만 있어서, 목록 집계 시 이걸 안 더하면 배지(count 뷰)와 값이 어긋남. */
+export async function getBufferedMap(siteIds: number[], date: string): Promise<Map<number, { today: number; total: number }>> {
+  const out = new Map<number, { today: number; total: number }>();
+  if (!redis || siteIds.length === 0) return out;
+  try {
+    const pipe = redis.pipeline();
+    for (const id of siteIds) {
+      pipe.hget<number>(HIT_COUNT_KEY(id, date), "count");
+      pipe.get<number>(TOTAL_KEY(id));
+    }
+    const results = await pipe.exec<number[]>();
+    siteIds.forEach((id, i) => {
+      const today = (results[i * 2] as number | null) ?? 0;
+      const total = (results[i * 2 + 1] as number | null) ?? 0;
+      out.set(id, { today, total });
+    });
+  } catch (e) {
+    console.warn("[hit-buffer] Redis getBufferedMap failed:", e);
+  }
+  return out;
+}
+
 /** flush: 로그 전부 꺼내기 (최대 batchSize개) — count 인자로 한 번에 배치 팝 (왕복 1회) */
 export async function drainLogs(batchSize = 500): Promise<HitEntry[]> {
   if (!redis) return [];

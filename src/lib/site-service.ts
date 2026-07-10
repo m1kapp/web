@@ -4,6 +4,7 @@ import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
 import { sql, desc, ilike, or, eq, and } from "drizzle-orm";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { todayKST } from "@/lib/format";
+import { getBufferedMap } from "@/lib/hit-buffer";
 import type { RecentSite } from "@/lib/types";
 
 export type Site = typeof sites.$inferSelect;
@@ -36,6 +37,7 @@ export async function fetchRecentSites({
 
   let query = db
     .select({
+      id: sites.id,
       slug: sites.slug,
       title: sites.title,
       url: sites.url,
@@ -65,6 +67,20 @@ export async function fetchRecentSites({
 
   const result = await query.limit(30);
 
+  // hits 테이블은 flush 크론(주기적) 이후에만 반영됨 — 그 사이 새로 쌓인 hit은
+  // Redis 버퍼에만 있어서 안 더하면 사이트 자체 배지(count 뷰)보다 낮게 보임.
+  const buffered = await getBufferedMap(result.map((s) => s.id), todayStr);
+  for (const s of result) {
+    const b = buffered.get(s.id);
+    if (b) {
+      s.total = Number(s.total) + b.total;
+      s.today = Number(s.today) + b.today;
+    }
+  }
+  if (sort === "today") result.sort((a, b) => Number(b.today) - Number(a.today) || Number(b.total) - Number(a.total));
+  else if (sort === "boosted") result.sort((a, b) => Number(b.boosted) - Number(a.boosted) || Number(b.total) - Number(a.total));
+  else result.sort((a, b) => Number(b.total) - Number(a.total));
+
   const userIds = [...new Set(result.map((s) => s.userId).filter(Boolean))] as string[];
   const userMap: Record<string, { name: string; imageUrl: string }> = {};
 
@@ -80,7 +96,7 @@ export async function fetchRecentSites({
     }
   }
 
-  return result.map((s) => ({
+  return result.map(({ id: _id, ...s }) => ({
     ...s,
     owner: s.userId && userMap[s.userId] ? userMap[s.userId] : null,
   }));
