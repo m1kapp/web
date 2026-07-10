@@ -7,6 +7,30 @@ interface Bucket {
   codeLines: number;
 }
 
+interface QualityWorstFn {
+  name: string;
+  cog: number;
+  file: string;
+  line: number;
+}
+
+interface QualityDupFile {
+  file: string;
+  dupTokens: number;
+}
+
+export interface SiteQuality {
+  score: number;
+  grade: string;
+  engine: string | null;
+  branchDensity: number;
+  avgFileLines: number | null;
+  longFiles: number | null;
+  maxFile: { path: string; lines: number } | null;
+  cognitive: { avg: number; max: number; over15: number; over25: number; worst: QualityWorstFn[] } | null;
+  duplication: { percent: number; worstFiles: QualityDupFile[] } | null;
+}
+
 export interface SiteKitStats {
   slug: string;
   kitVersion: string;
@@ -16,11 +40,11 @@ export interface SiteKitStats {
   savedPercent: number | null;
   savedLines: number | null;
   savedFiles: number | null; // kit 요소 소스 파일 수 = 안 썼으면 직접 만들었을 파일 근사치
-  quality: { score: number; grade: string; branchDensity: number } | null;
+  quality: SiteQuality | null;
   generatedAt: string | null;
 }
 
-const CACHE_KEY = "kit-stats:v3"; // v2: source.breakdown / v3: savedLines·savedFiles 추가
+const CACHE_KEY = "kit-stats:v4"; // v2: source.breakdown / v3: savedLines·savedFiles / v4: quality 상세(cognitive·duplication·avgFileLines) 추가
 const CACHE_TTL = 3600; // 1h — 각 사이트의 정적 kit-stats.json이라 잦은 갱신 불필요
 
 // 등록 사이트들의 /kit-stats.json을 수집해 kit 버전·규모·청결도를 한 번에 반환.
@@ -63,7 +87,30 @@ export const GET = handler(async (req) => {
         savedLines: j.kit?.savedLines ?? null,
         savedFiles: Array.isArray(j.kit?.features) ? j.kit.features.length : null,
         quality: j.quality
-          ? { score: j.quality.score, grade: j.quality.grade, branchDensity: j.quality.branchDensity }
+          ? {
+              score: j.quality.score,
+              grade: j.quality.grade,
+              engine: j.quality.engine ?? null,
+              branchDensity: j.quality.branchDensity,
+              avgFileLines: j.quality.avgFileLines ?? null,
+              longFiles: j.quality.longFiles ?? null,
+              maxFile: j.quality.maxFile ?? null,
+              cognitive: j.quality.cognitive
+                ? {
+                    avg: j.quality.cognitive.avg,
+                    max: j.quality.cognitive.max,
+                    over15: j.quality.cognitive.over15,
+                    over25: j.quality.cognitive.over25,
+                    worst: (j.quality.cognitive.worst ?? []).slice(0, 5),
+                  }
+                : null,
+              duplication: j.quality.duplication
+                ? {
+                    percent: j.quality.duplication.percent,
+                    worstFiles: (j.quality.duplication.worstFiles ?? []).slice(0, 3),
+                  }
+                : null,
+            }
           : null,
         generatedAt: j.generatedAt ?? null,
       };

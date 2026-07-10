@@ -20,13 +20,37 @@ export interface Bucket {
   codeLines: number;
 }
 
+interface QualityWorstFn {
+  name: string;
+  cog: number;
+  file: string;
+  line: number;
+}
+
+interface QualityDupFile {
+  file: string;
+  dupTokens: number;
+}
+
+export interface SiteQuality {
+  score: number;
+  grade: string;
+  engine: string | null;
+  branchDensity: number;
+  avgFileLines: number | null;
+  longFiles: number | null;
+  maxFile: { path: string; lines: number } | null;
+  cognitive: { avg: number; max: number; over15: number; over25: number; worst: QualityWorstFn[] } | null;
+  duplication: { percent: number; worstFiles: QualityDupFile[] } | null;
+}
+
 export interface SiteKitStats {
   kitVersion: string;
   files: number | null;
   codeLines: number | null;
   breakdown: { frontend: Bucket; backend: Bucket; shared: Bucket } | null;
   savedPercent: number | null;
-  quality: { score: number; grade: string; branchDensity: number } | null;
+  quality: SiteQuality | null;
 }
 
 interface KitStatsPayload {
