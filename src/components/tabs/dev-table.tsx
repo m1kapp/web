@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dialog } from "@m1kapp/kit";
+import { InAppSheet } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
 import type { SiteKitStats, SiteQuality, Bucket } from "./store-tab";
 
@@ -75,7 +75,7 @@ function SiteLogo({ name, faviconUrl }: { name: string; faviconUrl?: string | nu
   );
 }
 
-/** 코드 구성 — FE/BE/공용 실제 LOC 숫자 (색은 헤더 범례와 매칭) */
+/** 줄 구성 — FE/BE/공용 실제 LOC 숫자 (색은 헤더 범례와 매칭) */
 function CodeLoc({ total, breakdown }: { total: number | null; breakdown: { frontend: Bucket; backend: Bucket; shared: Bucket } | null }) {
   if (!total) return <span className="text-zinc-300 dark:text-zinc-600">—</span>;
   return (
@@ -94,13 +94,13 @@ function CodeLoc({ total, breakdown }: { total: number | null; breakdown: { fron
   );
 }
 
-/** health 클릭 시 뜨는 상세 체크항목 다이얼로그 */
-function QualityDialog({ name, quality, onClose }: { name: string; quality: SiteQuality; onClose: () => void }) {
+/** health 클릭 시 뜨는 상세 체크항목 바텀시트 */
+function QualitySheet({ name, quality, onClose }: { name: string; quality: SiteQuality; onClose: () => void }) {
   const cog = quality.cognitive;
   const dup = quality.duplication;
   return (
-    <Dialog open onClose={onClose} title={`${name} — 청결도 상세`} size="md">
-      <div className="space-y-4 text-sm">
+    <InAppSheet open onClose={onClose} title={`${name} — 청결도 상세`}>
+      <div className="px-5 pb-6 max-h-[70vh] overflow-y-auto space-y-4 text-sm">
         <div className="flex items-baseline gap-2">
           <span className={`text-2xl font-black ${GRADE_COLORS[quality.grade] ?? ""}`}>{quality.grade}</span>
           <span className="text-zinc-400 dark:text-zinc-500 font-mono text-sm">{quality.score}점</span>
@@ -156,7 +156,7 @@ function QualityDialog({ name, quality, onClose }: { name: string; quality: Site
           </div>
         )}
       </div>
-    </Dialog>
+    </InAppSheet>
   );
 }
 
@@ -171,9 +171,9 @@ function CheckItem({ label, value, sub }: { label: string; value: string; sub?: 
 }
 
 function HealthCell({ quality, onOpen }: { quality: SiteQuality | null; onOpen: () => void }) {
-  if (!quality) return <td className="py-2 text-right text-zinc-300 dark:text-zinc-600">—</td>;
+  if (!quality) return <td className="py-2 pr-2 text-zinc-300 dark:text-zinc-600">—</td>;
   return (
-    <td className="py-2 text-right">
+    <td className="py-2 pr-2">
       <button
         onClick={onOpen}
         className={`font-bold whitespace-nowrap tabular-nums cursor-pointer hover:underline underline-offset-2 ${GRADE_COLORS[quality.grade] ?? ""}`}
@@ -184,27 +184,28 @@ function HealthCell({ quality, onOpen }: { quality: SiteQuality | null; onOpen: 
   );
 }
 
+// 헬스(score) 열을 사이트 바로 옆 맨 왼쪽 데이터 열로 — 가로 스크롤 없이 바로 보이도록
 const COLS = {
   site: "130px",
+  health: "56px",
   files: "32px",
-  code: "90px",
-  perFile: "40px",
-  kit: "35px",
-  health: "55px",
+  code: "88px",
+  perFile: "46px",
+  kit: "34px",
 };
 
 function TableHead() {
   return (
     <thead>
       <tr className="text-[10px] text-zinc-400 dark:text-zinc-500 border-b border-zinc-100 dark:border-zinc-800">
-        <th className="text-left font-medium py-1.5 pr-2 sticky left-0 bg-white dark:bg-zinc-950" style={{ width: COLS.site }}>사이트</th>
-        <th className="text-left font-medium py-1.5 pr-2" style={{ width: COLS.files }}>파일</th>
-        <th className="text-left font-medium py-1.5 pr-2" style={{ width: COLS.code }}>
-          코드 <span style={{ color: BUCKET_COLORS.frontend }}>FE</span>/<span style={{ color: BUCKET_COLORS.backend }}>BE</span>/<span style={{ color: BUCKET_COLORS.shared }}>공용</span>
+        <th className="text-left font-medium py-1.5 pr-2 sticky left-0 z-10 bg-white dark:bg-zinc-950 whitespace-nowrap" style={{ width: COLS.site }}>사이트</th>
+        <th className="text-left font-medium py-1.5 pr-2 whitespace-nowrap" style={{ width: COLS.health }}>health</th>
+        <th className="text-left font-medium py-1.5 pr-2 whitespace-nowrap" style={{ width: COLS.files }}>파일</th>
+        <th className="text-left font-medium py-1.5 pr-2 whitespace-nowrap" style={{ width: COLS.code }}>
+          줄 <span style={{ color: BUCKET_COLORS.frontend }}>FE</span>/<span style={{ color: BUCKET_COLORS.backend }}>BE</span>/<span style={{ color: BUCKET_COLORS.shared }}>공용</span>
         </th>
-        <th className="text-right font-medium py-1.5 pr-2" style={{ width: COLS.perFile }}>줄/파일</th>
-        <th className="text-right font-medium py-1.5 pr-2" style={{ width: COLS.kit }}>kit</th>
-        <th className="text-right font-medium py-1.5" style={{ width: COLS.health }}>health</th>
+        <th className="text-right font-medium py-1.5 pr-2 whitespace-nowrap" style={{ width: COLS.perFile }}>줄/파일</th>
+        <th className="text-right font-medium py-1.5 whitespace-nowrap" style={{ width: COLS.kit }}>kit</th>
       </tr>
     </thead>
   );
@@ -227,8 +228,8 @@ export function DevTable({ sites, stats, latest }: {
   }
 
   return (
-    <div className="overflow-x-auto -mx-4 px-4">
-      <table className="text-[11px] font-mono border-collapse" style={{ width: "382px", tableLayout: "fixed" }}>
+    <div className="overflow-x-auto -mx-4 px-4 pb-2">
+      <table className="text-[11px] font-mono border-collapse" style={{ width: "386px", tableLayout: "fixed" }}>
         <TableHead />
         <tbody>
           {withStats.map(({ site, s }) => {
@@ -236,7 +237,7 @@ export function DevTable({ sites, stats, latest }: {
             const behind = !!(latest && s.kitVersion !== latest);
             return (
               <tr key={site.slug} className="border-b border-zinc-50 dark:border-zinc-900">
-                <td className="py-2 pr-2 sticky left-0 bg-white dark:bg-zinc-950 overflow-hidden">
+                <td className="py-2 pr-2 sticky left-0 z-10 bg-white dark:bg-zinc-950 overflow-hidden">
                   <a href={`/${site.slug}`} className="flex items-center gap-2 min-w-0 overflow-hidden">
                     <SiteLogo name={name} faviconUrl={site.faviconUrl} />
                     <span className="min-w-0">
@@ -247,6 +248,7 @@ export function DevTable({ sites, stats, latest }: {
                     </span>
                   </a>
                 </td>
+                <HealthCell quality={s.quality} onOpen={() => s.quality && setOpenQuality({ name, quality: s.quality })} />
                 <td className="py-2 pr-2 tabular-nums text-zinc-500 dark:text-zinc-400">
                   {s.files ?? "—"}
                 </td>
@@ -254,23 +256,22 @@ export function DevTable({ sites, stats, latest }: {
                 <td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
                   {s.quality?.avgFileLines ?? "—"}
                 </td>
-                <td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
+                <td className="py-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
                   {s.savedPercent != null ? `${s.savedPercent}%` : "—"}
                 </td>
-                <HealthCell quality={s.quality} onOpen={() => s.quality && setOpenQuality({ name, quality: s.quality })} />
               </tr>
             );
           })}
 
           {/* 참고 — 외부 오픈소스 벤치마크, 별도 구획 */}
           <tr>
-            <td colSpan={6} className="pt-3 pb-1 pr-2 sticky left-0 bg-white dark:bg-zinc-950 text-[9px] text-zinc-300 dark:text-zinc-600 tracking-wide">
+            <td colSpan={6} className="pt-3 pb-1 pr-2 sticky left-0 z-10 bg-white dark:bg-zinc-950 text-[9px] text-zinc-300 dark:text-zinc-600 tracking-wide">
               ── 참고 (외부 OSS) ──
             </td>
           </tr>
           {REFERENCE_ENTRIES.map((r) => (
             <tr key={r.name} className="border-b border-zinc-50 dark:border-zinc-900 opacity-70">
-              <td className="py-2 pr-2 sticky left-0 bg-white dark:bg-zinc-950 overflow-hidden">
+              <td className="py-2 pr-2 sticky left-0 z-10 bg-white dark:bg-zinc-950 overflow-hidden">
                 <a href={r.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-w-0 overflow-hidden">
                   <SiteLogo name={r.name} faviconUrl={null} />
                   <span className="min-w-0">
@@ -279,20 +280,20 @@ export function DevTable({ sites, stats, latest }: {
                   </span>
                 </a>
               </td>
+              <HealthCell quality={r.quality} onOpen={() => setOpenQuality({ name: r.name, quality: r.quality })} />
               <td className="py-2 pr-2 tabular-nums text-zinc-500 dark:text-zinc-400">{r.files}</td>
               <td className="py-2 pr-2"><CodeLoc total={r.codeLines} breakdown={r.breakdown} /></td>
               <td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
                 {r.quality.avgFileLines ?? "—"}
               </td>
-              <td className="py-2 pr-2 text-right tabular-nums text-zinc-300 dark:text-zinc-600">—</td>
-              <HealthCell quality={r.quality} onOpen={() => setOpenQuality({ name: r.name, quality: r.quality })} />
+              <td className="py-2 text-right tabular-nums text-zinc-300 dark:text-zinc-600">—</td>
             </tr>
           ))}
         </tbody>
       </table>
 
       {openQuality && (
-        <QualityDialog name={openQuality.name} quality={openQuality.quality} onClose={() => setOpenQuality(null)} />
+        <QualitySheet name={openQuality.name} quality={openQuality.quality} onClose={() => setOpenQuality(null)} />
       )}
     </div>
   );
