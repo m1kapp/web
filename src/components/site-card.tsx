@@ -9,15 +9,20 @@ interface SiteCardProps {
   site: RecentSite;
   /** 오른쪽 영역을 커스텀 슬롯으로 교체 */
   rightSlot?: React.ReactNode;
+  /** true면 카드형 호버/둥근모서리/탭축소 없이 플랫한 리스트 행으로 표시 */
+  flat?: boolean;
 }
 
-export function SiteCard({ site, rightSlot }: SiteCardProps) {
+export function SiteCard({ site, rightSlot, flat = false }: SiteCardProps) {
   const { slug, url, title, ogTitle, ogDescription, faviconUrl, color: colorProp, total, today } = site;
   const displayName = ogTitle || title || slug;
   const color = colorProp || slugToColor(slug);
 
   return (
-    <div className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all active:scale-[0.98] relative">
+    <div className={flat
+      ? "flex items-center gap-3 py-2"
+      : "flex items-center gap-3 py-2 px-2 -mx-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all active:scale-[0.98] relative"
+    }>
       <a href={`/${slug}`} className="shrink-0">
         <SiteThumbnail slug={slug} name={displayName} faviconUrl={faviconUrl} color={color} size="xs" />
       </a>

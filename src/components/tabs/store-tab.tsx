@@ -136,7 +136,7 @@ export function StoreTab({
           </div>
           <div className="divide-y divide-zinc-50 dark:divide-zinc-900">
             {sites.map((site) => (
-              <SiteCard key={site.slug} site={site} />
+              <SiteCard key={site.slug} site={site} flat />
             ))}
           </div>
         </div>
