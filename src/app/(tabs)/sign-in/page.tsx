@@ -10,7 +10,6 @@ export default function SignInPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const redirect = searchParams.get("redirect") || "/my";
-  const isExternal = redirect.startsWith("http");
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -25,14 +24,14 @@ export default function SignInPage() {
 
   if (!isLoaded || isSignedIn) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-white dark:bg-zinc-950">
+      <div className="flex items-center justify-center py-24">
         <div className="w-6 h-6 rounded-full border-2 border-zinc-300 border-t-zinc-600 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-white dark:bg-zinc-950">
+    <div className="px-4 py-3 flex flex-col items-center justify-center min-h-[70dvh]">
       <div className="w-full max-w-[320px]">
         {/* 로고 */}
         <h1 className="text-3xl font-black tracking-tighter text-center text-zinc-900 dark:text-white mb-2">
