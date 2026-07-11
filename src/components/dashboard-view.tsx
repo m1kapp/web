@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { Watermark, AppShell, Section, Divider, useFetch } from "@m1kapp/kit";
 import { AccentProvider, type AccentHex } from "@/lib/theme-context";
 import { SiteHero } from "./site-hero";
-import { BoostButton } from "./boost-button";
 import { StatsSections, OwnerSection } from "./dashboard-sections";
 import { BadgeEditor } from "./badge-editor";
 import { DashboardHeader, KitCodeSection, type KitStatsPayload } from "./dashboard-chrome";
@@ -38,7 +37,6 @@ export interface SiteData {
   todayCount: number;
   verified: boolean;
   parentId: number | null;
-  boosted: number;
   ownerHandle: string | null;
   ownerName: string | null;
   ownerImageUrl: string | null;
@@ -48,11 +46,10 @@ interface DashboardViewProps {
   data: SiteData;
   host: string;
   isOwner?: boolean;
-  isSignedIn?: boolean;
   owner?: { handle: string; name: string; imageUrl: string } | null;
 }
 
-/** 30초 폴링 + boost 완료 이벤트로 카운트 갱신. 값 변화 없으면 리렌더 안 함 */
+/** 30초 폴링으로 카운트 갱신. 값 변화 없으면 리렌더 안 함 */
 function useLiveCounts(initialData: SiteData): SiteData {
   const [data, setData] = useState(initialData);
 
@@ -70,17 +67,13 @@ function useLiveCounts(initialData: SiteData): SiteData {
     }
 
     const interval = setInterval(() => { if (!document.hidden) refresh(); }, POLL_INTERVAL_MS);
-    window.addEventListener("m1k:boost-completed", refresh);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("m1k:boost-completed", refresh);
-    };
+    return () => clearInterval(interval);
   }, []);
 
   return data;
 }
 
-type FreshCounts = { total: number } & Partial<Pick<SiteData, "weekly" | "monthly" | "todayCount" | "boosted" | "daily">>;
+type FreshCounts = { total: number } & Partial<Pick<SiteData, "weekly" | "monthly" | "todayCount" | "daily">>;
 
 function mergeCounts(prev: SiteData, fresh: FreshCounts): SiteData {
   const next = {
@@ -88,19 +81,17 @@ function mergeCounts(prev: SiteData, fresh: FreshCounts): SiteData {
     weekly: fresh.weekly ?? prev.weekly,
     monthly: fresh.monthly ?? prev.monthly,
     todayCount: fresh.todayCount ?? prev.todayCount,
-    boosted: fresh.boosted ?? prev.boosted,
   };
   const unchanged =
     prev.total === next.total &&
     prev.weekly === next.weekly &&
     prev.monthly === next.monthly &&
-    prev.todayCount === next.todayCount &&
-    prev.boosted === next.boosted;
+    prev.todayCount === next.todayCount;
   if (unchanged) return prev;
   return { ...prev, ...next, daily: fresh.daily ?? prev.daily };
 }
 
-export function DashboardView({ data: initialData, host, isOwner = false, isSignedIn = false, owner }: DashboardViewProps) {
+export function DashboardView({ data: initialData, host, isOwner = false, owner }: DashboardViewProps) {
   const data = useLiveCounts(initialData);
   const [showBadgeEditor, setShowBadgeEditor] = useState(false);
 
@@ -123,20 +114,6 @@ export function DashboardView({ data: initialData, host, isOwner = false, isSign
 
             {isOwner && !data.verified && (
               <BadgeEditor slug={data.slug} host={host} pending savedStyle={data.badgeStyle} savedColor={data.badgeColor} />
-            )}
-
-            {(hasData || data.verified) && (
-              <Section className="py-3">
-                <BoostButton
-                  slug={data.slug}
-                  siteName={data.ogTitle || data.title || data.slug}
-                  siteDescription={data.ogDescription}
-                  siteFaviconUrl={data.faviconUrl}
-                  siteColor={data.color}
-                  isSignedIn={isSignedIn}
-                  totalBoosted={data.boosted}
-                />
-              </Section>
             )}
 
             {hasData && <StatsSections data={data} hasCode={!!kitSite} />}

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
-import { PaddleProvider } from "@/components/paddle-provider";
 import { THEME_SCRIPT, ToastProvider } from "@m1kapp/kit";
 import { KitStyles } from "@m1kapp/kit/pwa";
 import { createMetadata, titleTemplate, jsonLd } from "@m1kapp/kit/seo";
@@ -120,7 +119,6 @@ export default async function RootLayout({
             },
           }}
         >
-          <PaddleProvider />
           <ToastProvider>
             {children}
           </ToastProvider>

@@ -113,26 +113,3 @@ export const dailyHourStats = pgTable("daily_hour_stats", {
   uniqueIndex("idx_daily_hour_stats_unique").on(table.siteId, table.date, table.hour),
   index("idx_daily_hour_stats_site").on(table.siteId),
 ]);
-
-// 포인트 지갑
-export const points = pgTable("points", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").notNull().unique(),
-  balance: integer("balance").default(0).notNull(),
-  bonusClaimed: boolean("bonus_claimed").default(false).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-});
-
-// 포인트 사용 내역
-export const pointLogs = pgTable("point_logs", {
-  id: serial("id").primaryKey(),
-  userId: text("user_id").notNull(),
-  amount: integer("amount").notNull(), // +100 지급, -500 투입
-  type: text("type").notNull(), // "bonus" | "purchase" | "inject"
-  targetSiteId: integer("target_site_id"),
-  memo: text("memo"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
-}, (table) => [
-  index("idx_point_logs_user_id").on(table.userId),
-  index("idx_point_logs_target_site_id").on(table.targetSiteId),
-]);

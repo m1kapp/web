@@ -7,12 +7,11 @@ import { useFetch, useDebounce, useLocalStorage } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
 import { DevTable } from "./dev-table";
 
-type Sort = "total" | "today" | "boosted";
+type Sort = "total" | "today";
 
 const SORTS: { value: Sort; label: string }[] = [
   { value: "total", label: "총 방문순" },
   { value: "today", label: "오늘 방문순" },
-  { value: "boosted", label: "부스트순" },
 ];
 
 export interface Bucket {

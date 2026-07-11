@@ -9,12 +9,11 @@ export default function PrivacyPage() {
           <h2 className="text-base font-bold text-zinc-900 dark:text-white">1. Information We Collect</h2>
           <p><strong>Account data:</strong> When you sign in with Google, we receive your name, email, and profile image via Clerk.</p>
           <p><strong>Visitor data:</strong> When a badge is loaded, we collect the visitor's IP address (hashed daily and never stored in plain text), country, city, device type, browser, OS, and referrer URL.</p>
-          <p><strong>Payment data:</strong> Payments are processed by Paddle. We do not store your credit card or payment details.</p>
         </section>
 
         <section>
           <h2 className="text-base font-bold text-zinc-900 dark:text-white">2. How We Use Your Data</h2>
-          <p>We use collected data to: display visitor statistics on your dashboard, prevent duplicate counting (via IP hashing), generate analytics (country, device, referrer breakdown), and process boost purchases.</p>
+          <p>We use collected data to: display visitor statistics on your dashboard, prevent duplicate counting (via IP hashing), and generate analytics (country, device, referrer breakdown).</p>
         </section>
 
         <section>

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { appHost } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getSiteData } from "@/lib/site-data";
-import { sites, hits, pointLogs } from "@/lib/db/schema";
+import { sites, hits } from "@/lib/db/schema";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { DashboardView } from "@/components/dashboard-view";
 import { UserProfileView } from "@/components/user-profile-view";
@@ -110,65 +110,13 @@ export default async function DashboardPage({ params }: Props) {
       owner: { name: user.name, imageUrl: user.imageUrl },
     }));
 
-    // 유저 전체 사이트에 대한 응원 로그
-    const siteIds = await db.select({ id: sites.id, slug: sites.slug, ogTitle: sites.ogTitle, ogDescription: sites.ogDescription, title: sites.title, faviconUrl: sites.faviconUrl, color: sites.color }).from(sites).where(eq(sites.userId, user.id));
-    const ids = siteIds.map((s) => s.id);
-    let totalBoost = 0;
-    let boostLogs: { amount: number; createdAt: string | null; memo: string | null; userId: string; siteSlug: string; siteName: string; siteDescription: string | null; siteFavicon: string | null; siteColor: string | null }[] = [];
-
-    if (ids.length > 0) {
-      const siteMap = Object.fromEntries(siteIds.map((s) => [s.id, s]));
-      const [boostResult] = await db
-        .select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` })
-        .from(pointLogs)
-        .where(and(sql`${pointLogs.targetSiteId} in (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`, eq(pointLogs.type, "inject")));
-      totalBoost = Number(boostResult.total);
-
-      const rawLogs = await db.query.pointLogs.findMany({
-        where: and(sql`${pointLogs.targetSiteId} in (${sql.join(ids.map(id => sql`${id}`), sql`, `)})`, eq(pointLogs.type, "inject")),
-        orderBy: desc(pointLogs.createdAt),
-        limit: 100,
-      });
-
-      // Clerk에서 유저 정보 가져오기
-      const uniqueUserIds = [...new Set(rawLogs.map((l) => l.userId))];
-      let userMap: Record<string, { name: string; imageUrl: string | null }> = {};
-      if (uniqueUserIds.length > 0) {
-        const { clerkClient } = await import("@clerk/nextjs/server");
-        const clerk = await clerkClient();
-        const users = await clerk.users.getUserList({ userId: uniqueUserIds, limit: Math.min(uniqueUserIds.length, 100) });
-        userMap = Object.fromEntries(
-          users.data.map((u) => [u.id, { name: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username || "익명", imageUrl: u.imageUrl }])
-        );
-      }
-
-      boostLogs = rawLogs.map((l) => {
-        const s = siteMap[l.targetSiteId!];
-        const u = userMap[l.userId];
-        return {
-          amount: Math.abs(l.amount),
-          createdAt: l.createdAt?.toISOString() ?? null,
-          memo: l.memo && !l.memo.startsWith("🚀") ? l.memo : null,
-          userId: l.userId,
-          userName: u?.name ?? "익명",
-          userImageUrl: u?.imageUrl ?? null,
-          siteSlug: s?.slug ?? "",
-          siteName: s?.ogTitle || s?.title || s?.slug || "",
-          siteDescription: s?.ogDescription ?? null,
-          siteFavicon: s?.faviconUrl ?? null,
-          siteColor: s?.color ?? null,
-        };
-      });
-    }
-
     const stats = {
       apps: userSites.length,
       totalVisitors: userSites.reduce((sum, s) => sum + s.total, 0),
       todayVisitors: userSites.reduce((sum, s) => sum + s.today, 0),
-      totalBoost,
     };
 
-    return <UserProfileView user={user} sites={userSites} stats={stats} boostLogs={boostLogs as any} />;
+    return <UserProfileView user={user} sites={userSites} stats={stats} />;
   }
 
   // 사이트 상세 페이지
@@ -187,7 +135,6 @@ export default async function DashboardPage({ params }: Props) {
       data={data}
       host={appHost()}
       isOwner={isOwner}
-      isSignedIn={!!userId}
       owner={owner}
     />
   );

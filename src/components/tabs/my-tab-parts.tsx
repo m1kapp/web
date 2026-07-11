@@ -4,22 +4,7 @@ import { useState } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { Avatar } from "@/components/avatar";
 import { useRouter } from "next/navigation";
-import { SiteCard } from "@/components/site-card";
-import { BoostHistorySheet } from "@/components/boost-history-sheet";
-import type { RecentSite } from "@/lib/types";
 import { useFormSubmit } from "@m1kapp/kit";
-
-export type BoostedSite = {
-  slug: string;
-  title: string | null;
-  url: string | null;
-  color: string | null;
-  ogTitle: string | null;
-  ogDescription: string | null;
-  ogImage: string | null;
-  faviconUrl?: string | null;
-  totalBoosted: number;
-};
 
 export function RegisterForm({
   bgColor,
@@ -111,46 +96,9 @@ export function RegisterForm({
   );
 }
 
-export function BoostedSiteCard({ site }: { site: BoostedSite }) {
-  const [showSheet, setShowSheet] = useState(false);
-  const name = site.ogTitle || site.title || site.url || site.slug;
-
-  const chip = (
-    <button
-      onClick={(e) => { e.stopPropagation(); setShowSheet(true); }}
-      className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors"
-    >
-      나의 응원 🚀{Number(site.totalBoosted).toLocaleString()}
-    </button>
-  );
-
-  const cardSite: RecentSite = {
-    slug: site.slug,
-    title: site.title,
-    url: site.url,
-    ogTitle: site.ogTitle,
-    ogDescription: site.ogDescription,
-    ogImage: site.ogImage,
-    color: site.color,
-    total: 0,
-    owner: null,
-  };
-
-  return (
-    <>
-      <SiteCard site={cardSite} rightSlot={chip} />
-      <BoostHistorySheet
-        open={showSheet}
-        onClose={() => setShowSheet(false)}
-        site={{ slug: site.slug, name: name ?? site.slug, faviconUrl: site.faviconUrl, color: site.color, description: site.ogDescription }}
-      />
-    </>
-  );
-}
-
-/** 프로필 카드 — 아바타·핸들·사이트/방문 요약·부스트 잔액·로그아웃 */
-export function ProfileHeader({ sitesCount, totalHits, pointBalance, onOpenShop }: {
-  sitesCount: number; totalHits: number; pointBalance: number | null; onOpenShop: () => void;
+/** 프로필 카드 — 아바타·핸들·사이트/방문 요약·로그아웃 */
+export function ProfileHeader({ sitesCount, totalHits }: {
+  sitesCount: number; totalHits: number;
 }) {
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -171,17 +119,6 @@ export function ProfileHeader({ sitesCount, totalHits, pointBalance, onOpenShop 
           )}
           <p className="text-xs text-zinc-400">
             {sitesCount}개 사이트 · 총 {totalHits.toLocaleString()}명 방문
-            {pointBalance !== null && (
-              <span className="ml-1.5 inline-flex items-center gap-1.5">
-                · 🚀 <span className="font-semibold text-zinc-600 dark:text-zinc-300">{pointBalance.toLocaleString()}</span>
-                <button
-                  onClick={onOpenShop}
-                  className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors text-[9px] font-bold leading-none border border-zinc-200 dark:border-zinc-700"
-                >
-                  충전
-                </button>
-              </span>
-            )}
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs, pointLogs } from "@/lib/db/schema";
+import { sites, hits, hitLogs } from "@/lib/db/schema";
 import { sql, desc, ilike, or, eq, and } from "drizzle-orm";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { todayKST } from "@/lib/format";
@@ -11,7 +11,7 @@ export type Site = typeof sites.$inferSelect;
 
 export interface FetchRecentSitesOptions {
   q?: string;
-  sort?: "total" | "today" | "boosted";
+  sort?: "total" | "today";
 }
 
 export async function fetchRecentSites({
@@ -22,7 +22,6 @@ export async function fetchRecentSites({
 
   const totalExpr = sql<number>`coalesce(sum(${hits.count}), 0)`;
   const todayExpr = sql<number>`coalesce(sum(case when ${hits.date} = ${todayStr} then ${hits.count} else 0 end), 0)`;
-  const boostedExpr = sql<number>`coalesce((select sum(abs(${pointLogs.amount})) from ${pointLogs} where ${pointLogs.targetSiteId} = ${sites.id} and ${pointLogs.type} = 'inject'), 0)`;
 
   const whereCondition = q
     ? and(
@@ -49,7 +48,6 @@ export async function fetchRecentSites({
       userId: sites.userId,
       total: totalExpr,
       today: todayExpr,
-      boosted: boostedExpr,
       createdAt: sites.createdAt,
     })
     .from(sites)
@@ -59,8 +57,6 @@ export async function fetchRecentSites({
 
   if (sort === "today") {
     query = query.orderBy(desc(todayExpr), desc(totalExpr)) as typeof query;
-  } else if (sort === "boosted") {
-    query = query.orderBy(desc(boostedExpr), desc(totalExpr)) as typeof query;
   } else {
     query = query.orderBy(desc(totalExpr)) as typeof query;
   }
@@ -78,7 +74,6 @@ export async function fetchRecentSites({
     }
   }
   if (sort === "today") result.sort((a, b) => Number(b.today) - Number(a.today) || Number(b.total) - Number(a.total));
-  else if (sort === "boosted") result.sort((a, b) => Number(b.boosted) - Number(a.boosted) || Number(b.total) - Number(a.total));
   else result.sort((a, b) => Number(b.total) - Number(a.total));
 
   const userIds = [...new Set(result.map((s) => s.userId).filter(Boolean))] as string[];

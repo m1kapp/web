@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats, dailyHourStats, pointLogs } from "@/lib/db/schema";
+import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats, dailyHourStats } from "@/lib/db/schema";
 import { eq, sql, and, gte, desc, ne } from "drizzle-orm";
 import { todayKST } from "@/lib/format";
 
@@ -46,7 +46,6 @@ function fetchSiteStats(siteId: number, todayStr: string, weekAgo: Date, monthAg
     db.select({ os: dailyDeviceStats.os, count: sql<number>`sum(${dailyDeviceStats.count})` }).from(dailyDeviceStats).where(eq(dailyDeviceStats.siteId, siteId)).groupBy(dailyDeviceStats.os).orderBy(desc(sql`sum(${dailyDeviceStats.count})`)).limit(5),
     db.select({ city: dailyGeoStats.city, count: sql<number>`sum(${dailyGeoStats.count})` }).from(dailyGeoStats).where(and(eq(dailyGeoStats.siteId, siteId), ne(dailyGeoStats.city, ""))).groupBy(dailyGeoStats.city).orderBy(desc(sql`sum(${dailyGeoStats.count})`)),
     db.select({ hour: dailyHourStats.hour, count: sql<number>`sum(${dailyHourStats.count})` }).from(dailyHourStats).where(eq(dailyHourStats.siteId, siteId)).groupBy(dailyHourStats.hour).orderBy(dailyHourStats.hour),
-    db.select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` }).from(pointLogs).where(and(eq(pointLogs.targetSiteId, siteId), eq(pointLogs.type, "inject"))),
   ]);
 }
 
@@ -66,7 +65,6 @@ function toSiteData(site: SiteRow, queryResult: Awaited<ReturnType<typeof fetchS
     os,
     cities,
     hourly,
-    [boostResult],
   ] = queryResult;
 
   return {
@@ -87,7 +85,6 @@ function toSiteData(site: SiteRow, queryResult: Awaited<ReturnType<typeof fetchS
     ...siteMetaFields(site),
     todayCount: Number(todayResult.total),
     verified: site.verified,
-    boosted: Number(boostResult.total),
   };
 }
 

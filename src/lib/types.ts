@@ -4,7 +4,6 @@ export interface RecentSite {
   url: string | null;
   total: number;
   today?: number;
-  boosted?: number;
   ogTitle: string | null;
   ogDescription: string | null;
   ogImage: string | null;

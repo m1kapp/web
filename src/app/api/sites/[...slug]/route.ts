@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats, pointLogs } from "@/lib/db/schema";
+import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats } from "@/lib/db/schema";
 import { eq, sql, and, gte, desc, ne } from "drizzle-orm";
 import { todayKST } from "@/lib/format";
 import { handler, ok, notFound } from "@m1kapp/kit/server";
@@ -73,11 +73,10 @@ export const GET = handler(async (req: Request, ctx: { params: Promise<{ slug: s
   const ninetyDaysAgo = new Date();
   ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-  const [[todayResult], [weeklyResult], [monthlyResult], [boostedResult], daily, countries, devices, referers] = await Promise.all([
+  const [[todayResult], [weeklyResult], [monthlyResult], daily, countries, devices, referers] = await Promise.all([
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), eq(hits.date, todayStr))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(weekAgo)))),
     db.select({ total: sql<number>`coalesce(sum(${hits.count}), 0)` }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(monthAgo)))),
-    db.select({ total: sql<number>`coalesce(sum(abs(${pointLogs.amount})), 0)` }).from(pointLogs).where(and(eq(pointLogs.targetSiteId, site!.id), eq(pointLogs.type, "inject"))),
     db.select({ date: hits.date, count: hits.count }).from(hits).where(and(eq(hits.siteId, site!.id), gte(hits.date, todayKST(ninetyDaysAgo)))).orderBy(hits.date),
     // 사전집계 테이블 사용
     db.select({ country: dailyGeoStats.country, count: sql<number>`sum(${dailyGeoStats.count})` }).from(dailyGeoStats).where(and(eq(dailyGeoStats.siteId, site!.id), ne(dailyGeoStats.country, ""))).groupBy(dailyGeoStats.country).orderBy(desc(sql`sum(${dailyGeoStats.count})`)).limit(10),
@@ -95,7 +94,6 @@ export const GET = handler(async (req: Request, ctx: { params: Promise<{ slug: s
     weekly: Number(weeklyResult.total),
     monthly: Number(monthlyResult.total),
     todayCount: Number(todayResult.total),
-    boosted: Number(boostedResult.total),
     progress: Math.min(total / 1000, 1),
     daily,
     countries,
