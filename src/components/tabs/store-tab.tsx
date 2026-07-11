@@ -134,9 +134,11 @@ export function StoreTab({
             <span className="flex-1 min-w-0">사이트</span>
             <span className="shrink-0 w-[84px] text-right">TODAY / TOTAL</span>
           </div>
-          {sites.map((site) => (
-            <SiteCard key={site.slug} site={site} />
-          ))}
+          <div className="divide-y divide-zinc-50 dark:divide-zinc-900">
+            {sites.map((site) => (
+              <SiteCard key={site.slug} site={site} />
+            ))}
+          </div>
         </div>
         )
       ) : (
