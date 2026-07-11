@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { InAppSheet } from "@m1kapp/kit";
+import { SiteThumbnail } from "@/components/site-preview-card";
 import type { RecentSite } from "@/lib/types";
 import type { SiteKitStats, SiteQuality, Bucket } from "./store-tab";
 
@@ -51,29 +52,6 @@ const REFERENCE_ENTRIES: {
     },
   },
 ];
-
-/** 파비콘 — 로드 실패 시 이니셜 원으로 폴백 (깨진 이미지 아이콘 방지) */
-function SiteLogo({ name, faviconUrl }: { name: string; faviconUrl?: string | null }) {
-  const [failed, setFailed] = useState(false);
-  if (!faviconUrl || failed) {
-    return (
-      <span className="w-7 h-7 rounded-lg bg-zinc-200 dark:bg-zinc-700 shrink-0 flex items-center justify-center text-[11px] font-bold text-zinc-500 dark:text-zinc-400">
-        {name[0]?.toUpperCase()}
-      </span>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={faviconUrl}
-      alt=""
-      width={28}
-      height={28}
-      className="rounded-lg shrink-0 w-7 h-7 object-cover"
-      onError={() => setFailed(true)}
-    />
-  );
-}
 
 /** 줄 구성 — FE/BE/공용 실제 LOC 숫자 (색은 헤더 범례와 매칭) */
 function CodeLoc({ total, breakdown }: { total: number | null; breakdown: { frontend: Bucket; backend: Bucket; shared: Bucket } | null }) {
@@ -185,8 +163,9 @@ function HealthCell({ quality, onOpen }: { quality: SiteQuality | null; onOpen: 
 }
 
 // 헬스(score) 열을 사이트 바로 옆 맨 왼쪽 데이터 열로 — 가로 스크롤 없이 바로 보이도록
+// site 열 폭·로고·글자 크기는 un-kit 모드(SiteCard)와 동일하게 맞춤 (40px 아바타 + text-sm)
 const COLS = {
-  site: "130px",
+  site: "168px",
   health: "56px",
   files: "32px",
   code: "88px",
@@ -229,7 +208,7 @@ export function DevTable({ sites, stats, latest }: {
 
   return (
     <div className="overflow-x-auto -mx-4 px-4 pb-2">
-      <table className="text-[11px] font-mono border-collapse" style={{ width: "386px", tableLayout: "fixed" }}>
+      <table className="text-[11px] font-mono border-collapse" style={{ width: "424px", tableLayout: "fixed" }}>
         <TableHead />
         <tbody>
           {withStats.map(({ site, s }) => {
@@ -238,11 +217,11 @@ export function DevTable({ sites, stats, latest }: {
             return (
               <tr key={site.slug} className="border-b border-zinc-50 dark:border-zinc-900">
                 <td className="py-2 pr-2 sticky left-0 z-10 bg-white dark:bg-zinc-950 overflow-hidden">
-                  <a href={`/${site.slug}`} className="flex items-center gap-2 min-w-0 overflow-hidden">
-                    <SiteLogo name={name} faviconUrl={site.faviconUrl} />
-                    <span className="min-w-0">
-                      <span className="block truncate font-sans font-medium text-zinc-700 dark:text-zinc-200">{name}</span>
-                      <span className={`block text-[9px] tabular-nums whitespace-nowrap ${behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}`}>
+                  <a href={`/${site.slug}`} className="flex items-center gap-3 min-w-0 overflow-hidden">
+                    <SiteThumbnail slug={site.slug} name={name} faviconUrl={site.faviconUrl} color={site.color} />
+                    <span className="min-w-0 font-sans">
+                      <span className="block truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">{name}</span>
+                      <span className={`block text-[10px] tabular-nums whitespace-nowrap ${behind ? "text-amber-500 font-semibold" : "text-emerald-600 dark:text-emerald-500"}`}>
                         v{s.kitVersion}
                       </span>
                     </span>
@@ -272,11 +251,11 @@ export function DevTable({ sites, stats, latest }: {
           {REFERENCE_ENTRIES.map((r) => (
             <tr key={r.name} className="border-b border-zinc-50 dark:border-zinc-900 opacity-70">
               <td className="py-2 pr-2 sticky left-0 z-10 bg-white dark:bg-zinc-950 overflow-hidden">
-                <a href={r.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 min-w-0 overflow-hidden">
-                  <SiteLogo name={r.name} faviconUrl={null} />
-                  <span className="min-w-0">
-                    <span className="block truncate font-sans font-medium text-zinc-700 dark:text-zinc-200">{r.name}</span>
-                    <span className="block text-[9px] text-zinc-400 dark:text-zinc-500 truncate">{r.note}</span>
+                <a href={r.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 min-w-0 overflow-hidden">
+                  <SiteThumbnail slug={r.name} name={r.name} faviconUrl={null} />
+                  <span className="min-w-0 font-sans">
+                    <span className="block truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">{r.name}</span>
+                    <span className="block text-[10px] text-zinc-400 dark:text-zinc-500 truncate">{r.note}</span>
                   </span>
                 </a>
               </td>
