@@ -135,6 +135,11 @@ export function StoreTab({
           <DevTable sites={sites} stats={kitStats?.stats} latest={kitStats?.latestKitVersion ?? null} />
         ) : (
         <div className="space-y-0">
+          <div className="flex items-center gap-3 px-2 pb-1.5 mb-0.5 border-b border-zinc-100 dark:border-zinc-800 text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+            <span className="w-7 shrink-0" />
+            <span className="flex-1 min-w-0">사이트</span>
+            <span className="shrink-0 w-[84px] text-right">TODAY / TOTAL</span>
+          </div>
           {sites.map((site) => (
             <SiteCard key={site.slug} site={site} />
           ))}
