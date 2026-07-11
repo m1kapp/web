@@ -57,14 +57,6 @@ export default async function Loading() {
               <div className="w-16 h-4 rounded bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
             </Section>
 
-            {/* 부스트 버튼 */}
-            <Section className="py-3">
-              <div className="flex gap-2">
-                <div className="flex-1 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
-                <div className="flex-1 h-11 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
-              </div>
-            </Section>
-
             {/* 섹션 탭 네비게이션 */}
             <Section className="py-2">
               <div className="flex gap-2 overflow-x-auto">
