@@ -108,11 +108,6 @@ export function StoreTab({
         ))}
         {searching && <span className="text-xs text-zinc-300 self-center ml-2">검색 중...</span>}
         <span className="flex-1" />
-        {devMode && kitStats?.latestKitVersion && (
-          <span className="text-[10px] font-mono text-zinc-400 self-center">
-            latest v{kitStats.latestKitVersion}
-          </span>
-        )}
         <button
           onClick={() => setDevMode((v) => !v)}
           title="dev 모드 — 사이트별 kit 버전·규모·청결도 비교"
@@ -135,8 +130,7 @@ export function StoreTab({
           <DevTable sites={sites} stats={kitStats?.stats} latest={kitStats?.latestKitVersion ?? null} />
         ) : (
         <div className="space-y-0">
-          <div className="flex items-center gap-3 px-2 pb-1.5 mb-0.5 border-b border-zinc-100 dark:border-zinc-800 text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-            <span className="w-7 shrink-0" />
+          <div className="flex items-center px-2 pb-1.5 mb-0.5 border-b border-zinc-100 dark:border-zinc-800 text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
             <span className="flex-1 min-w-0">사이트</span>
             <span className="shrink-0 w-[84px] text-right">TODAY / TOTAL</span>
           </div>
