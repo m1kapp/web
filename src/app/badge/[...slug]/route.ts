@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, after } from "next/server";
 import { generateBadge } from "@/lib/badge";
 import { findSiteBySlug } from "@/lib/site-service";
 import {
@@ -52,8 +52,12 @@ export async function GET(
   const urlObj = new URL(request.url);
   const viewOnly = urlObj.searchParams.get("view") === "true";
 
+  // 히트 기록(Redis dedup-체크 + pipeline, 왕복 2회)은 응답 critical path 밖으로 뺌 —
+  // 이번 요청의 카운트엔 살짝 늦게 반영되지만(다음 로드부턴 정상 반영) 배지 자체는
+  // 그만큼 빨리 응답됨. verified 갱신도 이 안에서 비동기로 처리.
   if (!viewOnly) {
-    site = await recordHit(request, site, slug);
+    const siteForHit = site;
+    after(() => recordHit(request, siteForHit, slug));
   }
 
   // 2) 카운트: KV 스냅샷 + 버퍼 증분 (Neon 안 침)
