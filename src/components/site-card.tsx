@@ -19,14 +19,14 @@ export function SiteCard({ site, rightSlot }: SiteCardProps) {
   return (
     <div className="flex items-center gap-3 py-2 px-2 -mx-2 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all active:scale-[0.98] relative">
       <a href={`/${slug}`} className="shrink-0">
-        <SiteThumbnail slug={slug} name={displayName} faviconUrl={faviconUrl} color={color} />
+        <SiteThumbnail slug={slug} name={displayName} faviconUrl={faviconUrl} color={color} size="xs" />
       </a>
 
       <a href={`/${slug}`} className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-100 truncate" title={displayName}>
+        <p className="text-[11px] font-medium text-zinc-700 dark:text-zinc-200 truncate" title={displayName}>
           {displayName}
         </p>
-        <p className="text-[10px] text-zinc-400 truncate mt-0.5" title={ogDescription || url || slug}>
+        <p className="text-[9px] text-zinc-400 truncate mt-0.5" title={ogDescription || url || slug}>
           {ogDescription || url || slug}
         </p>
       </a>
@@ -57,7 +57,7 @@ export function SiteCardSkeleton({ count = 3 }: { count?: number }) {
     <div className="space-y-0 animate-pulse">
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 py-2">
-          <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-zinc-800 shrink-0" />
+          <div className="w-7 h-7 rounded-lg bg-zinc-100 dark:bg-zinc-800 shrink-0" />
           <div className="flex-1 min-w-0 space-y-1.5">
             <div className="h-3.5 w-2/3 rounded bg-zinc-100 dark:bg-zinc-800" />
             <div className="h-2.5 w-1/2 rounded bg-zinc-50 dark:bg-zinc-800/50" />

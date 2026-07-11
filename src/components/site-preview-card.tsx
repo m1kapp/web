@@ -9,12 +9,12 @@ interface SiteThumbnailProps {
   name: string;
   faviconUrl?: string | null;  // DB에 저장된 favicon URL (있으면 바로 사용)
   color?: string | null;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 }
 
 export function SiteThumbnail({ slug, name, faviconUrl, color, size = "md" }: SiteThumbnailProps) {
   const bg = color || slugToColor(slug);
-  const dim = size === "sm" ? 32 : size === "lg" ? 48 : 40;
+  const dim = size === "xs" ? 28 : size === "sm" ? 32 : size === "lg" ? 48 : 40;
   const roundedClass = size === "lg" ? "rounded-xl" : "rounded-lg";
 
   return (
