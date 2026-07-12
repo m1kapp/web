@@ -1,29 +1,29 @@
 {
-  "generatedAt": "2026-07-09T12:48:13.212Z",
+  "generatedAt": "2026-07-12T00:29:21.122Z",
   "kitVersion": "0.0.31",
   "source": {
     "dir": "src",
-    "files": 110,
-    "totalLines": 9383,
-    "codeLines": 7952,
+    "files": 99,
+    "totalLines": 8385,
+    "codeLines": 7088,
     "breakdown": {
       "frontend": {
-        "files": 63,
-        "codeLines": 5269
+        "files": 57,
+        "codeLines": 4623
       },
       "backend": {
-        "files": 23,
-        "codeLines": 1336
+        "files": 18,
+        "codeLines": 1113
       },
       "shared": {
         "files": 24,
-        "codeLines": 1347
+        "codeLines": 1352
       }
     }
   },
   "quality": {
     "engine": "ast2",
-    "score": 96,
+    "score": 95,
     "grade": "A+",
     "cognitive": {
       "avg": 1.5,
@@ -40,11 +40,11 @@
           "line": 20
         },
         {
-          "name": "(anonymous)",
-          "cog": 15,
+          "name": "fetchRecentSites",
+          "cog": 14,
           "cc": 11,
-          "file": "src/app/api/paddle/webhook/route.ts",
-          "line": 37
+          "file": "src/lib/site-service.ts",
+          "line": 17
         },
         {
           "name": "(anonymous)",
@@ -54,66 +54,69 @@
           "line": 9
         },
         {
-          "name": "MyTab",
-          "cog": 13,
-          "cc": 10,
-          "file": "src/components/tabs/my-tab.tsx",
-          "line": 13
-        },
-        {
           "name": "cyworldBadge",
           "cog": 13,
           "cc": 14,
           "file": "src/lib/badge.ts",
           "line": 107
+        },
+        {
+          "name": "buildCurveGeometry",
+          "cog": 12,
+          "cc": 11,
+          "file": "src/components/cumulative-curve.tsx",
+          "line": 22
         }
       ]
     },
     "duplication": {
-      "percent": 4.6,
-      "dupTokens": 1627,
-      "totalTokens": 35446,
-      "blocks": 160,
+      "percent": 4.4,
+      "dupTokens": 1392,
+      "totalTokens": 31287,
+      "blocks": 201,
       "worstFiles": [
         {
           "file": "src/components/overview/kr-maps.tsx",
           "dupTokens": 303
         },
         {
-          "file": "src/components/overview/world-maps.tsx",
-          "dupTokens": 185
+          "file": "src/app/api/sites/kit-stats/route.ts",
+          "dupTokens": 199
         },
         {
-          "file": "src/app/api/points/inject/route.ts",
-          "dupTokens": 122
+          "file": "src/components/overview/world-maps.tsx",
+          "dupTokens": 185
         }
       ],
       "worstBlocks": [
         [
           "src/app/[...slug]/page.tsx:20",
-          "src/app/api/builders/route.ts:31",
-          "src/app/api/points/boosted-sites/route.ts:12"
+          "src/app/api/builders/route.ts:31"
         ],
         [
           "src/app/[...slug]/page.tsx:21",
-          "src/app/api/builders/route.ts:32",
-          "src/app/api/points/boosted-sites/route.ts:13"
+          "src/app/api/builders/route.ts:32"
         ],
         [
           "src/app/[...slug]/page.tsx:21",
-          "src/app/api/builders/route.ts:32",
-          "src/app/api/points/boosted-sites/route.ts:13"
+          "src/app/api/builders/route.ts:32"
         ]
       ]
     },
     "cc": {
-      "functions": 650,
+      "functions": 579,
       "avg": 2.6,
       "p90": 6,
-      "max": 15,
-      "over10": 20,
+      "max": 20,
+      "over10": 14,
       "over20": 0,
       "worst": [
+        {
+          "name": "(anonymous)",
+          "cc": 20,
+          "file": "src/app/api/sites/kit-stats/route.ts",
+          "line": 71
+        },
         {
           "name": "BadgeEditor",
           "cc": 15,
@@ -127,12 +130,6 @@
           "line": 9
         },
         {
-          "name": "DashboardView",
-          "cc": 14,
-          "file": "src/components/dashboard-view.tsx",
-          "line": 103
-        },
-        {
           "name": "cyworldBadge",
           "cc": 14,
           "file": "src/lib/badge.ts",
@@ -142,18 +139,18 @@
           "name": "siteMetaFields",
           "cc": 14,
           "file": "src/lib/site-data.ts",
-          "line": 95
+          "line": 92
         }
       ]
     },
-    "branchDensity": 13.9,
-    "branches": 1106,
-    "functions": 670,
+    "branchDensity": 13.8,
+    "branches": 979,
+    "functions": 595,
     "avgFileLines": 72,
-    "longFiles": 0,
+    "longFiles": 1,
     "maxFile": {
-      "path": "src/components/site-hero.tsx",
-      "lines": 182
+      "path": "src/components/tabs/dev-table.tsx",
+      "lines": 271
     }
   },
   "kit": {
@@ -182,11 +179,6 @@
         "name": "jsonLd",
         "loc": 168,
         "category": "util"
-      },
-      {
-        "name": "Dialog",
-        "loc": 98,
-        "category": "component"
       },
       {
         "name": "KitStyles",
@@ -259,20 +251,20 @@
         "category": "hook"
       }
     ],
-    "savedLines": 1746,
-    "savedKB": 68,
-    "savedA4": 22,
-    "savedPercent": 18,
+    "savedLines": 1648,
+    "savedKB": 64,
+    "savedA4": 21,
+    "savedPercent": 19,
     "usage": {
       "component": {
-        "used": 18,
+        "used": 17,
         "total": 59,
-        "percent": 31
+        "percent": 29
       },
       "hook": {
-        "used": 6,
+        "used": 5,
         "total": 13,
-        "percent": 46
+        "percent": 38
       },
       "util": {
         "used": 7,
