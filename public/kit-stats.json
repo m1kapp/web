@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-07-12T00:29:21.122Z",
-  "kitVersion": "0.0.31",
+  "generatedAt": "2026-07-17T09:47:10.875Z",
+  "kitVersion": "0.0.32",
   "source": {
     "dir": "src",
     "files": 99,
-    "totalLines": 8385,
-    "codeLines": 7088,
+    "totalLines": 8370,
+    "codeLines": 7074,
     "breakdown": {
       "frontend": {
         "files": 57,
@@ -13,11 +13,11 @@
       },
       "backend": {
         "files": 18,
-        "codeLines": 1113
+        "codeLines": 1100
       },
       "shared": {
         "files": 24,
-        "codeLines": 1352
+        "codeLines": 1351
       }
     }
   },
@@ -58,7 +58,7 @@
           "cog": 13,
           "cc": 14,
           "file": "src/lib/badge.ts",
-          "line": 107
+          "line": 106
         },
         {
           "name": "buildCurveGeometry",
@@ -70,9 +70,9 @@
       ]
     },
     "duplication": {
-      "percent": 4.4,
+      "percent": 4.5,
       "dupTokens": 1392,
-      "totalTokens": 31287,
+      "totalTokens": 31202,
       "blocks": 201,
       "worstFiles": [
         {
@@ -104,7 +104,7 @@
       ]
     },
     "cc": {
-      "functions": 579,
+      "functions": 578,
       "avg": 2.6,
       "p90": 6,
       "max": 20,
@@ -133,7 +133,7 @@
           "name": "cyworldBadge",
           "cc": 14,
           "file": "src/lib/badge.ts",
-          "line": 107
+          "line": 106
         },
         {
           "name": "siteMetaFields",
@@ -144,9 +144,9 @@
       ]
     },
     "branchDensity": 13.8,
-    "branches": 979,
-    "functions": 595,
-    "avgFileLines": 72,
+    "branches": 978,
+    "functions": 594,
+    "avgFileLines": 71,
     "longFiles": 1,
     "maxFile": {
       "path": "src/components/tabs/dev-table.tsx",
@@ -162,7 +162,7 @@
       },
       {
         "name": "Watermark",
-        "loc": 189,
+        "loc": 188,
         "category": "component"
       },
       {
@@ -251,7 +251,7 @@
         "category": "hook"
       }
     ],
-    "savedLines": 1648,
+    "savedLines": 1647,
     "savedKB": 64,
     "savedA4": 21,
     "savedPercent": 19,
