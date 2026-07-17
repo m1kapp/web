@@ -15,12 +15,11 @@ export interface BadgeOptions {
 
 export function generateBadge(
   count: number,
-  goal: number = 1000,
   options: BadgeOptions = {},
   todayCount: number = 0
 ): string {
   const style = options.style || "flat";
-  if (style === "cyworld") return cyworldBadge(count, todayCount, goal, options);
+  if (style === "cyworld") return cyworldBadge(count, todayCount, options);
   return modernBadge(count, options);
 }
 
@@ -104,7 +103,7 @@ function modernBadge(count: number, options: BadgeOptions): string {
 }
 
 // ── 싸이월드 배지 ──
-function cyworldBadge(total: number, today: number, goal: number, options: BadgeOptions): string {
+function cyworldBadge(total: number, today: number, options: BadgeOptions): string {
   const dark = options.theme === "dark";
   const accent = dark ? "#fafafa" : (options.color || "#cc0000");
   const label = options.label || "";

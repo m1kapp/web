@@ -10,19 +10,6 @@ import { createHash } from "crypto";
 import { todayKST } from "@/lib/format";
 import type { Site } from "@/lib/site-service";
 
-const GOAL_TIERS = [
-  { goal: 1_000, label: "1K" },
-  { goal: 10_000, label: "10K" },
-  { goal: 100_000, label: "100K" },
-  { goal: 1_000_000, label: "1M" },
-];
-function getCurrentGoal(total: number) {
-  for (const tier of GOAL_TIERS) {
-    if (total < tier.goal) return tier;
-  }
-  return GOAL_TIERS[GOAL_TIERS.length - 1];
-}
-
 export const runtime = "nodejs";
 
 const VALID_BADGE_TYPES = ["total", "today", "weekly", "monthly"] as const;
@@ -163,10 +150,9 @@ function buildBadgeArgs(
     : "total";
   const displayCount = counts[badgeType] ?? counts.total;
 
-  const currentGoal = getCurrentGoal(counts.total);
   const labelColorParam = urlObj.searchParams.get("labelColor");
 
-  return [displayCount, currentGoal.goal, {
+  return [displayCount, {
     label: resolveBadgeLabel(urlObj, site, badgeType),
     color: resolveBadgeColor(urlObj, site),
     labelColor: labelColorParam ? `#${labelColorParam}` : undefined,
