@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-17T09:47:10.875Z",
-  "kitVersion": "0.0.32",
+  "generatedAt": "2026-07-18T01:58:57.737Z",
+  "kitVersion": "0.0.33",
   "source": {
     "dir": "src",
     "files": 99,
@@ -217,7 +217,7 @@
       },
       {
         "name": "TabBar",
-        "loc": 45,
+        "loc": 44,
         "category": "component"
       },
       {
@@ -251,7 +251,7 @@
         "category": "hook"
       }
     ],
-    "savedLines": 1647,
+    "savedLines": 1646,
     "savedKB": 64,
     "savedA4": 21,
     "savedPercent": 19,
