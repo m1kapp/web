@@ -10,6 +10,9 @@ import { useFetch } from "@m1kapp/kit";
 import { ThemeProvider, useAppTheme } from "./theme-context";
 import { useState, useEffect } from "react";
 
+// m1k.app 자체 사이트 등록 slug — 하단 powered-by 뱃지에 방문자 카운터 노출
+const TRACK_SLUG = "gf";
+
 // 하단 탭 정의 — icon은 활성 여부에 따른 strokeWidth를 받는다
 const TAB_ITEMS: { id: string; href: string; label: string; icon: (sw: number) => React.ReactNode }[] = [
   {
@@ -63,6 +66,8 @@ function TabsShell({ children }: { children: React.ReactNode }) {
       <Watermark
         color={bgColor}
         sponsor={sponsor ? { name: sponsor.is1k ? `🎉 ${sponsor.name}` : sponsor.name, url: `/${sponsor.slug}` } : undefined}
+        trackSlug={TRACK_SLUG}
+        claimed
       >
         <AppShell className="m-0">
           <AppShellHeader>
