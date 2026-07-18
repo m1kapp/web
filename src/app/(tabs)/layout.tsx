@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Show, UserButton, useUser } from "@clerk/nextjs";
 import { Avatar } from "@/components/avatar";
-import { Watermark, AppShell, AppShellHeader, AppShellContent, FetchProgress, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/kit";
+import { Watermark, AppShell, AppShellHeader, AppShellContent, APP_SHELL_HEADER_HEIGHT, FetchProgress, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/kit";
 import { useFetch } from "@m1kapp/kit";
 import { ThemeProvider, useAppTheme } from "./theme-context";
 import { useState, useEffect } from "react";
@@ -77,8 +77,8 @@ function TabsShell({ children }: { children: React.ReactNode }) {
             <ThemeButton color={bgColor} onClick={() => setThemeOpen(true)} />
           </AppShellHeader>
 
-          {/* 백그라운드 갱신 인디케이터 — 헤더(h-14=56px) 바로 아래 */}
-          <FetchProgress color={bgColor} top={56} />
+          {/* 백그라운드 갱신 인디케이터 — 헤더 바로 아래(세이프에어리어 포함 높이) */}
+          <FetchProgress color={bgColor} top={APP_SHELL_HEADER_HEIGHT} />
 
           <AppShellContent className="tab-scroll relative">
             {children}
