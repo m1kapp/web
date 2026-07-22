@@ -5,6 +5,7 @@ import { geoPath, geoMercator } from "d3-geo";
 import type { GeoPermissibleObjects } from "d3-geo";
 import type { SiteData } from "../dashboard-view";
 import { useGeo, ZoomableSVG } from "./zoomable-svg";
+import { ChoroplethPath } from "./map-primitives";
 import { decodeCity, SEOUL_GU_SET, CITY_TO_KR_PROVINCE, GEO_URLS } from "./geo-data";
 
 // ─── 한국 시/도 choropleth ────────────────────────────────────────────────────
@@ -71,11 +72,7 @@ export function KoreaMap({ cities, accent }: { cities: SiteData["cities"]; accen
     const hasData = count > 0;
     return (
       <g key={key}>
-        <path d={d}
-          fill={hasData ? accent : "#e4e4e7"}
-          fillOpacity={hasData ? 0.15 + t * 0.78 : 1}
-          stroke="white" strokeWidth="0.7"
-          vectorEffect="non-scaling-stroke" />
+        <ChoroplethPath d={d} t={t} active={hasData} accent={accent} />
         {centroid && !isNaN(centroid[0]) && hasData && (
           <text x={centroid[0].toFixed(1)} y={centroid[1].toFixed(1)}
             textAnchor="middle" dominantBaseline="middle"
@@ -151,11 +148,8 @@ export function SeoulGuMap({ cities, accent }: { cities: SiteData["cities"]; acc
         const textFill = hasData ? (isLight ? accent : "white") : "#a1a1aa";
         return (
           <g key={i}>
-            <path d={d}
-              fill={hasData ? accent : "#e2e2e6"}
-              fillOpacity={hasData ? 0.18 + t * 0.72 : 1}
-              stroke="white" strokeWidth="0.8"
-              vectorEffect="non-scaling-stroke" />
+            <ChoroplethPath d={d} t={t} active={hasData} accent={accent}
+              empty="#e2e2e6" base={0.18} span={0.72} strokeWidth={0.8} />
             {centroid && !isNaN(centroid[0]) && (
               <>
                 <text x={centroid[0].toFixed(1)} y={(centroid[1] - (hasData ? 3.5 : 0)).toFixed(1)}

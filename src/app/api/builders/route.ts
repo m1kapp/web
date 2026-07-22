@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 import { sites, hits } from "@/lib/db/schema";
-import { sql, desc, eq, isNotNull } from "drizzle-orm";
+import { siteCardColumns, totalHitsSql } from "@/lib/site-query";
+import { sql, desc, eq } from "drizzle-orm";
 import { handler, ok } from "@m1kapp/kit/server";
-import { todayKST } from "@/lib/format";
 
 export type BuilderSite = {
   slug: string;
@@ -25,7 +25,6 @@ export type Builder = {
 };
 
 export const GET = handler(async () => {
-  const todayStr = todayKST();
 
   // userId별 총 방문자 + 앱 목록
   const rows = await db
@@ -34,19 +33,14 @@ export const GET = handler(async () => {
       ownerName: sites.ownerName,
       ownerHandle: sites.ownerHandle,
       ownerImageUrl: sites.ownerImageUrl,
-      slug: sites.slug,
-      title: sites.title,
-      ogTitle: sites.ogTitle,
-      faviconUrl: sites.faviconUrl,
-      color: sites.color,
-      url: sites.url,
-      total: sql<number>`coalesce(sum(${hits.count}), 0)`,
+      ...siteCardColumns,
+      total: totalHitsSql,
     })
     .from(sites)
     .leftJoin(hits, eq(hits.siteId, sites.id))
     .where(sql`${sites.userId} is not null and ${sites.verified} = true`)
     .groupBy(sites.id)
-    .orderBy(desc(sql<number>`coalesce(sum(${hits.count}), 0)`));
+    .orderBy(desc(totalHitsSql));
 
   // userId로 그룹핑
   const builderMap = new Map<string, Builder>();

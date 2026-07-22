@@ -4,6 +4,7 @@ import { appHost } from "@/lib/utils";
 import { db } from "@/lib/db";
 import { getSiteData } from "@/lib/site-data";
 import { sites, hits } from "@/lib/db/schema";
+import { siteCardColumns, totalHitsSql } from "@/lib/site-query";
 import { eq, sql, and, desc } from "drizzle-orm";
 import { DashboardView } from "@/components/dashboard-view";
 import { UserProfileView } from "@/components/user-profile-view";
@@ -19,15 +20,10 @@ async function getUserSites(userId: string) {
   const todayStr = todayKST();
   return db
     .select({
-      slug: sites.slug,
-      title: sites.title,
-      url: sites.url,
-      color: sites.color,
-      ogTitle: sites.ogTitle,
+      ...siteCardColumns,
       ogDescription: sites.ogDescription,
       ogImage: sites.ogImage,
-      faviconUrl: sites.faviconUrl,
-      total: sql<number>`coalesce(sum(${hits.count}), 0)`,
+      total: totalHitsSql,
       today: sql<number>`coalesce(sum(case when ${hits.date} = ${todayStr} then ${hits.count} else 0 end), 0)`,
     })
     .from(sites)

@@ -1,44 +1,37 @@
 {
-  "generatedAt": "2026-07-18T01:58:57.737Z",
-  "kitVersion": "0.0.33",
+  "generatedAt": "2026-07-22T13:32:54.971Z",
+  "kitVersion": "0.0.37",
   "source": {
     "dir": "src",
-    "files": 99,
-    "totalLines": 8370,
-    "codeLines": 7074,
+    "files": 103,
+    "totalLines": 8423,
+    "codeLines": 7100,
     "breakdown": {
       "frontend": {
-        "files": 57,
-        "codeLines": 4623
+        "files": 59,
+        "codeLines": 4633
       },
       "backend": {
         "files": 18,
-        "codeLines": 1100
+        "codeLines": 1080
       },
       "shared": {
-        "files": 24,
-        "codeLines": 1351
+        "files": 26,
+        "codeLines": 1387
       }
     }
   },
   "quality": {
     "engine": "ast2",
-    "score": 95,
+    "score": 100,
     "grade": "A+",
     "cognitive": {
       "avg": 1.5,
-      "p90": 5,
-      "max": 18,
-      "over15": 1,
+      "p90": 4,
+      "max": 14,
+      "over15": 0,
       "over25": 0,
       "worst": [
-        {
-          "name": "BadgeEditor",
-          "cog": 18,
-          "cc": 15,
-          "file": "src/components/badge-editor.tsx",
-          "line": 20
-        },
         {
           "name": "fetchRecentSites",
           "cog": 14,
@@ -52,6 +45,13 @@
           "cc": 14,
           "file": "src/app/api/sites/refresh-og/route.ts",
           "line": 9
+        },
+        {
+          "name": "BadgeEditor",
+          "cog": 13,
+          "cc": 10,
+          "file": "src/components/badge-editor.tsx",
+          "line": 20
         },
         {
           "name": "cyworldBadge",
@@ -70,59 +70,58 @@
       ]
     },
     "duplication": {
-      "percent": 4.5,
-      "dupTokens": 1392,
-      "totalTokens": 31202,
-      "blocks": 201,
+      "percent": 2.6,
+      "dupTokens": 834,
+      "totalTokens": 31998,
+      "blocks": 74,
       "worstFiles": [
         {
           "file": "src/components/overview/kr-maps.tsx",
-          "dupTokens": 303
-        },
-        {
-          "file": "src/app/api/sites/kit-stats/route.ts",
-          "dupTokens": 199
+          "dupTokens": 244
         },
         {
           "file": "src/components/overview/world-maps.tsx",
-          "dupTokens": 185
+          "dupTokens": 126
+        },
+        {
+          "file": "src/components/cumulative-curve.tsx",
+          "dupTokens": 72
         }
       ],
       "worstBlocks": [
         [
-          "src/app/[...slug]/page.tsx:20",
-          "src/app/api/builders/route.ts:31"
+          "src/app/api/sites/cli/route.ts:25",
+          "src/app/api/sites/route.ts:16"
         ],
         [
-          "src/app/[...slug]/page.tsx:21",
-          "src/app/api/builders/route.ts:32"
+          "src/app/api/sites/cli/route.ts:25",
+          "src/app/api/sites/route.ts:16"
         ],
         [
-          "src/app/[...slug]/page.tsx:21",
-          "src/app/api/builders/route.ts:32"
+          "src/app/api/sites/kit-stats/route.ts:10",
+          "src/components/kit-code-section.tsx:13"
         ]
       ]
     },
+    "io": {
+      "readers": 0,
+      "uncachedReaders": 0,
+      "loopSites": 0,
+      "uncachedLoopSites": 0,
+      "worst": []
+    },
+    "renderGates": {
+      "hostages": 0,
+      "worst": []
+    },
     "cc": {
-      "functions": 578,
+      "functions": 582,
       "avg": 2.6,
       "p90": 6,
-      "max": 20,
-      "over10": 14,
+      "max": 14,
+      "over10": 12,
       "over20": 0,
       "worst": [
-        {
-          "name": "(anonymous)",
-          "cc": 20,
-          "file": "src/app/api/sites/kit-stats/route.ts",
-          "line": 71
-        },
-        {
-          "name": "BadgeEditor",
-          "cc": 15,
-          "file": "src/components/badge-editor.tsx",
-          "line": 20
-        },
         {
           "name": "(anonymous)",
           "cc": 14,
@@ -140,17 +139,29 @@
           "cc": 14,
           "file": "src/lib/site-data.ts",
           "line": 92
+        },
+        {
+          "name": "(anonymous)",
+          "cc": 12,
+          "file": "src/app/api/sites/route.ts",
+          "line": 12
+        },
+        {
+          "name": "recordHit",
+          "cc": 12,
+          "file": "src/app/badge/[...slug]/route.ts",
+          "line": 67
         }
       ]
     },
-    "branchDensity": 13.8,
-    "branches": 978,
-    "functions": 594,
-    "avgFileLines": 71,
-    "longFiles": 1,
+    "branchDensity": 13.7,
+    "branches": 973,
+    "functions": 602,
+    "avgFileLines": 69,
+    "longFiles": 0,
     "maxFile": {
-      "path": "src/components/tabs/dev-table.tsx",
-      "lines": 271
+      "path": "src/components/badge-editor.tsx",
+      "lines": 200
     }
   },
   "kit": {
@@ -162,7 +173,7 @@
       },
       {
         "name": "Watermark",
-        "loc": 188,
+        "loc": 190,
         "category": "component"
       },
       {
@@ -172,7 +183,7 @@
       },
       {
         "name": "InAppSheet",
-        "loc": 175,
+        "loc": 177,
         "category": "component"
       },
       {
@@ -192,7 +203,7 @@
       },
       {
         "name": "AppShell",
-        "loc": 76,
+        "loc": 78,
         "category": "component"
       },
       {
@@ -251,15 +262,15 @@
         "category": "hook"
       }
     ],
-    "savedLines": 1646,
-    "savedKB": 64,
+    "savedLines": 1652,
+    "savedKB": 65,
     "savedA4": 21,
     "savedPercent": 19,
     "usage": {
       "component": {
-        "used": 17,
-        "total": 59,
-        "percent": 29
+        "used": 18,
+        "total": 60,
+        "percent": 30
       },
       "hook": {
         "used": 5,

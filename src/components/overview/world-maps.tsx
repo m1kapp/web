@@ -5,6 +5,7 @@ import { geoPath, geoMercator } from "d3-geo";
 import type { GeoPermissibleObjects, GeoProjection } from "d3-geo";
 import type { SiteData } from "../dashboard-view";
 import { useGeo, ZoomableSVG } from "./zoomable-svg";
+import { ChoroplethPath } from "./map-primitives";
 import { decodeCity, CITY_COORDS, CITY_COUNTRY_MAP, CITY_KR, CITY_TO_US_STATE, GEO_URLS } from "./geo-data";
 
 // 도시 dot (choropleth 없는 지도용)
@@ -108,11 +109,7 @@ export function USMap({ cities, accent }: { cities: SiteData["cities"]; accent: 
         const hasCount = count > 0;
         return (
           <g key={key}>
-            <path d={d}
-              fill={hasCount ? accent : "#e4e4e7"}
-              fillOpacity={hasCount ? 0.15 + t * 0.78 : 1}
-              stroke="white" strokeWidth="0.5"
-              vectorEffect="non-scaling-stroke" />
+            <ChoroplethPath d={d} t={t} active={hasCount} accent={accent} strokeWidth={0.5} />
             {abbr && !isNaN(cx) && !isNaN(cy) && (
               <text x={cx.toFixed(1)} y={(cy + 3).toFixed(1)}
                 textAnchor="middle" fontSize="4.5" fontWeight="600" fontFamily="inherit"

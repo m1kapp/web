@@ -1,35 +1,9 @@
 import { fetchRecentSites } from "@/lib/site-service";
 import { redis } from "@/lib/redis";
 import { handler, ok } from "@m1kapp/kit/server";
+import type { Bucket, QualityWorstFn, QualityDupFile, SiteQuality } from "@/lib/kit-stats-types";
 
-interface Bucket {
-  files: number;
-  codeLines: number;
-}
-
-interface QualityWorstFn {
-  name: string;
-  cog: number;
-  file: string;
-  line: number;
-}
-
-interface QualityDupFile {
-  file: string;
-  dupTokens: number;
-}
-
-export interface SiteQuality {
-  score: number;
-  grade: string;
-  engine: string | null;
-  branchDensity: number;
-  avgFileLines: number | null;
-  longFiles: number | null;
-  maxFile: { path: string; lines: number } | null;
-  cognitive: { avg: number; max: number; over15: number; over25: number; worst: QualityWorstFn[] } | null;
-  duplication: { percent: number; worstFiles: QualityDupFile[] } | null;
-}
+export type { SiteQuality };
 
 export interface SiteKitStats {
   slug: string;
@@ -46,6 +20,55 @@ export interface SiteKitStats {
 
 const CACHE_KEY = "kit-stats:v4"; // v2: source.breakdown / v3: savedLines·savedFiles / v4: quality 상세(cognitive·duplication·avgFileLines) 추가
 const CACHE_TTL = 3600; // 1h — 각 사이트의 정적 kit-stats.json이라 잦은 갱신 불필요
+
+// 원격 kit-stats.json(느슨한 형태) → 우리 SiteQuality 스키마로 정규화
+function normalizeQuality(q: Record<string, unknown> | null | undefined): SiteQuality | null {
+  if (!q) return null;
+  const cog = q.cognitive as Record<string, unknown> | undefined;
+  const dup = q.duplication as Record<string, unknown> | undefined;
+  return {
+    score: q.score as number,
+    grade: q.grade as string,
+    engine: (q.engine as string) ?? null,
+    branchDensity: q.branchDensity as number,
+    avgFileLines: (q.avgFileLines as number) ?? null,
+    longFiles: (q.longFiles as number) ?? null,
+    maxFile: (q.maxFile as SiteQuality["maxFile"]) ?? null,
+    cognitive: cog
+      ? {
+          avg: cog.avg as number,
+          max: cog.max as number,
+          over15: cog.over15 as number,
+          over25: cog.over25 as number,
+          worst: ((cog.worst as QualityWorstFn[]) ?? []).slice(0, 5),
+        }
+      : null,
+    duplication: dup
+      ? {
+          percent: dup.percent as number,
+          worstFiles: ((dup.worstFiles as QualityDupFile[]) ?? []).slice(0, 3),
+        }
+      : null,
+  };
+}
+
+// 원격 kit-stats.json → 우리 응답용 SiteKitStats로 정규화
+function normalizeSiteStats(slug: string, j: Record<string, unknown>): SiteKitStats {
+  const source = j.source as Record<string, unknown> | undefined;
+  const kit = j.kit as Record<string, unknown> | undefined;
+  return {
+    slug,
+    kitVersion: j.kitVersion as string,
+    files: (source?.files as number) ?? null,
+    codeLines: (source?.codeLines as number) ?? null,
+    breakdown: (source?.breakdown as SiteKitStats["breakdown"]) ?? null,
+    savedPercent: (kit?.savedPercent as number) ?? null,
+    savedLines: (kit?.savedLines as number) ?? null,
+    savedFiles: Array.isArray(kit?.features) ? (kit!.features as unknown[]).length : null,
+    quality: normalizeQuality(j.quality as Record<string, unknown> | null | undefined),
+    generatedAt: (j.generatedAt as string) ?? null,
+  };
+}
 
 // 등록 사이트들의 /kit-stats.json을 수집해 kit 버전·규모·청결도를 한 번에 반환.
 // 스토어 dev 모드 비교용.
@@ -77,43 +100,7 @@ export const GET = handler(async (req) => {
       if (!res.ok) return null;
       const j = await res.json();
       if (!j?.kitVersion) return null;
-      return {
-        slug: s.slug,
-        kitVersion: j.kitVersion,
-        files: j.source?.files ?? null,
-        codeLines: j.source?.codeLines ?? null,
-        breakdown: j.source?.breakdown ?? null,
-        savedPercent: j.kit?.savedPercent ?? null,
-        savedLines: j.kit?.savedLines ?? null,
-        savedFiles: Array.isArray(j.kit?.features) ? j.kit.features.length : null,
-        quality: j.quality
-          ? {
-              score: j.quality.score,
-              grade: j.quality.grade,
-              engine: j.quality.engine ?? null,
-              branchDensity: j.quality.branchDensity,
-              avgFileLines: j.quality.avgFileLines ?? null,
-              longFiles: j.quality.longFiles ?? null,
-              maxFile: j.quality.maxFile ?? null,
-              cognitive: j.quality.cognitive
-                ? {
-                    avg: j.quality.cognitive.avg,
-                    max: j.quality.cognitive.max,
-                    over15: j.quality.cognitive.over15,
-                    over25: j.quality.cognitive.over25,
-                    worst: (j.quality.cognitive.worst ?? []).slice(0, 5),
-                  }
-                : null,
-              duplication: j.quality.duplication
-                ? {
-                    percent: j.quality.duplication.percent,
-                    worstFiles: (j.quality.duplication.worstFiles ?? []).slice(0, 3),
-                  }
-                : null,
-            }
-          : null,
-        generatedAt: j.generatedAt ?? null,
-      };
+      return normalizeSiteStats(s.slug, j);
     })
   );
 

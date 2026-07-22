@@ -5,7 +5,10 @@ import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
 import { EmptyState } from "@m1kapp/kit";
 import { useFetch, useDebounce, useLocalStorage } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
+import type { Bucket, SiteQuality } from "@/lib/kit-stats-types";
 import { DevTable } from "./dev-table";
+
+export type { Bucket, SiteQuality };
 
 type Sort = "total" | "today";
 
@@ -13,35 +16,6 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: "total", label: "총 방문순" },
   { value: "today", label: "오늘 방문순" },
 ];
-
-export interface Bucket {
-  files: number;
-  codeLines: number;
-}
-
-interface QualityWorstFn {
-  name: string;
-  cog: number;
-  file: string;
-  line: number;
-}
-
-interface QualityDupFile {
-  file: string;
-  dupTokens: number;
-}
-
-export interface SiteQuality {
-  score: number;
-  grade: string;
-  engine: string | null;
-  branchDensity: number;
-  avgFileLines: number | null;
-  longFiles: number | null;
-  maxFile: { path: string; lines: number } | null;
-  cognitive: { avg: number; max: number; over15: number; over25: number; worst: QualityWorstFn[] } | null;
-  duplication: { percent: number; worstFiles: QualityDupFile[] } | null;
-}
 
 export interface SiteKitStats {
   kitVersion: string;
