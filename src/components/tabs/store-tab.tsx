@@ -1,55 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
-import { EmptyState } from "@m1kapp/kit";
-import { useFetch, useDebounce, useLocalStorage } from "@m1kapp/kit";
-import type { RecentSite } from "@/lib/types";
 import type { Bucket, SiteQuality } from "@/lib/kit-stats-types";
-import { DevTable } from "./dev-table";
+import { SORTS } from "./store-tab.types";
+import { useStoreSites } from "./use-store-sites";
+import { StoreSiteList } from "./store-site-list";
 
 export type { Bucket, SiteQuality };
+export type { Sort, SiteKitStats } from "./store-tab.types";
 
-type Sort = "total" | "today";
-
-const SORTS: { value: Sort; label: string }[] = [
-  { value: "total", label: "총 방문순" },
-  { value: "today", label: "오늘 방문순" },
-];
-
-export interface SiteKitStats {
-  kitVersion: string;
-  files: number | null;
-  codeLines: number | null;
-  breakdown: { frontend: Bucket; backend: Bucket; shared: Bucket } | null;
-  savedPercent: number | null;
-  quality: SiteQuality | null;
-}
-
-interface KitStatsPayload {
-  latestKitVersion: string | null;
-  stats: Record<string, SiteKitStats>;
-}
-
-export function StoreTab({
-  bgColor,
-}: {
-  bgColor: string;
-}) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sort, setSort] = useState<Sort>("total");
-  const [devMode, setDevMode] = useLocalStorage("m1k:store-dev-mode", false);
-  const debouncedQuery = useDebounce(searchQuery, 300);
-
-  const params = new URLSearchParams();
-  if (debouncedQuery) params.set("q", debouncedQuery);
-  params.set("sort", sort);
-
-  const { data: sites, loading: searching } = useFetch<RecentSite[]>(`/api/sites/recent?${params}`);
-  // dev 모드 켤 때만 수집 API 호출 (서버가 1h Redis 캐시)
-  const { data: kitStats } = useFetch<KitStatsPayload>(devMode ? "/api/sites/kit-stats" : null, {
-    staleTime: 5 * 60 * 1000,
-  });
+export function StoreTab({ bgColor }: { bgColor: string }) {
+  const { searchQuery, setSearchQuery, sort, setSort, devMode, setDevMode, sites, searching, kitStats } =
+    useStoreSites();
 
   return (
     <div className="px-4 py-3">
@@ -96,27 +57,12 @@ export function StoreTab({
       </div>
 
       {/* 목록 */}
-      {!sites ? (
-        <SiteCardSkeleton count={4} />
-      ) : sites.length > 0 ? (
-        devMode ? (
-          <DevTable sites={sites} stats={kitStats?.stats} latest={kitStats?.latestKitVersion ?? null} />
-        ) : (
-        <div className="space-y-0">
-          <div className="flex items-center py-1.5 pr-2 border-b border-zinc-100 dark:border-zinc-800 text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-            <span className="flex-1 min-w-0">사이트</span>
-            <span className="shrink-0 w-[84px] text-right">TODAY / TOTAL</span>
-          </div>
-          <div className="divide-y divide-zinc-50 dark:divide-zinc-900">
-            {sites.map((site) => (
-              <SiteCard key={site.slug} site={site} flat />
-            ))}
-          </div>
-        </div>
-        )
-      ) : (
-        <EmptyState message="아직 등록된 사이트가 없어요" />
-      )}
+      <StoreSiteList
+        sites={sites}
+        devMode={devMode}
+        stats={kitStats?.stats}
+        latestKitVersion={kitStats?.latestKitVersion ?? null}
+      />
     </div>
   );
 }
