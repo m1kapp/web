@@ -10,17 +10,22 @@ import { DashboardView } from "@/components/dashboard-view";
 import { UserProfileView } from "@/components/user-profile-view";
 import { auth } from "@clerk/nextjs/server";
 import { todayKST } from "@/lib/format";
+import { getBufferedMap } from "@/lib/hit-buffer";
 
 interface Props {
   params: Promise<{ slug: string[] }>;
 }
 
 
+/** 프로필의 사이트 목록. hits 테이블은 flush 크론 뒤에만 채워지므로 Redis 버퍼를
+ *  같이 더한다 — 안 더하면 배지엔 숫자가 뜨는데 프로필엔 0으로 보인다.
+ *  목록 집계는 site-service 의 listSites 가 쓰는 것과 같은 getBufferedMap 을 쓴다. */
 async function getUserSites(userId: string) {
   const todayStr = todayKST();
-  return db
+  const rows = await db
     .select({
       ...siteCardColumns,
+      id: sites.id, // 버퍼 병합 키 — siteCardColumns 엔 없다
       ogDescription: sites.ogDescription,
       ogImage: sites.ogImage,
       total: totalHitsSql,
@@ -31,6 +36,14 @@ async function getUserSites(userId: string) {
     .where(and(eq(sites.userId, userId), eq(sites.verified, true)))
     .groupBy(sites.id)
     .orderBy(desc(sites.createdAt));
+
+  const buffered = await getBufferedMap(rows.map((s) => s.id), todayStr);
+  return rows.map((s) => {
+    const b = buffered.get(s.id);
+    return b
+      ? { ...s, total: Number(s.total) + b.total, today: Number(s.today) + b.today }
+      : s;
+  });
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

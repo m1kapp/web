@@ -1,7 +1,4 @@
 import { redis } from "@/lib/redis";
-import { db } from "@/lib/db";
-import { sites } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { directWriteHit, directGetCountSnapshot } from "./hit-direct";
 
 export interface HitEntry {
@@ -30,10 +27,8 @@ const DEDUP_KEY = (siteId: number, ipHash: string) => `dedup:${siteId}:${ipHash}
 const HIT_COUNT_KEY = (siteId: number, date: string) => `hits:${siteId}:${date}`;
 const TOTAL_KEY = (siteId: number) => `total:${siteId}`;
 const LOG_LIST_KEY = "hit:logs";
-const ACTIVE_SITES_KEY = "hit:active-sites";
 const SITE_CACHE_KEY = (slug: string) => `site:${slug}`;
 const COUNT_SNAPSHOT_KEY = (siteId: number) => `counts:${siteId}`;
-const VERIFY_QUEUE_KEY = "verify:queue";
 
 
 // ─── 공개 API (Redis 우선, 실패 시 Neon 폴백) ─────────────────────────
@@ -49,7 +44,6 @@ export async function bufferHit(entry: HitEntry): Promise<boolean> {
       pipe.hincrby(HIT_COUNT_KEY(entry.siteId, entry.date), "count", 1);
       pipe.incrby(TOTAL_KEY(entry.siteId), 1);
       pipe.lpush(LOG_LIST_KEY, JSON.stringify(entry));
-      pipe.sadd(ACTIVE_SITES_KEY, `${entry.siteId}:${entry.date}`);
       await pipe.exec();
       return true;
     } catch (e) {
@@ -122,20 +116,45 @@ export async function drainLogs(batchSize = 500): Promise<HitEntry[]> {
   }
 }
 
-/** flush 후 카운트 키 초기화 */
+/** flush 후 카운트 키에서 **비운 만큼만** 뺀다.
+ *
+ * 예전엔 del 로 통째 지웠는데, drain 은 배치 상한에서 끊기고 flush 의 DB 작업은
+ * 순차 await 이 수십 번이라 초 단위다. 그 사이 들어온 히트와 이번에 못 비운
+ * 백로그의 카운터까지 같이 날아갔다 — 로그는 남아 있어 손실은 아니지만 다음
+ * 크론(하루 1회)까지 배지·대시보드가 과소 표시됐다. */
 export async function clearFlushedKeys(entries: { siteId: number; date: string }[]): Promise<void> {
   if (!redis || entries.length === 0) return;
+
+  const byDay = new Map<string, { siteId: number; date: string; n: number }>();
+  const bySite = new Map<number, number>();
+  for (const e of entries) {
+    const k = `${e.siteId}:${e.date}`;
+    const cur = byDay.get(k);
+    if (cur) cur.n++;
+    else byDay.set(k, { siteId: e.siteId, date: e.date, n: 1 });
+    bySite.set(e.siteId, (bySite.get(e.siteId) ?? 0) + 1);
+  }
+
   try {
     const pipe = redis.pipeline();
-    const seen = new Set<string>();
-    for (const e of entries) {
-      const hk = HIT_COUNT_KEY(e.siteId, e.date);
-      if (!seen.has(hk)) { pipe.del(hk); seen.add(hk); }
-      const tk = TOTAL_KEY(e.siteId);
-      if (!seen.has(tk)) { pipe.del(tk); seen.add(tk); }
+    const keys: string[] = [];
+    for (const d of byDay.values()) {
+      pipe.hincrby(HIT_COUNT_KEY(d.siteId, d.date), "count", -d.n);
+      keys.push(HIT_COUNT_KEY(d.siteId, d.date));
     }
-    pipe.del(ACTIVE_SITES_KEY);
-    await pipe.exec();
+    for (const [siteId, n] of bySite) {
+      pipe.decrby(TOTAL_KEY(siteId), n);
+      keys.push(TOTAL_KEY(siteId));
+    }
+    const res = await pipe.exec<number[]>();
+
+    // 0 이하로 내려간 키는 지운다 — 안 지우면 날짜별 키가 0인 채로 계속 쌓인다.
+    const empty = keys.filter((_, i) => Number(res[i] ?? 0) <= 0);
+    if (empty.length > 0) {
+      const cleanup = redis.pipeline();
+      for (const k of empty) cleanup.del(k);
+      await cleanup.exec();
+    }
   } catch (e) {
     console.warn("[hit-buffer] Redis clearFlushedKeys failed:", e);
   }
@@ -190,29 +209,8 @@ export async function getCountSnapshot(siteId: number): Promise<CountSnapshot | 
   return directGetCountSnapshot(siteId);
 }
 
-// ─── verify 큐 (badge에서 Neon 쓰기 대신 큐에 넣고 flush에서 처리) ─
-
-export async function queueVerify(siteId: number, slug: string): Promise<void> {
-  if (redis) {
-    try {
-      await redis.sadd(VERIFY_QUEUE_KEY, JSON.stringify({ siteId, slug }));
-      return;
-    } catch (e) {
-      console.warn("[hit-buffer] Redis queueVerify failed, writing directly:", e);
-    }
-  }
-  // Neon 폴백: 직접 verified 업데이트
-  await db.update(sites).set({ verified: true }).where(eq(sites.id, siteId));
-}
-
-export async function drainVerifyQueue(): Promise<{ siteId: number; slug: string }[]> {
-  if (!redis) return [];
-  try {
-    const members = await redis.smembers(VERIFY_QUEUE_KEY);
-    if (members.length > 0) await redis.del(VERIFY_QUEUE_KEY);
-    return members.map((m: unknown) => (typeof m === "string" ? JSON.parse(m) : m) as { siteId: number; slug: string });
-  } catch (e) {
-    console.warn("[hit-buffer] Redis drainVerifyQueue failed:", e);
-    return [];
-  }
-}
+// verify 큐(queueVerify/drainVerifyQueue)는 지웠다. 부르는 곳이 한 군데도 없어
+// flush 크론의 처리 단계가 통째로 죽은 코드였고, 주석이 말하던 설계("badge에서
+// Neon 쓰기 대신 큐에 넣고 flush에서 처리")와 실제 구현이 반대였다 — 배지
+// 라우트가 verifyByReferer 로 Neon 을 직접 친다. 인증은 첫 방문 즉시 붙어야
+// 사용자가 "뱃지를 심으면 추적이 시작돼요"를 안 보므로, 직접 쓰기 쪽을 남겼다.

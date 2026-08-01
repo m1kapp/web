@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { hits, hitLogs, sites, dailyGeoStats, dailyDeviceStats, dailyHourStats } from "@/lib/db/schema";
 import { eq, sql, and, gte } from "drizzle-orm";
 import {
-  drainLogs, clearFlushedKeys, saveCountSnapshot, drainVerifyQueue,
+  drainLogs, clearFlushedKeys, saveCountSnapshot,
   cacheSite, type HitEntry,
 } from "@/lib/hit-buffer";
 import { todayKST } from "@/lib/format";
@@ -17,17 +17,7 @@ export async function GET(request: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  // ── 1. verify 큐 처리 ─────────────────────────────────────────────
-  const verifyItems = await drainVerifyQueue();
-  for (const { siteId, slug } of verifyItems) {
-    const updated = await db.update(sites)
-      .set({ verified: true })
-      .where(eq(sites.id, siteId))
-      .returning();
-    if (updated[0]) await cacheSite(slug, updated[0]);
-  }
-
-  // ── 2. 버퍼 로그 drain → 집계 테이블 반영 ─────────────────────────
+  // ── 1. 버퍼 로그 drain → 집계 테이블 반영 ─────────────────────────
   // 배치가 가득 차면 백로그가 남은 것 — 다 빌 때까지 반복 (크론 하루 1회라 캡 걸면 영구 누적)
   const entries: HitEntry[] = [];
   for (let round = 0; round < 20; round++) {
@@ -35,23 +25,21 @@ export async function GET(request: NextRequest) {
     entries.push(...batch);
     if (batch.length < 1000) break;
   }
-  if (entries.length === 0 && verifyItems.length === 0) {
-    return Response.json({ flushed: 0, verified: 0 });
+  if (entries.length === 0) {
+    return Response.json({ flushed: 0 });
   }
 
-  if (entries.length > 0) {
-    await flushEntries(entries);
-  }
+  await flushEntries(entries);
   // NOTE: hitLogs 보존정책(90일 삭제)은 referer 통계가 hitLogs 풀스캔에 의존하는 동안 불가 —
   // dailyRefererStats 사전집계 테이블 도입 후에 켤 것
 
-  // ── 3. 카운트 스냅샷 갱신 + milestone 체크 ────────────────────────
+  // ── 2. 카운트 스냅샷 갱신 + milestone 체크 ────────────────────────
   const affectedSiteIds = [...new Set(entries.map((e) => e.siteId))];
   for (const siteId of affectedSiteIds) {
     await refreshSnapshot(siteId);
   }
 
-  return Response.json({ flushed: entries.length, verified: verifyItems.length, snapshots: affectedSiteIds.length });
+  return Response.json({ flushed: entries.length, snapshots: affectedSiteIds.length });
 }
 
 /** entries를 keyOf로 묶어 count 집계 */

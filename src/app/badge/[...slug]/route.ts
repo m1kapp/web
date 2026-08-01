@@ -79,7 +79,7 @@ async function recordHit(request: NextRequest, site: Site, slug: string): Promis
   const referer = request.headers.get("referer") || null;
   const nowKST = new Date(Date.now() + 9 * 60 * 60 * 1000);
 
-  const isNew = await bufferHit({
+  await bufferHit({
     siteId: site.id,
     ipHash,
     country: request.headers.get("x-vercel-ip-country") || null,
@@ -92,8 +92,13 @@ async function recordHit(request: NextRequest, site: Site, slug: string): Promis
     hourKST: nowKST.getUTCHours(),
   });
 
-  // verify 체크 → 사이트당 1회뿐이므로 즉시 처리
-  if (isNew && !site.verified && referer && site.url) {
+  // verify 체크 → 사이트당 1회뿐이므로 즉시 처리.
+  // isNew 를 조건에 걸면 안 된다: 그날 첫 요청이 referer 없이 오면(curl·프리페치·
+  // 이미지 프록시) 그게 dedup 슬롯을 먹고, 정작 사이트에서 온 진짜 방문은
+  // isNew=false 라 인증 기회를 못 얻는다 — 실제로 그래서 하루 종일
+  // "뱃지를 심으면 방문자 추적이 시작돼요"가 떠 있었다. verifyByReferer 는
+  // 호스트가 맞을 때만 쓰고, 한 번 붙으면 site.verified 로 더 안 들어온다.
+  if (!site.verified && referer && site.url) {
     return verifyByReferer(site, slug, referer);
   }
   return site;
