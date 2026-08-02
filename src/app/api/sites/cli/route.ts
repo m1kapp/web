@@ -5,10 +5,12 @@ import { scrapeOg } from "@/lib/og";
 import { resolveFavicon, extractDominantColor } from "@/lib/favicon";
 import { idToSlug, appHost } from "@/lib/utils";
 import dns from "dns/promises";
-import { randomBytes } from "crypto";
-import { handler, ok, badRequest, conflict } from "@m1kapp/kit/server";
+import { randomBytes, timingSafeEqual } from "crypto";
+import { handler, ok, badRequest, conflict, notFound, forbidden } from "@m1kapp/kit/server";
 import { userIdFromBearer } from "@/lib/api-token";
 import { getUserById } from "@/lib/user-handle";
+import { deleteSiteWithCascade } from "@/lib/site-service";
+import { purgeSiteBuffers } from "@/lib/hit-buffer";
 
 /**
  * 사이트 등록 — CLI/AI(클로드)/사이드프로젝트용.
@@ -75,6 +77,59 @@ export const POST = handler(async (req) => {
     201,
   );
 });
+
+/**
+ * 사이트 등록 취소 — CLI용.
+ *   DELETE /api/sites/cli  { slug }            + Authorization: Bearer <개인 토큰>
+ *   DELETE /api/sites/cli  { slug, claimToken }
+ *
+ * 대시보드 삭제(`DELETE /api/sites/settings`)는 Clerk 브라우저 세션이 필요해서
+ * CLI에서 쓸 수 없다. 특히 CLI로 익명 등록한 사이트는 아직 어느 계정에도 안
+ * 붙어 있어서, 잘못 등록해도 지울 방법이 claim 토큰밖에 없었다. 그 구멍을 막는다.
+ *
+ * 권한 규칙:
+ * - 귀속된 사이트 → Bearer 토큰의 소유자만
+ * - 미귀속(익명) 사이트 → 발급받은 claimToken을 아는 사람만
+ */
+export const DELETE = handler(async (req) => {
+  const body = await req.json().catch(() => ({}));
+  const { slug, claimToken } = body as { slug?: string; claimToken?: string };
+  if (!slug?.trim()) badRequest("slug를 입력해주세요");
+
+  const site = await db.query.sites.findFirst({ where: eq(sites.slug, slug.trim()) });
+  if (!site) notFound("그런 사이트가 없어요");
+
+  // 자식 사이트(서브 경로)가 달려 있으면 조용히 고아로 만들지 않고 막는다.
+  const child = await db.query.sites.findFirst({ where: eq(sites.parentId, site.id) });
+  if (child) conflict("하위 사이트가 남아 있어요. 그것부터 지워주세요");
+
+  if (site.userId) {
+    const tokenUserId = await userIdFromBearer(req);
+    if (!tokenUserId || tokenUserId !== site.userId) {
+      forbidden("귀속된 사이트예요. 소유자 토큰(Authorization: Bearer)이 필요해요");
+    }
+  } else {
+    if (!claimToken || !site.claimToken || !safeEqual(claimToken, site.claimToken)) {
+      forbidden("claim 토큰이 필요해요 (.m1k.json 의 claimToken)");
+    }
+  }
+
+  await deleteSiteWithCascade(site.id);
+  await purgeSiteBuffers(site.id, site.slug);
+
+  return ok({ ok: true, slug: site.slug, url: site.url });
+});
+
+/** 길이까지 비밀로 취급하는 상수시간 비교 — 토큰 비교에 == 를 쓰지 않는다. */
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return timingSafeEqual(bufA, bufB);
+}
 
 type Existing = NonNullable<Awaited<ReturnType<typeof db.query.sites.findFirst>>>;
 
