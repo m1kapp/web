@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { sites, hits, hitLogs } from "@/lib/db/schema";
+import {
+  sites,
+  hits,
+  hitLogs,
+  dailyGeoStats,
+  dailyDeviceStats,
+  dailyHourStats,
+} from "@/lib/db/schema";
 import { sql, desc, ilike, or, eq, and } from "drizzle-orm";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { todayKST } from "@/lib/format";
@@ -143,10 +150,20 @@ export async function requireSiteOwner(slug: string): Promise<SiteOwnerResult> {
   return { site, error: null };
 }
 
-/** hitLogs → hits → sites 순서로 삭제 (FK 제약 순서) */
+/**
+ * 자식 행 → sites 순서로 삭제 (FK 제약 순서).
+ *
+ * sites.id 를 참조하는 테이블이 하나라도 빠지면 마지막 delete가 FK 위반으로
+ * 터진다. 사전집계 테이블(daily*Stats)이 나중에 추가됐으므로 여기도 같이
+ * 지운다 — 스키마에 sites.id 참조를 새로 추가하면 이 목록도 늘려야 한다.
+ * Redis 버퍼 정리는 호출부(purgeSiteBuffers) 몫.
+ */
 export async function deleteSiteWithCascade(siteId: number): Promise<void> {
   await db.delete(hitLogs).where(eq(hitLogs.siteId, siteId));
   await db.delete(hits).where(eq(hits.siteId, siteId));
+  await db.delete(dailyGeoStats).where(eq(dailyGeoStats.siteId, siteId));
+  await db.delete(dailyDeviceStats).where(eq(dailyDeviceStats.siteId, siteId));
+  await db.delete(dailyHourStats).where(eq(dailyHourStats.siteId, siteId));
   await db.delete(sites).where(eq(sites.id, siteId));
 }
 
