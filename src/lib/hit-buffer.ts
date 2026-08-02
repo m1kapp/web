@@ -160,6 +160,32 @@ export async function clearFlushedKeys(entries: { siteId: number; date: string }
   }
 }
 
+/**
+ * 사이트 삭제 시 Redis에 남는 잔여 키를 지운다.
+ *
+ * 안 지우면 같은 URL을 다시 등록했을 때 새 siteId를 받으므로 카운트가 섞이진
+ * 않지만, 총합/스냅샷 키가 영영 남아 메모리를 먹는다. 날짜별 `hits:<id>:<date>`
+ * 는 개수를 모르므로 오늘부터 과거 `days`일만 훑는다(그 이전은 이미 flush돼
+ * 지워졌을 가능성이 높다). dedup 키는 TTL 24h라 자연 소멸.
+ */
+export async function purgeSiteBuffers(siteId: number, slug: string, days = 40): Promise<void> {
+  if (!redis) return;
+  try {
+    const pipe = redis.pipeline();
+    pipe.del(TOTAL_KEY(siteId));
+    pipe.del(COUNT_SNAPSHOT_KEY(siteId));
+    pipe.del(SITE_CACHE_KEY(slug));
+    const day = new Date();
+    for (let i = 0; i < days; i++) {
+      pipe.del(HIT_COUNT_KEY(siteId, day.toISOString().slice(0, 10)));
+      day.setDate(day.getDate() - 1);
+    }
+    await pipe.exec();
+  } catch (e) {
+    console.warn("[hit-buffer] Redis purgeSiteBuffers failed:", e);
+  }
+}
+
 // ─── site 캐싱 ──────────────────────────────────────────────────────
 
 /** site 데이터를 KV에서 조회. 없으면 null (호출자가 Neon fallback) */
