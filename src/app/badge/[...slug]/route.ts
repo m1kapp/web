@@ -8,6 +8,7 @@ import {
 } from "@/lib/hit-buffer";
 import { createHash } from "crypto";
 import { todayKST } from "@/lib/format";
+import { appHost } from "@/lib/utils";
 import type { Site } from "@/lib/site-service";
 
 export const runtime = "nodejs";
@@ -98,8 +99,11 @@ async function recordHit(request: NextRequest, site: Site, slug: string): Promis
   // isNew=false 라 인증 기회를 못 얻는다 — 실제로 그래서 하루 종일
   // "뱃지를 심으면 방문자 추적이 시작돼요"가 떠 있었다. verifyByReferer 는
   // 호스트가 맞을 때만 쓰고, 한 번 붙으면 site.verified 로 더 안 들어온다.
-  if (!site.verified && referer && site.url) {
-    return verifyByReferer(site, slug, referer);
+  if (!site.verified && site.url) {
+    if (referer) return verifyByReferer(site, slug, referer);
+    // GitHub 은 README 이미지를 camo 프록시로 대신 받아오면서 referer 를 지운다.
+    // 그래서 GitHub 에 심은 뱃지는 위 경로로는 영영 인증되지 않는다.
+    if (isGithubCamo(ua)) return verifyByCamo(site, slug);
   }
   return site;
 }
@@ -110,17 +114,56 @@ async function verifyByReferer(site: Site, slug: string, referer: string): Promi
     const refererHost = new URL(referer).hostname;
     const siteHost = new URL(site.url!).hostname;
     if (refererHost !== siteHost && !refererHost.endsWith(`.${siteHost}`)) return site;
-
-    const { db } = await import("@/lib/db");
-    const { sites } = await import("@/lib/db/schema");
-    const { eq } = await import("drizzle-orm");
-    await db.update(sites).set({ verified: true }).where(eq(sites.id, site.id));
-    const updated = { ...site, verified: true };
-    await cacheSite(slug, updated);
-    return updated;
+    return markVerified(site, slug);
   } catch {
     return site;
   }
+}
+
+function isGithubCamo(ua: string): boolean {
+  return /github-camo/i.test(ua);
+}
+
+/**
+ * GitHub 에 심은 뱃지 인증.
+ *
+ * camo 요청에는 referer 가 없으니 UA 만으로는 아무나 흉내낼 수 있다. 그래서 UA 는
+ * 입구로만 쓰고, 실제 판단은 등록된 GitHub 페이지를 직접 읽어서 한다. camo URL 은
+ * `/<hmac>/<원본 URL 을 hex 로 인코딩한 값>` 꼴이라, 페이지에서 hex 를 풀면 그 뱃지가
+ * 정말 그 페이지에 박혀 있는지 확인할 수 있다.
+ */
+async function verifyByCamo(site: Site, slug: string): Promise<Site> {
+  try {
+    const siteUrl = new URL(site.url!);
+    // 임의 주소를 대신 긁어주는 통로가 되지 않도록 GitHub 으로만 나간다.
+    if (siteUrl.hostname !== "github.com" && siteUrl.hostname !== "www.github.com") return site;
+
+    const res = await fetch(siteUrl.toString(), {
+      headers: { "User-Agent": "m1k-badge-verifier" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return site;
+
+    const html = await res.text();
+    const badgePrefix = `https://${appHost()}/badge/${slug}`;
+    const embedded = [...html.matchAll(/camo\.githubusercontent\.com\/[a-f0-9]+\/([a-f0-9]+)/g)]
+      .some((m) => Buffer.from(m[1], "hex").toString("utf8").startsWith(badgePrefix));
+    if (!embedded) return site;
+
+    return markVerified(site, slug);
+  } catch {
+    return site;
+  }
+}
+
+async function markVerified(site: Site, slug: string): Promise<Site> {
+  const { db } = await import("@/lib/db");
+  const { sites } = await import("@/lib/db/schema");
+  const { eq } = await import("drizzle-orm");
+  await db.update(sites).set({ verified: true }).where(eq(sites.id, site.id));
+  const updated = { ...site, verified: true };
+  await cacheSite(slug, updated);
+  return updated;
 }
 
 /** KV 스냅샷 + 버퍼 증분 병합 카운트 */
