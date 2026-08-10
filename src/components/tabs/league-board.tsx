@@ -118,10 +118,10 @@ function LeagueRow({ site, rank, bgColor }: { site: RecentSite; rank: number; bg
       <SiteThumbnail slug={site.slug} name={name} faviconUrl={site.faviconUrl} color={color} size="sm" />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13px] font-semibold text-zinc-800 dark:text-zinc-100" title={name}>
+        <p className="truncate text-[13px] font-semibold leading-tight text-zinc-800 dark:text-zinc-100" title={name}>
           {name}
         </p>
-        <p className="mt-0.5 truncate text-[10px] tabular-nums text-zinc-400">
+        <p className="truncate text-[10px] leading-tight tabular-nums text-zinc-400">
           {league.target ? `${league.label} 리그` : "1M 돌파"} · {compactNumber(site.total)}
           {site.today ? <span className="ml-1 text-emerald-500">+{compactNumber(site.today)}</span> : null}
         </p>
