@@ -84,7 +84,7 @@ export function HomeTab({
         <div className="px-4 pb-2">
           <SectionHeader>리그</SectionHeader>
           <p className="-mt-1 mb-3 text-[11px] text-zinc-400">
-            1K를 넘기면 10K, 100K, 1M으로 올라갑니다. 막대는 그 리그 안에서의 진행률이에요.
+            1K를 넘기면 10K, 100K, 1M으로 올라갑니다. 퍼센트는 다음 목표까지의 진행률이에요.
           </p>
           <LeagueBoard sites={recentSites} bgColor={bgColor} />
         </div>
