@@ -1,10 +1,11 @@
 import type { Bucket, SiteQuality } from "@/lib/kit-stats-types";
 
-export type Sort = "total" | "today";
+export type Sort = "total" | "today" | "recent";
 
 export const SORTS: { value: Sort; label: string }[] = [
   { value: "total", label: "총 방문순" },
   { value: "today", label: "오늘 방문순" },
+  { value: "recent", label: "최근 등록순" },
 ];
 
 export interface SiteKitStats {

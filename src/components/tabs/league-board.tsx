@@ -30,7 +30,9 @@ export function LeagueBoard({
   const [selected, setSelected] = useState<string>("1K");
 
   const { chips, rows, total } = useMemo(() => {
-    const ranked = [...sites].sort((a, b) => b.total - a.total);
+    // 리그는 주인이 있는 사이트만 — 아직 아무도 자기 것이라 하지 않은 사이트를
+    // 순위표에 세우면 축하할 사람이 없다
+    const ranked = sites.filter((s) => s.userId).sort((a, b) => b.total - a.total);
 
     // 사이트가 없는 리그는 칩을 만들지 않는다 — 눌러도 빈 화면인 탭은 없느니만 못하다
     const counts = new Map<string, number>();

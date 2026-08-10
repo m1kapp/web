@@ -58,7 +58,7 @@ export function AppCard({
             )}
           </span>
 
-          <span className="mt-0.5 line-clamp-2 block text-[10px] leading-snug text-zinc-400" title={desc}>
+          <span className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-zinc-400" title={desc}>
             {desc}
           </span>
 

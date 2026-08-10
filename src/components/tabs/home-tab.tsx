@@ -21,9 +21,10 @@ export function HomeTab({
   onStart: () => void;
   onBrowseApps: () => void;
 }) {
-  // 1,000명을 넘겨 다음 리그로 올라간 사이트 수 — 이 서비스가 실제로 굴러간다는 증거
-  const graduated = recentSites.filter((s) => leagueOf(s.total).rank > 0).length;
-  const todayTotal = recentSites.reduce((sum, s) => sum + (s.today ?? 0), 0);
+  // 통계도 리그와 같은 기준(주인 있는 사이트)으로 센다 — 리그엔 10개인데 위에선 12라고 하면 어긋난다
+  const owned = recentSites.filter((s) => s.userId);
+  const graduated = owned.filter((s) => leagueOf(s.total).rank > 0).length;
+  const todayTotal = owned.reduce((sum, s) => sum + (s.today ?? 0), 0);
 
   return (
     <>
@@ -60,7 +61,7 @@ export function HomeTab({
 
         {/* 지금 이 순간의 판 — 숫자를 자랑하는 게 아니라 "돌아가고 있다"를 보여준다 */}
         <div className="mb-5 grid grid-cols-3 gap-2">
-          <Stat label="사이트" value={compactNumber(recentSites.length)} bgColor={bgColor} />
+          <Stat label="사이트" value={compactNumber(owned.length)} bgColor={bgColor} />
           <Stat label="오늘 방문" value={compactNumber(todayTotal)} bgColor={bgColor} />
           <Stat label="1K 돌파" value={compactNumber(graduated)} bgColor={bgColor} />
         </div>

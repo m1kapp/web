@@ -18,7 +18,7 @@ export type Site = typeof sites.$inferSelect;
 
 export interface FetchRecentSitesOptions {
   q?: string;
-  sort?: "total" | "today";
+  sort?: "total" | "today" | "recent";
 }
 
 export async function fetchRecentSites({
@@ -64,6 +64,8 @@ export async function fetchRecentSites({
 
   if (sort === "today") {
     query = query.orderBy(desc(todayExpr), desc(totalExpr)) as typeof query;
+  } else if (sort === "recent") {
+    query = query.orderBy(desc(sites.createdAt)) as typeof query;
   } else {
     query = query.orderBy(desc(totalExpr)) as typeof query;
   }
@@ -80,8 +82,9 @@ export async function fetchRecentSites({
       s.today = Number(s.today) + b.today;
     }
   }
+  // 버퍼를 더한 뒤라 방문 기준 정렬은 여기서 다시 세운다. 등록순은 버퍼와 무관해 DB 순서를 그대로 둔다.
   if (sort === "today") result.sort((a, b) => Number(b.today) - Number(a.today) || Number(b.total) - Number(a.total));
-  else result.sort((a, b) => Number(b.total) - Number(a.total));
+  else if (sort !== "recent") result.sort((a, b) => Number(b.total) - Number(a.total));
 
   const userIds = [...new Set(result.map((s) => s.userId).filter(Boolean))] as string[];
   const userMap: Record<string, { name: string; imageUrl: string }> = {};
