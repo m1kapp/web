@@ -62,6 +62,7 @@ export function StoreTab({ bgColor }: { bgColor: string }) {
         devMode={devMode}
         stats={kitStats?.stats}
         latestKitVersion={kitStats?.latestKitVersion ?? null}
+        bgColor={bgColor}
       />
     </div>
   );

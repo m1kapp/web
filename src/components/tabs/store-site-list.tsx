@@ -1,6 +1,7 @@
 "use client";
 
-import { SiteCard, SiteCardSkeleton } from "@/components/site-card";
+import { SiteCardSkeleton } from "@/components/site-card";
+import { AppCard } from "@/components/app-card";
 import { EmptyState } from "@m1kapp/kit";
 import type { RecentSite } from "@/lib/types";
 import type { SiteKitStats } from "./store-tab.types";
@@ -16,27 +17,23 @@ export function StoreSiteList({
   devMode,
   stats,
   latestKitVersion,
+  bgColor,
 }: {
   sites: RecentSite[] | undefined;
   devMode: boolean;
   stats?: Record<string, SiteKitStats>;
   latestKitVersion: string | null;
+  bgColor: string;
 }) {
   if (!sites) return <SiteCardSkeleton count={4} />;
   if (sites.length === 0) return <EmptyState message="아직 등록된 사이트가 없어요" />;
   if (devMode) return <DevTable sites={sites} stats={stats} latest={latestKitVersion} />;
 
   return (
-    <div className="space-y-0">
-      <div className="flex items-center py-1.5 pr-2 border-b border-zinc-100 dark:border-zinc-800 text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
-        <span className="flex-1 min-w-0">사이트</span>
-        <span className="shrink-0 w-[84px] text-right">TODAY / TOTAL</span>
-      </div>
-      <div className="divide-y divide-zinc-50 dark:divide-zinc-900">
-        {sites.map((site) => (
-          <SiteCard key={site.slug} site={site} flat />
-        ))}
-      </div>
+    <div className="space-y-2">
+      {sites.map((site) => (
+        <AppCard key={site.slug} site={site} bgColor={bgColor} />
+      ))}
     </div>
   );
 }
