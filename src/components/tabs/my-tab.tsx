@@ -53,6 +53,25 @@ export function MyTab({
         <EmptyState message="사이트를 등록하고 1K 도전을 시작해보세요" />
       )}
 
+      {/* 트래커 심기 — 등록 뒤 한 번 하는 작업이라 하단 탭이 아니라 여기에 둔다 */}
+      <a
+        href="/connect"
+        className="mt-4 flex items-center justify-between rounded-xl border border-zinc-200 px-4 py-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40"
+      >
+        <span className="min-w-0">
+          <span className="block text-sm font-bold text-zinc-800 dark:text-zinc-100">
+            내 사이트에 트래커 심기
+          </span>
+          <span className="mt-0.5 block text-[11px] text-zinc-400">
+            코딩 에이전트에 붙여넣을 프롬프트를 발급해요
+          </span>
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-zinc-300">
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+      </a>
+
       <div className="absolute right-4 bottom-4 z-40">
         <button
           onClick={() => setShowRegisterSheet(true)}
