@@ -11,9 +11,11 @@ import type { RecentSite } from "@/lib/types";
  * 방금 합류한 사람의 것을 한 번은 눈에 띄게 놓아주려는 섹션이다.
  */
 export function NewArrivals({ sites, bgColor }: { sites: RecentSite[]; bgColor: string }) {
+  // createdAt은 서버에선 Date, fetch를 거치면 string으로 온다 — 숫자로 눌러서 비교한다
+  const time = (v: RecentSite["createdAt"]) => (v ? new Date(v).getTime() : 0);
   const newest = [...sites]
     .filter((s) => s.createdAt)
-    .sort((a, b) => (a.createdAt! < b.createdAt! ? 1 : -1))
+    .sort((a, b) => time(b.createdAt) - time(a.createdAt))
     .slice(0, 3);
 
   if (!newest.length) return null;
