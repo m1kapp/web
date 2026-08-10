@@ -6,17 +6,20 @@ import { leagueOf } from "@/lib/league";
 import type { RecentSite } from "@/lib/types";
 import { TypewriterHero, FAQSection } from "./home-tab-parts";
 import { LeagueBoard } from "./league-board";
+import { NewArrivals } from "./new-arrivals";
 
 export function HomeTab({
   bgColor,
   recentSites,
   selfSlug,
   onStart,
+  onBrowseApps,
 }: {
   bgColor: string;
   recentSites: RecentSite[];
   selfSlug: string | null;
   onStart: () => void;
+  onBrowseApps: () => void;
 }) {
   // 1,000명을 넘겨 다음 리그로 올라간 사이트 수 — 이 서비스가 실제로 굴러간다는 증거
   const graduated = recentSites.filter((s) => leagueOf(s.total).rank > 0).length;
@@ -86,7 +89,16 @@ export function HomeTab({
           <p className="-mt-1 mb-3 text-[11px] text-zinc-400">
             1K를 넘기면 10K, 100K, 1M으로 올라갑니다. 퍼센트는 다음 목표까지의 진행률이에요.
           </p>
-          <LeagueBoard sites={recentSites} bgColor={bgColor} />
+          <LeagueBoard sites={recentSites} bgColor={bgColor} onMore={onBrowseApps} />
+        </div>
+      )}
+
+      {/* 새로 등록된 앱 — 누적 순 목록에선 늘 아래로 밀리는 자리 */}
+      {recentSites.length > 0 && (
+        <div className="px-4 pt-6">
+          <SectionHeader>새로 등록된 앱</SectionHeader>
+          <p className="-mt-1 mb-3 text-[11px] text-zinc-400">방금 합류한 사이드 프로젝트예요.</p>
+          <NewArrivals sites={recentSites} bgColor={bgColor} />
         </div>
       )}
 

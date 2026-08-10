@@ -10,4 +10,6 @@ export interface RecentSite {
   faviconUrl?: string | null;
   color: string | null;
   owner: { name: string; imageUrl: string } | null;
+  /** 등록 시각 — 최신 등록 섹션 정렬에 쓴다 */
+  createdAt?: string;
 }

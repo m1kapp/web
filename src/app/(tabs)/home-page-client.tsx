@@ -22,6 +22,7 @@ export default function HomePageClient() {
       recentSites={recentSites ?? []}
       selfSlug={self?.slug ?? null}
       onStart={() => router.push("/my")}
+      onBrowseApps={() => router.push("/store")}
     />
   );
 }

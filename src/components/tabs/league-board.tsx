@@ -8,17 +8,28 @@ import { SiteThumbnail } from "@/components/site-preview-card";
 import type { RecentSite } from "@/lib/types";
 
 const ALL = "all";
+/** 홈에서는 한 리그당 10개까지만. 나머지는 앱 탭에서 본다 */
+const VISIBLE = 10;
 
 /**
  * 리그 보드 — 등록된 사이트를 1K / 10K / 100K / 1M 리그로 세운다.
  *
  * 리그마다 섹션을 쌓으면 화면이 길어지고, 사이트가 적은 리그는 한 줄짜리 섹션이 된다.
- * 그래서 리그는 우상단 필터로 두고 목록은 하나만 유지한다.
+ * 그래서 리그는 필터 칩으로 두고 목록은 하나만 유지한다.
  */
-export function LeagueBoard({ sites, bgColor }: { sites: RecentSite[]; bgColor: string }) {
-  const [selected, setSelected] = useState<string>(ALL);
+export function LeagueBoard({
+  sites,
+  bgColor,
+  onMore,
+}: {
+  sites: RecentSite[];
+  bgColor: string;
+  onMore: () => void;
+}) {
+  // 여기 오는 사람 대부분은 아직 1K를 향해 가는 중이다 — 기본값을 1K 리그로 둔다
+  const [selected, setSelected] = useState<string>("1K");
 
-  const { chips, rows } = useMemo(() => {
+  const { chips, rows, total } = useMemo(() => {
     const ranked = [...sites].sort((a, b) => b.total - a.total);
 
     // 사이트가 없는 리그는 칩을 만들지 않는다 — 눌러도 빈 화면인 탭은 없느니만 못하다
@@ -30,17 +41,21 @@ export function LeagueBoard({ sites, bgColor }: { sites: RecentSite[]; bgColor: 
     const order = [...LEAGUE_TARGETS.map((t) => leagueOf(t - 1).label), "1M+"];
     const present = order.filter((label) => counts.has(label));
 
+    const matched =
+      selected === ALL ? ranked : ranked.filter((s) => leagueOf(s.total).label === selected);
+
     return {
       chips: [{ id: ALL, label: "전체", count: ranked.length }].concat(
         present.map((label) => ({ id: label, label, count: counts.get(label)! })),
       ),
-      rows: selected === ALL ? ranked : ranked.filter((s) => leagueOf(s.total).label === selected),
+      rows: matched.slice(0, VISIBLE),
+      total: matched.length,
     };
   }, [sites, selected]);
 
   return (
     <>
-      <div className="mb-3 flex gap-1.5 overflow-x-auto scrollbar-hide">
+      <div className="mb-2 flex gap-1.5 overflow-x-auto scrollbar-hide">
         {chips.map((chip) => {
           const active = chip.id === selected;
           return (
@@ -66,6 +81,19 @@ export function LeagueBoard({ sites, bgColor }: { sites: RecentSite[]; bgColor: 
           <LeagueRow key={site.slug} site={site} rank={i + 1} bgColor={bgColor} />
         ))}
       </div>
+
+      {total > VISIBLE && (
+        <button
+          onClick={onMore}
+          className="mt-2 flex w-full items-center justify-center gap-1 rounded-xl border border-zinc-200 py-2.5 text-[12px] font-bold text-zinc-500 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800/40"
+        >
+          {total - VISIBLE}개 더보기
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      )}
     </>
   );
 }
@@ -79,25 +107,25 @@ function LeagueRow({ site, rank, bgColor }: { site: RecentSite; rank: number; bg
   return (
     <a
       href={`/${site.slug}`}
-      className="flex items-center gap-2.5 py-2.5 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+      className="flex items-center gap-3 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
     >
-      <span className="w-5 shrink-0 text-center text-[11px] font-black tabular-nums text-zinc-300 dark:text-zinc-600">
-        {String(rank).padStart(2, "0")}
+      <span className="w-4 shrink-0 text-center text-[12px] font-black tabular-nums text-zinc-300 dark:text-zinc-600">
+        {rank}
       </span>
 
-      <SiteThumbnail slug={site.slug} name={name} faviconUrl={site.faviconUrl} color={color} size="xs" />
+      <SiteThumbnail slug={site.slug} name={name} faviconUrl={site.faviconUrl} color={color} size="sm" />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[12px] font-semibold text-zinc-800 dark:text-zinc-100" title={name}>
+        <p className="truncate text-[13px] font-semibold text-zinc-800 dark:text-zinc-100" title={name}>
           {name}
         </p>
-        <p className="mt-0.5 truncate text-[9px] tabular-nums text-zinc-400">
+        <p className="mt-0.5 truncate text-[10px] tabular-nums text-zinc-400">
           {league.target ? `${league.label} 리그` : "1M 돌파"} · {compactNumber(site.total)}
           {site.today ? <span className="ml-1 text-emerald-500">+{compactNumber(site.today)}</span> : null}
         </p>
       </div>
 
-      <div className="w-[76px] shrink-0 text-right">
+      <div className="w-[68px] shrink-0 text-right">
         {league.target ? (
           <>
             <span className="text-[13px] font-black tabular-nums" style={{ color: bgColor }}>
