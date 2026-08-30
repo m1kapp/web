@@ -11,7 +11,6 @@ import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import "./globals.css";
-import "@m1kapp/kit/styles.css";
 
 // Inlined to prevent FOUC before the external stylesheet loads
 const CRITICAL_CSS = `
