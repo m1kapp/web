@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
-import { SignInButton, useSocialSignIn } from "@m1kapp/auth";
+import { SignInScreen, useSocialSignIn } from "@m1kapp/auth";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getAuthRedirectUrls } from "@/lib/auth-redirect";
 
@@ -33,29 +33,18 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="px-4 py-3 flex flex-col items-center justify-center min-h-[70dvh]">
-      <div className="w-full max-w-[320px]">
-        {/* 로고 */}
-        <h1 className="text-3xl font-black tracking-tighter text-center text-zinc-900 dark:text-white mb-2">
-          m1k
-        </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center mb-8">
-          계속하려면 로그인하세요
-        </p>
-
-        {/* 로그인 버튼 */}
-        <div className="flex flex-col gap-2.5">
-          <SignInButton way="kakao" signIn={signIn}
-            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold transition-colors bg-[#FEE500] text-[#191919]"
-          />
-          <SignInButton way="google" signIn={signIn}
-            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold transition-colors text-white bg-zinc-900 dark:bg-white dark:text-zinc-900"
-          />
-          <SignInButton way="github" signIn={signIn}
-            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold transition-colors text-white bg-zinc-700 dark:bg-zinc-800 dark:text-white"
-          />
-        </div>
-      </div>
+    <div className="flex min-h-[100dvh] flex-col">
+      <SignInScreen
+        className="flex-1"
+        color="#09090b"
+        icon="/icon-512.png"
+        name="m1k"
+        slogan="방문자 1,000명을 향한 첫걸음"
+        title="하나의 계정으로."
+        text="m1k의 모든 앱을 같은 계정으로 써요."
+        ways={["kakao", "google", "github"]}
+        signIn={signIn}
+      />
     </div>
   );
 }
