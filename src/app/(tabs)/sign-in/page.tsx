@@ -33,7 +33,7 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col">
+    <div className="flex min-h-full flex-col">
       <SignInScreen
         className="flex-1"
         color="#09090b"
