@@ -1,14 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
+import { SignInButton, useSocialSignIn } from "@m1kapp/auth";
 import { useSearchParams, useRouter } from "next/navigation";
-import { OAuthLoginButton } from "@/components/oauth-login-button";
+import { getAuthRedirectUrls } from "@/lib/auth-redirect";
 
 export default function SignInPage() {
   const { isSignedIn, isLoaded } = useUser();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const signIn = useSocialSignIn(useClerk(), getAuthRedirectUrls());
   const redirect = searchParams.get("redirect") || "/my";
 
   useEffect(() => {
@@ -43,11 +45,14 @@ export default function SignInPage() {
 
         {/* 로그인 버튼 */}
         <div className="flex flex-col gap-2.5">
-          <OAuthLoginButton provider="google"
-            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 transition-colors"
+          <SignInButton way="kakao" signIn={signIn}
+            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold transition-colors bg-[#FEE500] text-[#191919]"
           />
-          <OAuthLoginButton provider="github"
-            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold text-white bg-zinc-700 dark:bg-zinc-800 dark:text-white transition-colors"
+          <SignInButton way="google" signIn={signIn}
+            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold transition-colors text-white bg-zinc-900 dark:bg-white dark:text-zinc-900"
+          />
+          <SignInButton way="github" signIn={signIn}
+            className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-xl text-sm font-bold transition-colors text-white bg-zinc-700 dark:bg-zinc-800 dark:text-white"
           />
         </div>
       </div>
