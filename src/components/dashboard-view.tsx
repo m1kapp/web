@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Watermark, AppShell, Section, Divider, useFetch } from "@m1kapp/kit";
 import { AccentProvider, type AccentHex } from "@/lib/theme-context";
 import { SiteHero } from "./site-hero";
@@ -53,13 +53,10 @@ interface DashboardViewProps {
 function useLiveCounts(initialData: SiteData): SiteData {
   const [data, setData] = useState(initialData);
 
-  const slugRef = useRef(data.slug);
-  slugRef.current = data.slug;
-
   useEffect(() => {
     async function refresh() {
       try {
-        const res = await fetch(`/api/sites/${slugRef.current}`);
+        const res = await fetch(`/api/sites/${data.slug}?view=live`);
         if (!res.ok) return;
         const fresh = await res.json();
         setData((prev) => mergeCounts(prev, fresh));
@@ -68,7 +65,7 @@ function useLiveCounts(initialData: SiteData): SiteData {
 
     const interval = setInterval(() => { if (!document.hidden) refresh(); }, POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [data.slug]);
 
   return data;
 }

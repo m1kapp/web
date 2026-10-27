@@ -72,10 +72,8 @@ function normalizeSiteStats(slug: string, j: Record<string, unknown>): SiteKitSt
 
 // 등록 사이트들의 /kit-stats.json을 수집해 kit 버전·규모·청결도를 한 번에 반환.
 // 스토어 dev 모드 비교용.
-export const GET = handler(async (req) => {
-  const force = new URL(req.url).searchParams.get("refresh") === "1";
-
-  if (!force && redis) {
+export const GET = handler(async () => {
+  if (redis) {
     const cached = await redis.get(CACHE_KEY);
     if (cached) return ok(cached);
   }

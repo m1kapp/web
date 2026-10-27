@@ -3,22 +3,24 @@ import { sites, hits, hitLogs, dailyGeoStats, dailyDeviceStats } from "@/lib/db/
 import { eq, sql, and, gte, desc, ne } from "drizzle-orm";
 import { todayKST } from "@/lib/format";
 import { handler, ok, notFound } from "@m1kapp/kit/server";
-import { getCountSnapshot, getBufferedCount, getBufferedTotal } from "@/lib/hit-buffer";
+import { getCountSnapshot, getBufferedCount, getBufferedTotal, getCachedSite, cacheSite } from "@/lib/hit-buffer";
 
 export const GET = handler(async (req: Request, ctx: { params: Promise<{ slug: string[] }> }) => {
   const { slug: slugParts } = await ctx.params;
   const slug = slugParts.join("/");
+  const view = new URL(req.url).searchParams.get("view");
+  const lightweight = view === "count" || view === "live";
 
-  const site = await db.query.sites.findFirst({
-    where: eq(sites.slug, slug),
-  });
+  let site = lightweight ? await getCachedSite<typeof sites.$inferSelect>(slug) : null;
+  if (!site) {
+    site = await db.query.sites.findFirst({ where: eq(sites.slug, slug) }) ?? null;
+    if (site && lightweight) await cacheSite(slug, site);
+  }
 
   if (!site) notFound("프로젝트를 찾을 수 없습니다");
 
   const now = new Date();
   const todayStr = todayKST(now);
-
-  const view = new URL(req.url).searchParams.get("view");
 
   // 공개 통계 상세 — kit 푸터 카운터 클릭 시 시트용. 카운트 계열만 CORS 허용.
   // (국가·기기·리퍼러는 여전히 same-origin 전용 — 교차출처로 노출하지 않음)
@@ -52,7 +54,7 @@ export const GET = handler(async (req: Request, ctx: { params: Promise<{ slug: s
 
   // 경량 공개 카운트 — kit PoweredByKit 푸터용. today/total만 반환하고 CORS 허용.
   // (풀 통계는 same-origin 유지 → 국가·기기·리퍼러 등은 교차출처로 노출하지 않음)
-  if (view === "count") {
+  if (view === "count" || view === "live") {
     // 실시간: DB 스냅샷 + Redis 버퍼 증분 합산 (flush 주기와 무관하게 today/total 최신)
     const [snapshot, bufferedToday, bufferedTotal] = await Promise.all([
       getCountSnapshot(site!.id),
@@ -60,7 +62,23 @@ export const GET = handler(async (req: Request, ctx: { params: Promise<{ slug: s
       getBufferedTotal(site!.id),
     ]);
     const base = snapshot ?? { total: site!.totalHits, today: 0 };
-    const res = ok({ slug: site!.slug, today: base.today + bufferedToday, total: base.total + bufferedTotal });
+    const today = base.today + bufferedToday;
+    const total = base.total + bufferedTotal;
+    let live = {};
+    if (view === "live") {
+      const daily = await db.select({ date: hits.date, count: hits.count })
+        .from(hits).where(eq(hits.siteId, site!.id)).orderBy(hits.date);
+      const todayRow = daily.find((d) => d.date === todayStr);
+      if (todayRow) todayRow.count = today;
+      else if (today > 0) daily.push({ date: todayStr, count: today });
+      live = {
+        todayCount: today,
+        weekly: (snapshot?.weekly ?? 0) + bufferedToday,
+        monthly: (snapshot?.monthly ?? 0) + bufferedToday,
+        daily,
+      };
+    }
+    const res = ok({ slug: site!.slug, today, total, ...live });
     res.headers.set("Access-Control-Allow-Origin", "*");
     return res;
   }

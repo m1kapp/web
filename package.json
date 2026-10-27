@@ -6,7 +6,8 @@
     "dev": "next dev --port 3335",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:usage": "tsx --test scripts/usage.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

@@ -1,3 +1,4 @@
+import { todayKST } from "@/lib/format";
 import { redis } from "@/lib/redis";
 import { directWriteHit, directGetCountSnapshot } from "./hit-direct";
 
@@ -37,15 +38,14 @@ const COUNT_SNAPSHOT_KEY = (siteId: number) => `counts:${siteId}`;
 export async function bufferHit(entry: HitEntry): Promise<boolean> {
   if (redis) {
     try {
-      const isNew = await redis.set(DEDUP_KEY(entry.siteId, entry.ipHash), 1, { nx: true, ex: 86400 });
-      if (!isNew) return false;
-
-      const pipe = redis.pipeline();
-      pipe.hincrby(HIT_COUNT_KEY(entry.siteId, entry.date), "count", 1);
-      pipe.incrby(TOTAL_KEY(entry.siteId), 1);
-      pipe.lpush(LOG_LIST_KEY, JSON.stringify(entry));
-      await pipe.exec();
-      return true;
+      return await redis.eval(`
+        if not redis.call('SET', KEYS[1], 1, 'NX', 'EX', 86400) then return 0 end
+        redis.call('HINCRBY', KEYS[2], 'count', 1)
+        redis.call('INCRBY', KEYS[3], 1)
+        redis.call('LPUSH', KEYS[4], ARGV[1])
+        return 1
+      `, [DEDUP_KEY(entry.siteId, entry.ipHash), HIT_COUNT_KEY(entry.siteId, entry.date),
+        TOTAL_KEY(entry.siteId), LOG_LIST_KEY], [JSON.stringify(entry)]) === 1;
     } catch (e) {
       console.warn("[hit-buffer] Redis bufferHit failed, falling back to Neon:", e);
     }
@@ -103,61 +103,59 @@ export async function getBufferedMap(siteIds: number[], date: string): Promise<M
   return out;
 }
 
-/** flush: 로그 전부 꺼내기 (최대 batchSize개) — count 인자로 한 번에 배치 팝 (왕복 1회) */
-export async function drainLogs(batchSize = 500): Promise<HitEntry[]> {
-  if (!redis) return [];
-  try {
-    const raw = await redis.rpop<string[]>(LOG_LIST_KEY, batchSize);
-    if (!raw) return [];
-    return raw.map((r) => (typeof r === "string" ? JSON.parse(r) : r) as HitEntry);
-  } catch (e) {
-    console.warn("[hit-buffer] Redis drainLogs failed:", e);
-    return [];
-  }
+/** 성공 확인 전에는 큐를 비우지 않는다. 새 방문은 LPUSH라 읽은 꼬리는 유지된다. */
+export async function readPendingHits(batchSize = 1000) {
+  if (!redis) return { raw: [], entries: [] };
+  const values = await redis.lrange<string | HitEntry>(LOG_LIST_KEY, -batchSize, -1);
+  const raw = values.map((v) => typeof v === "string" ? v : JSON.stringify(v));
+  return { raw, entries: raw.map((v) => JSON.parse(v) as HitEntry) };
 }
 
-/** flush 후 카운트 키에서 **비운 만큼만** 뺀다.
- *
- * 예전엔 del 로 통째 지웠는데, drain 은 배치 상한에서 끊기고 flush 의 DB 작업은
- * 순차 await 이 수십 번이라 초 단위다. 그 사이 들어온 히트와 이번에 못 비운
- * 백로그의 카운터까지 같이 날아갔다 — 로그는 남아 있어 손실은 아니지만 다음
- * 크론(하루 1회)까지 배지·대시보드가 과소 표시됐다. */
-export async function clearFlushedKeys(entries: { siteId: number; date: string }[]): Promise<void> {
-  if (!redis || entries.length === 0) return;
+const ACK_HITS_SCRIPT = `
+local raw = cjson.decode(ARGV[1])
+local queued = redis.call('LRANGE', KEYS[1], -#raw, -1)
+if #queued ~= #raw then return 0 end
+for i, value in ipairs(raw) do
+  if queued[i] ~= value then return 0 end
+end
+local deltas = cjson.decode(ARGV[2])
+for i, delta in ipairs(deltas) do
+  local key = KEYS[i + 1]
+  local left
+  if delta.hash then left = redis.call('HINCRBY', key, 'count', -delta.n)
+  else left = redis.call('DECRBY', key, delta.n) end
+  if left <= 0 then redis.call('DEL', key) end
+end
+for i, update in ipairs(cjson.decode(ARGV[3])) do
+  redis.call('SET', KEYS[#deltas + 1 + i], update.value, 'EX', update.ttl)
+end
+redis.call('LTRIM', KEYS[1], 0, -#raw - 1)
+return 1
+`;
 
-  const byDay = new Map<string, { siteId: number; date: string; n: number }>();
-  const bySite = new Map<number, number>();
-  for (const e of entries) {
-    const k = `${e.siteId}:${e.date}`;
-    const cur = byDay.get(k);
-    if (cur) cur.n++;
-    else byDay.set(k, { siteId: e.siteId, date: e.date, n: 1 });
-    bySite.set(e.siteId, (bySite.get(e.siteId) ?? 0) + 1);
+/** 큐 삭제·버퍼 차감·DB 스냅샷 공개를 한 번에 반영한다. */
+export async function acknowledgeHits(
+  batch: { raw: string[]; entries: HitEntry[] },
+  snapshots: { siteId: number; slug: string; site: unknown; snapshot: CountSnapshot }[],
+): Promise<boolean> {
+  if (!redis || batch.raw.length === 0) return false;
+  const counters = new Map<string, { n: number; hash: boolean }>();
+  for (const e of batch.entries) {
+    for (const [key, hash] of [[HIT_COUNT_KEY(e.siteId, e.date), true], [TOTAL_KEY(e.siteId), false]] as const) {
+      const counter = counters.get(key);
+      if (counter) counter.n++;
+      else counters.set(key, { n: 1, hash });
+    }
   }
-
-  try {
-    const pipe = redis.pipeline();
-    const keys: string[] = [];
-    for (const d of byDay.values()) {
-      pipe.hincrby(HIT_COUNT_KEY(d.siteId, d.date), "count", -d.n);
-      keys.push(HIT_COUNT_KEY(d.siteId, d.date));
-    }
-    for (const [siteId, n] of bySite) {
-      pipe.decrby(TOTAL_KEY(siteId), n);
-      keys.push(TOTAL_KEY(siteId));
-    }
-    const res = await pipe.exec<number[]>();
-
-    // 0 이하로 내려간 키는 지운다 — 안 지우면 날짜별 키가 0인 채로 계속 쌓인다.
-    const empty = keys.filter((_, i) => Number(res[i] ?? 0) <= 0);
-    if (empty.length > 0) {
-      const cleanup = redis.pipeline();
-      for (const k of empty) cleanup.del(k);
-      await cleanup.exec();
-    }
-  } catch (e) {
-    console.warn("[hit-buffer] Redis clearFlushedKeys failed:", e);
+  const keys = [LOG_LIST_KEY, ...counters.keys()];
+  const updates: { value: string; ttl: number }[] = [];
+  for (const s of snapshots) {
+    keys.push(COUNT_SNAPSHOT_KEY(s.siteId), SITE_CACHE_KEY(s.slug));
+    updates.push({ value: JSON.stringify(s.snapshot), ttl: 90_000 }, { value: JSON.stringify(s.site), ttl: 3600 });
   }
+  return await redis.eval(ACK_HITS_SCRIPT, keys, [
+    JSON.stringify(batch.raw), JSON.stringify([...counters.values()]), JSON.stringify(updates),
+  ]) === 1;
 }
 
 /**
@@ -227,7 +225,11 @@ export async function saveCountSnapshot(siteId: number, snapshot: CountSnapshot)
 export async function getCountSnapshot(siteId: number): Promise<CountSnapshot | null> {
   if (redis) {
     try {
-      return await redis.get<CountSnapshot>(COUNT_SNAPSHOT_KEY(siteId));
+      const snapshot = await redis.get<CountSnapshot>(COUNT_SNAPSHOT_KEY(siteId));
+      if (snapshot && todayKST(new Date(snapshot.updatedAt)) === todayKST()) return snapshot;
+      const fresh = await directGetCountSnapshot(siteId);
+      if (fresh) await saveCountSnapshot(siteId, fresh);
+      return fresh;
     } catch (e) {
       console.warn("[hit-buffer] Redis getCountSnapshot failed:", e);
     }
