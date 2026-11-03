@@ -3,13 +3,27 @@
 import { InAppSheet } from "@m1kapp/kit";
 import type { SiteQuality, Bucket } from "./store-tab";
 
+// fixearly 등급표 SSS~E — 위쪽 등급일수록 차가운 색, 아래로 갈수록 따뜻한 색
 export const GRADE_COLORS: Record<string, string> = {
+  SSS: "text-violet-500",
+  SS: "text-indigo-500",
+  S: "text-blue-500",
   "A+": "text-emerald-500",
   A: "text-green-500",
+  "B+": "text-lime-600 dark:text-lime-500",
   B: "text-lime-600 dark:text-lime-500",
+  "C+": "text-amber-500",
   C: "text-amber-500",
-  D: "text-red-500",
+  "D+": "text-orange-500",
+  D: "text-orange-500",
+  "E+": "text-red-500",
+  E: "text-red-500",
 };
+
+/** kit 0.0.38 전에는 다른 엔진으로 채점했다. A+ 100이 지금의 SSS 97보다 높은 게 아니라 자가 다르다 */
+export function isLegacyScale(kitVersion: string): boolean {
+  return Number(kitVersion.split(".")[2]) < 38;
+}
 
 /** 참고용 외부 오픈소스 벤치마크 — 라이브 사이트 목록이 아니라 하드코딩된 1회성 측정치.
  *  m1kkit stats로 직접 돌려본 결과를 옮긴 것이라 sites API 갱신과 무관하게 고정. */

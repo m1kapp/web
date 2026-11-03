@@ -1,50 +1,60 @@
 {
-  "generatedAt": "2026-07-22T13:32:54.971Z",
-  "kitVersion": "0.0.37",
+  "generatedAt": "2026-11-03T14:38:18.777Z",
+  "kitVersion": "0.0.61",
   "source": {
     "dir": "src",
-    "files": 103,
-    "totalLines": 8423,
-    "codeLines": 7100,
+    "files": 107,
+    "totalLines": 8807,
+    "codeLines": 7356,
     "breakdown": {
       "frontend": {
-        "files": 59,
-        "codeLines": 4633
+        "files": 60,
+        "codeLines": 4694
       },
       "backend": {
-        "files": 18,
+        "files": 19,
         "codeLines": 1080
       },
       "shared": {
-        "files": 26,
-        "codeLines": 1387
+        "files": 28,
+        "codeLines": 1582
       }
     }
   },
   "quality": {
     "engine": "ast2",
-    "score": 100,
-    "grade": "A+",
+    "score": 93,
+    "grade": "SS",
+    "gradeBase": "S",
+    "dead": null,
     "cognitive": {
       "avg": 1.5,
       "p90": 4,
-      "max": 14,
-      "over15": 0,
+      "max": 16,
+      "over15": 1,
       "over25": 0,
+      "top10avg": 12.8,
       "worst": [
         {
-          "name": "fetchRecentSites",
-          "cog": 14,
-          "cc": 11,
-          "file": "src/lib/site-service.ts",
-          "line": 17
+          "name": "(anonymous)",
+          "cog": 16,
+          "cc": 18,
+          "file": "src/app/api/sites/[...slug]/route.ts",
+          "line": 8
         },
         {
-          "name": "(anonymous)",
-          "cog": 13,
-          "cc": 14,
-          "file": "src/app/api/sites/refresh-og/route.ts",
-          "line": 9
+          "name": "fetchRecentSites",
+          "cog": 15,
+          "cc": 13,
+          "file": "src/lib/site-service.ts",
+          "line": 24
+        },
+        {
+          "name": "AppCard",
+          "cog": 14,
+          "cc": 17,
+          "file": "src/components/app-card.tsx",
+          "line": 16
         },
         {
           "name": "BadgeEditor",
@@ -61,72 +71,341 @@
           "line": 106
         },
         {
-          "name": "buildCurveGeometry",
+          "name": "refreshSiteMeta",
+          "cog": 13,
+          "cc": 13,
+          "file": "src/lib/refresh-site-meta.ts",
+          "line": 23
+        },
+        {
+          "name": "recordHit",
           "cog": 12,
-          "cc": 11,
-          "file": "src/components/cumulative-curve.tsx",
-          "line": 22
+          "cc": 12,
+          "file": "src/app/badge/[...slug]/route.ts",
+          "line": 68
+        },
+        {
+          "name": "(anonymous)",
+          "cog": 11,
+          "cc": 10,
+          "file": "src/app/api/sites/cli/route.ts",
+          "line": 94
+        },
+        {
+          "name": "dominantFromPixels",
+          "cog": 11,
+          "cc": 8,
+          "file": "src/lib/favicon.ts",
+          "line": 86
+        },
+        {
+          "name": "acknowledgeHits",
+          "cog": 10,
+          "cc": 7,
+          "file": "src/lib/hit-buffer.ts",
+          "line": 137
         }
       ]
     },
+    "fnLength": {
+      "avg": 9.9,
+      "p90": 27,
+      "max": 98,
+      "over40": 15,
+      "over80": 1,
+      "top10avg": 76.1,
+      "countAll": 605,
+      "count5": 298,
+      "count10": 184,
+      "worst": [
+        {
+          "name": "(anonymous)",
+          "lines": 98,
+          "cog": 16,
+          "file": "src/app/api/sites/[...slug]/route.ts",
+          "line": 8
+        },
+        {
+          "name": "HomeTab",
+          "lines": 96,
+          "cog": 7,
+          "file": "src/components/tabs/home-tab.tsx",
+          "line": 13
+        },
+        {
+          "name": "MyTab",
+          "lines": 82,
+          "cog": 4,
+          "file": "src/components/tabs/my-tab.tsx",
+          "line": 11
+        },
+        {
+          "name": "Loading",
+          "lines": 75,
+          "cog": 1,
+          "file": "src/app/[...slug]/loading.tsx",
+          "line": 4
+        },
+        {
+          "name": "AppCard",
+          "lines": 75,
+          "cog": 14,
+          "file": "src/components/app-card.tsx",
+          "line": 16
+        },
+        {
+          "name": "ConnectPage",
+          "lines": 70,
+          "cog": 8,
+          "file": "src/app/(tabs)/connect/page.tsx",
+          "line": 64
+        },
+        {
+          "name": "BadgeEditor",
+          "lines": 69,
+          "cog": 13,
+          "file": "src/components/badge-editor.tsx",
+          "line": 20
+        },
+        {
+          "name": "ClaimInner",
+          "lines": 67,
+          "cog": 8,
+          "file": "src/app/claim/page.tsx",
+          "line": 9
+        },
+        {
+          "name": "fetchRecentSites",
+          "lines": 65,
+          "cog": 15,
+          "file": "src/lib/site-service.ts",
+          "line": 24
+        },
+        {
+          "name": "SiteHero",
+          "lines": 64,
+          "cog": 4,
+          "file": "src/components/site-hero.tsx",
+          "line": 133
+        }
+      ]
+    },
+    "scoreInputs": {
+      "over15Pct": 0.17,
+      "over25Pct": 0,
+      "p90Cog": 4,
+      "maxCog": 16,
+      "dupPct": 0.9,
+      "longFileSeverityPct": 0,
+      "avgFileLines": 69,
+      "fnOver40Pct": 2.48,
+      "fnP90": 27,
+      "fnMax": 98,
+      "fnTop10": 76.1,
+      "cogTop10": 12.8
+    },
     "duplication": {
-      "percent": 2.6,
-      "dupTokens": 834,
-      "totalTokens": 31998,
-      "blocks": 74,
+      "percent": 0.9,
+      "dupTokens": 312,
+      "totalTokens": 34801,
+      "blocks": 9,
       "worstFiles": [
         {
-          "file": "src/components/overview/kr-maps.tsx",
-          "dupTokens": 244
+          "file": "src/app/api/sites/mine/route.ts",
+          "dupTokens": 55
         },
         {
-          "file": "src/components/overview/world-maps.tsx",
-          "dupTokens": 126
+          "file": "src/lib/site-service.ts",
+          "dupTokens": 55
         },
         {
-          "file": "src/components/cumulative-curve.tsx",
-          "dupTokens": 72
+          "file": "src/app/api/sites/cli/route.ts",
+          "dupTokens": 51
         }
       ],
       "worstBlocks": [
         [
-          "src/app/api/sites/cli/route.ts:25",
+          "src/app/api/sites/cli/route.ts:27",
           "src/app/api/sites/route.ts:16"
         ],
         [
-          "src/app/api/sites/cli/route.ts:25",
+          "src/app/api/sites/cli/route.ts:27",
           "src/app/api/sites/route.ts:16"
         ],
         [
-          "src/app/api/sites/kit-stats/route.ts:10",
-          "src/components/kit-code-section.tsx:13"
+          "src/app/api/sites/mine/route.ts:11",
+          "src/lib/site-service.ts:28"
         ]
-      ]
+      ],
+      "variantSkipped": 0
     },
     "io": {
       "readers": 0,
       "uncachedReaders": 0,
-      "loopSites": 0,
-      "uncachedLoopSites": 0,
-      "worst": []
+      "loopSites": 1,
+      "uncachedLoopSites": 1,
+      "worst": [
+        {
+          "file": "src/app/api/sites/kit-stats/route.ts",
+          "line": 94,
+          "callee": "fetch"
+        }
+      ]
+    },
+    "textbook": {
+      "awaitInForEach": {
+        "count": 0,
+        "worst": []
+      },
+      "spreadAccumulator": {
+        "count": 0,
+        "worst": []
+      },
+      "regexInLoop": {
+        "count": 0,
+        "worst": []
+      },
+      "floatingPromise": {
+        "count": 0,
+        "worst": []
+      },
+      "loopInvariantIndex": {
+        "count": 1,
+        "worst": [
+          {
+            "file": "src/lib/favicon.ts",
+            "line": 70,
+            "ctor": "Set",
+            "src": "declared"
+          }
+        ]
+      },
+      "sharedRefFill": {
+        "count": 0,
+        "worst": []
+      },
+      "numericSortNoComparator": {
+        "count": 0,
+        "worst": []
+      },
+      "emptyCatch": {
+        "count": 4,
+        "worst": [
+          {
+            "file": "src/app/(tabs)/connect/page.tsx",
+            "line": 53
+          },
+          {
+            "file": "src/app/sitemap.ts",
+            "line": 31
+          },
+          {
+            "file": "src/components/badge-editor.tsx",
+            "line": 35
+          },
+          {
+            "file": "src/lib/favicon.ts",
+            "line": 66
+          }
+        ]
+      },
+      "statefulRegex": {
+        "count": 0,
+        "worst": []
+      },
+      "forInArray": {
+        "count": 0,
+        "worst": []
+      }
+    },
+    "typeSafety": {
+      "tsFiles": 107,
+      "totalAnnots": 1842,
+      "anyType": {
+        "count": 0,
+        "pct": 0,
+        "worst": []
+      },
+      "asAny": {
+        "count": 0,
+        "worst": []
+      },
+      "nonNull": {
+        "count": 68,
+        "worst": [
+          {
+            "file": "src/app/api/admin/backfill-owners/route.ts",
+            "line": 21,
+            "text": "s.userId!"
+          },
+          {
+            "file": "src/app/api/admin/backfill-owners/route.ts",
+            "line": 40,
+            "text": "site.userId!"
+          },
+          {
+            "file": "src/app/api/builders/route.ts",
+            "line": 60,
+            "text": "builderMap.get(row.userId)!"
+          },
+          {
+            "file": "src/app/api/sites/[...slug]/route.ts",
+            "line": 31,
+            "text": "site!"
+          },
+          {
+            "file": "src/app/api/sites/[...slug]/route.ts",
+            "line": 32,
+            "text": "site!"
+          },
+          {
+            "file": "src/app/api/sites/[...slug]/route.ts",
+            "line": 33,
+            "text": "site!"
+          }
+        ]
+      },
+      "tsIgnore": {
+        "count": 0,
+        "worst": []
+      }
+    },
+    "testDensity": {
+      "files": 0,
+      "lines": 0,
+      "percent": null
+    },
+    "quadratic": {
+      "sites": 0,
+      "candidates": 0,
+      "zones": {},
+      "worst": [],
+      "candidateList": [],
+      "files": []
     },
     "renderGates": {
       "hostages": 0,
       "worst": []
     },
     "cc": {
-      "functions": 582,
+      "functions": 605,
       "avg": 2.6,
       "p90": 6,
-      "max": 14,
-      "over10": 12,
+      "max": 18,
+      "over10": 13,
       "over20": 0,
       "worst": [
         {
           "name": "(anonymous)",
-          "cc": 14,
-          "file": "src/app/api/sites/refresh-og/route.ts",
-          "line": 9
+          "cc": 18,
+          "file": "src/app/api/sites/[...slug]/route.ts",
+          "line": 8
+        },
+        {
+          "name": "AppCard",
+          "cc": 17,
+          "file": "src/components/app-card.tsx",
+          "line": 16
         },
         {
           "name": "cyworldBadge",
@@ -138,25 +417,19 @@
           "name": "siteMetaFields",
           "cc": 14,
           "file": "src/lib/site-data.ts",
-          "line": 92
+          "line": 117
         },
         {
-          "name": "(anonymous)",
-          "cc": 12,
-          "file": "src/app/api/sites/route.ts",
-          "line": 12
-        },
-        {
-          "name": "recordHit",
-          "cc": 12,
-          "file": "src/app/badge/[...slug]/route.ts",
-          "line": 67
+          "name": "refreshSiteMeta",
+          "cc": 13,
+          "file": "src/lib/refresh-site-meta.ts",
+          "line": 23
         }
       ]
     },
-    "branchDensity": 13.7,
-    "branches": 973,
-    "functions": 602,
+    "branchDensity": 14.3,
+    "branches": 1051,
+    "functions": 634,
     "avgFileLines": 69,
     "longFiles": 0,
     "maxFile": {
@@ -167,23 +440,28 @@
   "kit": {
     "features": [
       {
+        "name": "relativeTime",
+        "loc": 244,
+        "category": "util"
+      },
+      {
+        "name": "Watermark",
+        "loc": 205,
+        "category": "component"
+      },
+      {
         "name": "GrassMap",
         "loc": 194,
         "category": "component"
       },
       {
-        "name": "Watermark",
-        "loc": 190,
+        "name": "InAppSheet",
+        "loc": 194,
         "category": "component"
       },
       {
         "name": "ThemeButton",
         "loc": 187,
-        "category": "component"
-      },
-      {
-        "name": "InAppSheet",
-        "loc": 177,
         "category": "component"
       },
       {
@@ -193,7 +471,7 @@
       },
       {
         "name": "KitStyles",
-        "loc": 97,
+        "loc": 98,
         "category": "component"
       },
       {
@@ -203,7 +481,7 @@
       },
       {
         "name": "AppShell",
-        "loc": 78,
+        "loc": 76,
         "category": "component"
       },
       {
@@ -225,6 +503,11 @@
         "name": "useCopy",
         "loc": 67,
         "category": "hook"
+      },
+      {
+        "name": "PWAInstallButton",
+        "loc": 65,
+        "category": "component"
       },
       {
         "name": "TabBar",
@@ -262,25 +545,25 @@
         "category": "hook"
       }
     ],
-    "savedLines": 1652,
-    "savedKB": 65,
-    "savedA4": 21,
-    "savedPercent": 19,
+    "savedLines": 1992,
+    "savedKB": 78,
+    "savedA4": 25,
+    "savedPercent": 21,
     "usage": {
       "component": {
-        "used": 18,
-        "total": 60,
-        "percent": 30
+        "used": 20,
+        "total": 64,
+        "percent": 31
       },
       "hook": {
         "used": 5,
-        "total": 13,
-        "percent": 38
+        "total": 14,
+        "percent": 36
       },
       "util": {
         "used": 7,
-        "total": 26,
-        "percent": 27
+        "total": 48,
+        "percent": 15
       }
     }
   }
