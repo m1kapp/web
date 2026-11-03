@@ -16,7 +16,11 @@ const keepable = (req, res) => res.type === "opaque" ||
 // 하나라도 못 받으면 페이지는 옛 판을 그대로 둔다(옛 판의 파일은 남아 있다).
 async function savePage(c, key, res) {
   const html = await res.clone().text();
-  const own = [...html.matchAll(/(?:src|href)="(\/[^"/][^"]*)"/g)].map((m) => new Request(m[1]));
+  // <a href> 는 다른 페이지고 스플래시는 기기마다 한 장이라 담지 않는다 — 페이지 링크가 섞이면 첫 페이지가 저장되지 않는다
+  const own = [...html.matchAll(/<(?:script|link)\b[^>]*>/g)]
+    .filter(([tag]) => !tag.includes("apple-touch-startup-image"))
+    .flatMap(([tag]) => tag.match(/(?:src|href)="(\/[^"/][^"]*)"/)?.slice(1) ?? [])
+    .map((url) => new Request(url.replaceAll("&amp;", "&")));
   // CDN 폰트 CSS 도(Pretendard·Tossface 같은) — 빠지면 오프라인에서 글꼴·국기 이모지가 바뀐다. 실패해도 페이지는 담는다
   const cdn = [...html.matchAll(/href="(https:\/\/[^"]+\.css)"/g)].map((m) => new Request(m[1], { mode: "no-cors" }));
   const got = (req) => c.match(req, { ignoreVary: true }).then(async (hit) => {
