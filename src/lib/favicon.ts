@@ -11,7 +11,36 @@ const FAVICON_CANDIDATES = (origin: string) => [
   `${origin}/favicon.ico`,
 ];
 
-/** 사이트 URL에서 유효한 favicon URL을 순서대로 조회해 반환. 없으면 null */
+const attr = (tag: string, name: string) => tag.match(new RegExp(`\\b${name}=["']([^"']+)["']`, "i"))?.[1];
+const largest = (sizes?: string) => Math.max(0, ...(sizes?.match(/\d+(?=x)/g) ?? []).map(Number));
+
+/** HTML이 선언한 아이콘 — apple-touch-icon을 먼저, 나머지는 큰 순서로. 경로 추측보다 정확하다 */
+export function declaredIcons(html: string, baseUrl: string): { icons: string[]; manifest: string | null } {
+  const tags = html.match(/<link\b[^>]*>/gi) ?? [];
+  const rel = (tag: string) => attr(tag, "rel")?.toLowerCase() ?? "";
+  const resolve = (href: string) => new URL(href.replaceAll("&amp;", "&"), baseUrl).href;
+  const score = (tag: string) => (rel(tag).includes("apple-touch-icon") ? 1e6 : largest(attr(tag, "sizes")));
+
+  const icons = tags
+    .filter((tag) => rel(tag).includes("icon") && attr(tag, "href"))
+    .sort((a, b) => score(b) - score(a))
+    .map((tag) => resolve(attr(tag, "href")!));
+  const manifest = tags.find((tag) => rel(tag) === "manifest" && attr(tag, "href"));
+  return { icons, manifest: manifest ? resolve(attr(manifest, "href")!) : null };
+}
+
+async function isImage(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { method: "HEAD", signal: AbortSignal.timeout(3000), redirect: "follow" });
+    const type = res.headers.get("content-type") ?? "";
+    // SPA는 없는 파일에도 HTML을 200으로 준다 — .ico라도 HTML이면 아이콘이 아니다
+    return res.ok && !type.includes("text/html") && (type.startsWith("image/") || url.includes(".ico"));
+  } catch {
+    return false; // 타임아웃 or 네트워크 오류 → 다음 후보
+  }
+}
+
+/** 사이트가 선언한 아이콘을 먼저, 없으면 흔한 경로를 조회해 유효한 URL을 반환. 없으면 null */
 export async function resolveFavicon(siteUrl: string): Promise<string | null> {
   let origin: string;
   try {
@@ -20,20 +49,26 @@ export async function resolveFavicon(siteUrl: string): Promise<string | null> {
     return null;
   }
 
-  for (const candidate of FAVICON_CANDIDATES(origin)) {
-    try {
-      const res = await fetch(candidate, {
-        method: "HEAD",
-        signal: AbortSignal.timeout(3000),
-        redirect: "follow",
-      });
-      const ct = res.headers.get("content-type") ?? "";
-      if (res.ok && (ct.startsWith("image/") || candidate.endsWith(".ico"))) {
-        return candidate;
-      }
-    } catch {
-      // 타임아웃 or 네트워크 오류 → 다음 후보
+  let declared: string[] = [];
+  try {
+    const res = await fetch(siteUrl, { signal: AbortSignal.timeout(5000), redirect: "follow" });
+    const { icons, manifest } = declaredIcons(await res.text(), res.url);
+    declared = icons;
+    if (manifest) {
+      const data = await fetch(manifest, { signal: AbortSignal.timeout(3000) }).then((r) => r.json());
+      const fromManifest = ((data.icons ?? []) as { src: string; sizes?: string; purpose?: string }[])
+        .filter((icon) => !icon.purpose?.includes("maskable"))
+        .sort((a, b) => largest(b.sizes) - largest(a.sizes))
+        .map((icon) => new URL(icon.src, manifest).href);
+      // apple-touch-icon(모서리까지 채운 앱 아이콘)이 있으면 그걸 먼저 둔다
+      declared = [...icons.slice(0, 1), ...fromManifest, ...icons.slice(1)];
     }
+  } catch {
+    // 페이지를 못 읽으면 흔한 경로로 넘어간다
+  }
+
+  for (const candidate of new Set([...declared, ...FAVICON_CANDIDATES(origin)])) {
+    if (await isImage(candidate)) return candidate;
   }
   return null;
 }
