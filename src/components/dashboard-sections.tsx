@@ -1,9 +1,8 @@
 "use client";
 
-import { GrassMap, Section, Divider } from "@m1kapp/kit";
+import { CumulativeCurve, GrassMap, Section, Divider } from "@m1kapp/kit";
 import { useAccent } from "@/lib/theme-context";
 import type { SiteData } from "./dashboard-view";
-import { CumulativeCurve } from "./cumulative-curve";
 import { OverviewInsights, CoachSection } from "./overview-insights";
 import { RefreshOgButton, DeleteSiteButton } from "./dashboard-settings";
 import { BadgeEditor } from "./badge-editor";

@@ -25,6 +25,8 @@ export function SiteThumbnail({ slug, name, faviconUrl, color, size = "md" }: Si
       ring={false}
       rounded={roundedClass}
       bg={bg}
+      // 투명·흰 아이콘도 앱 아이콘 모양이 보이도록 흰 바탕과 얇은 윤곽선을 깐다
+      className="relative bg-white after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:ring-1 after:ring-inset after:ring-black/10 dark:after:ring-white/10"
     />
   );
 }

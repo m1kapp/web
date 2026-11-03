@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { THEME_SCRIPT, ToastProvider } from "@m1kapp/kit";
+import { STARTUP_IMAGES, SW_SCRIPT } from "@/lib/pwa-head";
 import { KitStyles } from "@m1kapp/kit/pwa";
 import { createMetadata, titleTemplate, jsonLd } from "@m1kapp/kit/seo";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -59,6 +60,7 @@ export const metadata: Metadata = {
     apple: { url: "/apple-touch-icon.png", sizes: "180x180" },
   },
   manifest: "/manifest.json",
+  appleWebApp: { capable: true, title: "m1k", statusBarStyle: "default", startupImage: STARTUP_IMAGES },
   openGraph: {
     ...(createMetadata({ title: TITLE, description: DESCRIPTION, url: BASE_URL, siteName: "m1k", image: `${BASE_URL}/og` }).openGraph as object),
     locale: "ko_KR",
@@ -83,10 +85,12 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <meta name="theme-color" content="#09090b" />
+        <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+        <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b" />
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
         <KitStyles />
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: SW_SCRIPT }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLd.website({ name: "m1k", url: BASE_URL, description: DESCRIPTION }) }}

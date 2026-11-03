@@ -3,6 +3,10 @@ import sharp from "sharp";
 const FAVICON_CANDIDATES = (origin: string) => [
   `${origin}/apple-touch-icon.png`,
   `${origin}/apple-touch-icon-precomposed.png`,
+  // Next.js 파일 규칙(app/apple-icon.png) — 이게 빠지면 32px favicon이 뽑혀 앱 아이콘이 흐려진다
+  `${origin}/apple-icon.png`,
+  `${origin}/icon-512.png`,
+  `${origin}/icon-192.png`,
   `${origin}/favicon-32.png`,
   `${origin}/favicon.ico`,
 ];

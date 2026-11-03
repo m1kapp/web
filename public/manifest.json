@@ -1,10 +1,10 @@
 {
-  "name": "logodown",
-  "short_name": "logodown",
-  "description": "Make logos like markdown logo",
+  "name": "m1k — 웹앱 스토어",
+  "short_name": "m1k",
+  "description": "설치 없이 바로 여는 웹앱만 모았어요. 메이커의 첫 방문자 1,000명까지.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#09090b",
+  "background_color": "#ffffff",
   "theme_color": "#09090b",
   "icons": [
     {

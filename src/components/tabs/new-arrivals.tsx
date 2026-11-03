@@ -20,7 +20,7 @@ export function NewArrivals({ sites, bgColor }: { sites: RecentSite[]; bgColor: 
   if (!newest.length) return null;
 
   return (
-    <div className="space-y-2">
+    <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
       {newest.map((site) => (
         <AppCard key={site.slug} site={site} bgColor={bgColor} showAge />
       ))}
