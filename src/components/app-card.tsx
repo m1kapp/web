@@ -8,7 +8,7 @@ import { SiteThumbnail } from "@/components/site-preview-card";
 import type { RecentSite } from "@/lib/types";
 
 /**
- * 앱스토어식 사이트 카드 — 홈의 "새로 등록된 앱"과 앱 탭 목록이 같이 쓴다.
+ * 앱스토어식 앱 행 — 홈의 "새로 등록된 앱"과 앱 탭 목록이 같이 쓴다.
  *
  * 카드 본문과 "열기"는 목적지가 다르다. 본문은 m1k 안의 사이트 상세(방문 추이),
  * 열기는 그 사이트 자체다. 남의 사이트라 새 탭으로 연다.
@@ -18,10 +18,13 @@ export function AppCard({
   bgColor,
   /** 등록 시각을 보여줄지 — "새로 등록된 앱"에서만 의미가 있다 */
   showAge = false,
+  /** 순위 — 정렬 기준이 순위인 목록에서만 넘긴다 */
+  rank,
 }: {
   site: RecentSite;
   bgColor: string;
   showAge?: boolean;
+  rank?: number;
 }) {
   const name = site.ogTitle || site.title || site.slug;
   const desc = site.ogDescription || site.url || site.slug;
@@ -33,8 +36,11 @@ export function AppCard({
   const isFresh = showAge && created > 0 && Date.now() - created < 3 * 24 * 60 * 60 * 1000;
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 p-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/40">
+    <div className="flex items-center gap-3 py-3">
       <a href={`/${site.slug}`} className="flex min-w-0 flex-1 items-center gap-3">
+        {rank !== undefined && (
+          <span className="w-4 shrink-0 text-center text-[13px] font-black tabular-nums text-zinc-400">{rank}</span>
+        )}
         <SiteThumbnail
           slug={site.slug}
           name={name}
@@ -58,23 +64,22 @@ export function AppCard({
             )}
           </span>
 
-          <span className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-zinc-400" title={desc}>
+          <span className="mt-0.5 block truncate text-[11px] leading-snug text-zinc-400" title={desc}>
             {desc}
           </span>
 
-          <span className="mt-1 flex items-center gap-1.5 text-[9px] tabular-nums text-zinc-400">
-            <span className="font-bold" style={{ color: bgColor }}>
-              {league.target ? `${league.label} ${percent}%` : "1M 돌파 ✦"}
+          <span className="mt-1 flex items-center gap-1.5 text-[11px] font-bold tabular-nums text-zinc-400">
+            <span className={site.today ? "text-emerald-500" : undefined}>
+              오늘 {site.today ? `+${compactNumber(site.today)}` : 0}
             </span>
-            <span>·</span>
-            <span>{compactNumber(site.total)}</span>
-            {site.today ? <span className="text-emerald-500">+{compactNumber(site.today)}</span> : null}
-            {showAge && site.createdAt && (
-              <>
-                <span>·</span>
-                <span>{relativeTime(site.createdAt)} 등록</span>
-              </>
-            )}
+            <span className="text-zinc-700 dark:text-zinc-300">누적 {compactNumber(site.total)}</span>
+            <span className="truncate font-medium">
+              {showAge && site.createdAt
+                ? `${relativeTime(site.createdAt)} 등록`
+                : league.target
+                  ? `${league.label} ${percent}%`
+                  : "1M 돌파 ✦"}
+            </span>
           </span>
         </span>
       </a>
@@ -84,8 +89,7 @@ export function AppCard({
           href={site.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold text-white"
-          style={{ backgroundColor: bgColor }}
+          className="shrink-0 rounded-full bg-zinc-100 px-4 py-1.5 text-[12px] font-black text-zinc-900 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
         >
           열기
         </a>

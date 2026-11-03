@@ -18,21 +18,23 @@ export function StoreSiteList({
   stats,
   latestKitVersion,
   bgColor,
+  ranked,
 }: {
   sites: RecentSite[] | undefined;
   devMode: boolean;
   stats?: Record<string, SiteKitStats>;
   latestKitVersion: string | null;
   bgColor: string;
+  ranked: boolean;
 }) {
   if (!sites) return <SiteCardSkeleton count={4} />;
   if (sites.length === 0) return <EmptyState message="아직 등록된 사이트가 없어요" />;
   if (devMode) return <DevTable sites={sites} stats={stats} latest={latestKitVersion} />;
 
   return (
-    <div className="space-y-2">
-      {sites.map((site) => (
-        <AppCard key={site.slug} site={site} bgColor={bgColor} />
+    <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+      {sites.map((site, i) => (
+        <AppCard key={site.slug} site={site} bgColor={bgColor} rank={ranked ? i + 1 : undefined} />
       ))}
     </div>
   );

@@ -1,14 +1,15 @@
 "use client";
 
-import { useRef } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Show, UserButton, useUser } from "@clerk/nextjs";
 import { Avatar } from "@/components/avatar";
 import { Watermark, AppShell, AppShellHeader, AppShellContent, APP_SHELL_HEADER_HEIGHT, FetchProgress, Tab, TabBar, ThemeButton, ThemeDialog } from "@m1kapp/kit";
 import { useFetch } from "@m1kapp/kit";
+import { ScrollRestorer, markTabNavigation } from "@m1kapp/kit/next";
+import { PWAInstallButton } from "@m1kapp/kit/pwa";
 import { ThemeProvider, useAppTheme } from "./theme-context";
-import { useState, useEffect } from "react";
 
 // m1k.app 자체 사이트 등록 slug — 하단 powered-by 뱃지에 방문자 카운터 노출
 const TRACK_SLUG = "gf";
@@ -38,17 +39,8 @@ function TabsShell({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const { bgColor, setBgColor } = useAppTheme();
   const [themeOpen, setThemeOpen] = useState(false);
-  const scrollRef = useRef<HTMLElement | null>(null);
 
   const { data: sponsor } = useFetch<{ slug: string; name: string; is1k: boolean } | null>("/api/sponsor");
-
-  useEffect(() => {
-    // Cache the scroll container ref once on mount
-    if (!scrollRef.current) {
-      scrollRef.current = document.querySelector<HTMLElement>(".tab-scroll");
-    }
-    scrollRef.current?.scrollTo({ top: 0 });
-  }, [pathname]);
 
   const tab = pathname === "/" ? "home" : pathname.slice(1).split("/")[0];
 
@@ -75,11 +67,18 @@ function TabsShell({ children }: { children: React.ReactNode }) {
                 <UserButton appearance={{ elements: { avatarBox: "w-6 h-6" } }} />
               </Show>
             </div>
-            <ThemeButton color={bgColor} onClick={() => setThemeOpen(true)} />
+            <div className="flex items-center gap-1">
+              <PWAInstallButton variant="ghost" label="m1k 앱 설치" appName="m1k" iconSrc="/icon-192.png" />
+              <ThemeButton color={bgColor} onClick={() => setThemeOpen(true)} />
+            </div>
           </AppShellHeader>
 
           {/* 백그라운드 갱신 인디케이터 — 헤더 바로 아래(세이프에어리어 포함 높이) */}
           <FetchProgress color={bgColor} top={APP_SHELL_HEADER_HEIGHT} />
+
+          <Suspense>
+            <ScrollRestorer />
+          </Suspense>
 
           <AppShellContent className="tab-scroll relative">
             {children}
@@ -95,7 +94,7 @@ function TabsShell({ children }: { children: React.ReactNode }) {
                 <Tab
                   key={t.id}
                   active={active}
-                  render={(p) => <Link href={t.href} prefetch {...p} />}
+                  render={(p) => <Link href={t.href} prefetch {...p} onClick={markTabNavigation} />}
                   activeColor={bgColor}
                   label={t.label}
                   icon={icon}

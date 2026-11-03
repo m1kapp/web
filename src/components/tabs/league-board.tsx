@@ -26,13 +26,16 @@ export function LeagueBoard({
   bgColor: string;
   onMore: () => void;
 }) {
-  // 여기 오는 사람 대부분은 아직 1K를 향해 가는 중이다 — 기본값을 1K 리그로 둔다
-  const [selected, setSelected] = useState<string>("1K");
+  // 스토어의 인기 차트라 기본은 전체 — 리그는 좁혀 볼 때 쓰는 필터다
+  const [selected, setSelected] = useState<string>(ALL);
+  const [sort, setSort] = useState<"today" | "total">("total");
 
   const { chips, rows, total } = useMemo(() => {
     // 리그는 주인이 있는 사이트만 — 아직 아무도 자기 것이라 하지 않은 사이트를
     // 순위표에 세우면 축하할 사람이 없다
-    const ranked = sites.filter((s) => s.userId).sort((a, b) => b.total - a.total);
+    const ranked = sites
+      .filter((s) => s.userId)
+      .sort((a, b) => (sort === "today" ? (b.today ?? 0) - (a.today ?? 0) : 0) || b.total - a.total);
 
     // 사이트가 없는 리그는 칩을 만들지 않는다 — 눌러도 빈 화면인 탭은 없느니만 못하다
     const counts = new Map<string, number>();
@@ -53,7 +56,7 @@ export function LeagueBoard({
       rows: matched.slice(0, VISIBLE),
       total: matched.length,
     };
-  }, [sites, selected]);
+  }, [sites, selected, sort]);
 
   return (
     <>
@@ -78,7 +81,26 @@ export function LeagueBoard({
         })}
       </div>
 
-      <div className="divide-y divide-zinc-100 dark:divide-zinc-800/70">
+      <div className="flex justify-end gap-1 text-[11px] font-bold">
+        {(
+          [
+            ["today", "오늘"],
+            ["total", "누적"],
+          ] as const
+        ).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setSort(id)}
+            aria-pressed={sort === id}
+            className={`w-12 py-1.5 text-right ${sort === id ? "text-zinc-900 dark:text-white" : "text-zinc-400"}`}
+          >
+            {label}
+            {sort === id && " ↓"}
+          </button>
+        ))}
+      </div>
+
+      <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
         {rows.map((site, i) => (
           <LeagueRow key={site.slug} site={site} rank={i + 1} bgColor={bgColor} />
         ))}
@@ -121,30 +143,20 @@ function LeagueRow({ site, rank, bgColor }: { site: RecentSite; rank: number; bg
         <p className="truncate text-[13px] font-semibold leading-tight text-zinc-800 dark:text-zinc-100" title={name}>
           {name}
         </p>
-        <p className="truncate text-[10px] leading-tight tabular-nums text-zinc-400">
-          {league.target ? `${league.label} 리그` : "1M 돌파"} · {compactNumber(site.total)}
-          {site.today ? <span className="ml-1 text-emerald-500">+{compactNumber(site.today)}</span> : null}
+        <p className="mt-0.5 truncate text-[10px] font-bold leading-tight tabular-nums" style={{ color: bgColor }}>
+          {league.target ? `${league.label} 리그 ${percent}%` : "1M 돌파 ✦"}
         </p>
       </div>
 
-      <div className="w-[68px] shrink-0 text-right">
-        {league.target ? (
-          <>
-            <span className="text-[13px] font-black tabular-nums" style={{ color: bgColor }}>
-              {percent}%
-            </span>
-            <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-              <div
-                className="h-full rounded-full transition-[width] duration-700 ease-out"
-                style={{ width: `${Math.max(percent, 2)}%`, backgroundColor: bgColor }}
-              />
-            </div>
-          </>
-        ) : (
-          <span className="text-[12px] font-black tracking-tight" style={{ color: bgColor }}>
-            ✦ MAX
-          </span>
-        )}
+      <div className="flex shrink-0 items-center gap-1 text-right tabular-nums">
+        <span
+          className={`w-12 text-[14px] font-black ${site.today ? "text-emerald-500" : "text-zinc-300 dark:text-zinc-600"}`}
+        >
+          {site.today ? `+${compactNumber(site.today)}` : "0"}
+        </span>
+        <span className="w-12 text-[14px] font-black text-zinc-900 dark:text-white">
+          {compactNumber(site.total)}
+        </span>
       </div>
     </a>
   );
