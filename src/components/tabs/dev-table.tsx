@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { RecentSite } from "@/lib/types";
 import type { SiteKitStats, SiteQuality, Bucket } from "./store-tab";
-import { GRADE_COLORS, REFERENCE_ENTRIES, QualitySheet } from "./dev-table-quality";
+import { GRADE_COLORS, REFERENCE_ENTRIES, QualitySheet, isLegacyScale } from "./dev-table-quality";
 
 // FE/BE/공용 라벨 색 — indigo·teal 동계열 + 중립 회색 (파랑/주황 보색 충돌 대신 톤 맞춤)
 const BUCKET_COLORS = { frontend: "#6366f1", backend: "#14b8a6", shared: "#a1a1aa" } as const;
@@ -50,15 +50,16 @@ function CodeLoc({ total, breakdown }: { total: number | null; breakdown: { fron
   );
 }
 
-function HealthCell({ quality, onOpen }: { quality: SiteQuality | null; onOpen: () => void }) {
+function HealthCell({ quality, legacy = false, onOpen }: { quality: SiteQuality | null; legacy?: boolean; onOpen: () => void }) {
   if (!quality) return <td className="py-2 pr-2 text-zinc-300 dark:text-zinc-600">—</td>;
   return (
     <td className="py-2 pr-2">
       <button
         onClick={onOpen}
-        className={`font-bold whitespace-nowrap tabular-nums cursor-pointer hover:underline underline-offset-2 ${GRADE_COLORS[quality.grade] ?? ""}`}
+        title={legacy ? "옛 채점 기준 — kit을 올려 다시 재기 전엔 다른 사이트와 비교할 수 없어요" : undefined}
+        className={`whitespace-nowrap tabular-nums cursor-pointer hover:underline underline-offset-2 ${legacy ? "font-medium text-zinc-400 dark:text-zinc-500" : `font-bold ${GRADE_COLORS[quality.grade] ?? ""}`}`}
       >
-        {quality.grade} {quality.score}
+        {quality.grade} {quality.score}{legacy && "*"}
       </button>
     </td>
   );
@@ -128,7 +129,7 @@ export function DevTable({ sites, stats, latest }: {
                     </span>
                   </a>
                 </td>
-                <HealthCell quality={s.quality} onOpen={() => s.quality && setOpenQuality({ name, quality: s.quality })} />
+                <HealthCell quality={s.quality} legacy={isLegacyScale(s.kitVersion)} onOpen={() => s.quality && setOpenQuality({ name, quality: s.quality })} />
                 <td className="py-2 pr-2 tabular-nums text-zinc-500 dark:text-zinc-400">
                   {s.files ?? "—"}
                 </td>
@@ -171,6 +172,7 @@ export function DevTable({ sites, stats, latest }: {
           ))}
         </tbody>
       </table>
+      <p className="mt-2 text-[10px] text-zinc-400 dark:text-zinc-500">* 옛 채점 기준(kit 0.0.38 미만). 다시 재기 전엔 비교 불가</p>
 
       {openQuality && (
         <QualitySheet name={openQuality.name} quality={openQuality.quality} onClose={() => setOpenQuality(null)} />
