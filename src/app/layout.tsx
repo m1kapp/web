@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
 import { cookies } from "next/headers";
 import { ClerkProvider } from "@clerk/nextjs";
 import { THEME_SCRIPT, ToastProvider } from "@m1kapp/kit";
@@ -11,6 +10,8 @@ import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { sites } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+// 2MB 통파일 대신 글자 범위별 조각 — 화면에 쓰인 글자의 조각만 받는다
+import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
 
 // Inlined to prevent FOUC before the external stylesheet loads
@@ -19,13 +20,6 @@ const CRITICAL_CSS = `
 .dark{--background:oklch(0.145 0 0);--foreground:oklch(0.985 0 0);--border:oklch(1 0 0/10%);--ring:oklch(0.556 0 0);--card:oklch(0.205 0 0);--muted:oklch(0.269 0 0);--accent:oklch(0.269 0 0)}
 body{margin:0;background-color:var(--background);color:var(--foreground)}
 `.trim();
-
-const pretendard = localFont({
-  src: "../../node_modules/pretendard/dist/web/variable/woff2/PretendardVariable.woff2",
-  variable: "--font-pretendard",
-  display: "optional",
-  weight: "45 920",
-});
 
 const getSelfSlug = unstable_cache(
   () => db.query.sites.findFirst({ where: eq(sites.url, "https://m1k.app"), columns: { slug: true } }),
@@ -81,10 +75,12 @@ export default async function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${pretendard.variable} h-full antialiased${isDark ? " dark" : ""}`}
+      className={`h-full antialiased${isDark ? " dark" : ""}`}
       suppressHydrationWarning
     >
       <head>
+        {/* Next는 mobile-web-app-capable만 출력한다 — 이 태그가 없으면 iOS가 스플래시를 쓰지 않는다 */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
         <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#09090b" />
         <style dangerouslySetInnerHTML={{ __html: CRITICAL_CSS }} />
@@ -95,12 +91,8 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLd.website({ name: "m1k", url: BASE_URL, description: DESCRIPTION }) }}
         />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/toss/tossface/dist/tossface.css"
-        />
       </head>
-      <body className="min-h-full h-dvh" style={{ fontFamily: 'var(--font-pretendard), system-ui, sans-serif' }} data-self-slug={self?.slug ?? ""}>
+      <body className="min-h-full h-dvh" style={{ fontFamily: '"Pretendard Variable", system-ui, sans-serif' }} data-self-slug={self?.slug ?? ""}>
         <ClerkProvider
           appearance={{
             layout: {

@@ -1,9 +1,10 @@
-"use client";
+import { getCachedRecentSites } from "@/lib/site-service";
+import StorePageClient from "./store-page-client";
 
-import { StoreTab } from "@/components/tabs/store-tab";
-import { useAppTheme } from "../theme-context";
-
-export default function StorePage() {
-  const { bgColor } = useAppTheme();
-  return <StoreTab bgColor={bgColor} />;
+export default async function StorePage() {
+  const [initialSites, initialFeatured] = await Promise.all([
+    getCachedRecentSites("total").catch(() => []),
+    getCachedRecentSites("today").catch(() => []),
+  ]);
+  return <StorePageClient initialSites={initialSites} initialFeatured={initialFeatured} />;
 }

@@ -13,9 +13,17 @@ import { StoreSiteList } from "./store-site-list";
 export type { Bucket, SiteQuality };
 export type { Sort, SiteKitStats } from "./store-tab.types";
 
-export function StoreTab({ bgColor }: { bgColor: string }) {
+export function StoreTab({
+  bgColor,
+  initialSites,
+  initialFeatured,
+}: {
+  bgColor: string;
+  initialSites: RecentSite[];
+  initialFeatured: RecentSite[];
+}) {
   const { searchQuery, setSearchQuery, sort, setSort, devMode, setDevMode, sites, searching, kitStats } =
-    useStoreSites();
+    useStoreSites(initialSites);
 
   return (
     <div className="py-3">
@@ -45,7 +53,7 @@ export function StoreTab({ bgColor }: { bgColor: string }) {
         />
       </div>
 
-      {!searchQuery && !devMode && <Featured />}
+      {!searchQuery && !devMode && <Featured initial={initialFeatured} />}
 
       {/* 정렬 + dev 토글 */}
       <div className="mx-4 mb-1 flex items-center gap-2">
@@ -95,9 +103,9 @@ export function StoreTab({ bgColor }: { bgColor: string }) {
 }
 
 /** 앱스토어의 투데이 자리 — 오늘 방문 상위 앱을 스크린샷(OG 이미지)과 함께 크게 보여준다 */
-function Featured() {
+function Featured({ initial }: { initial: RecentSite[] }) {
   const { data } = useFetch<RecentSite[]>("/api/sites/recent?sort=today", { staleTime: 60 * 1000 });
-  const featured = (data ?? []).filter((s) => s.userId && s.ogImage && s.today).slice(0, 5);
+  const featured = (data ?? initial).filter((s) => s.userId && s.ogImage && s.today).slice(0, 5);
 
   if (!featured.length) return null;
 
@@ -117,15 +125,17 @@ function FeaturedCard({ site }: { site: RecentSite }) {
   return (
     <a href={`/${site.slug}`} className="w-[82%] shrink-0 snap-start">
       <span className="block aspect-[1.91/1] overflow-hidden rounded-2xl bg-zinc-100 dark:bg-zinc-800">
-        {/* 남의 사이트 이미지라 도메인을 미리 알 수 없다 — next/image 대신 img, 깨지면 숨긴다 */}
+        {/* 축소본을 먼저 쓰고, 실패하면 원본, 원본도 깨지면 숨긴다 */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={site.ogImage ?? undefined}
+          src={`/api/og-thumb/${site.slug}`}
           alt=""
           loading="lazy"
           className="h-full w-full object-cover"
           onError={(e) => {
-            e.currentTarget.style.display = "none";
+            const original = site.ogImage ?? "";
+            if (original && e.currentTarget.src !== original) e.currentTarget.src = original;
+            else e.currentTarget.style.display = "none";
           }}
         />
       </span>
