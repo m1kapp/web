@@ -56,8 +56,8 @@ export function HomeTab({
       <div className="px-4 pb-6">
         <div className="rounded-2xl p-4 text-white" style={{ backgroundColor: bgColor }}>
           <div className="grid grid-cols-2 divide-x divide-white/20">
-            <Counter label="TODAY" value={loading ? "–" : todayTotal.toLocaleString()} />
-            <Counter label="TOTAL" value={loading ? "–" : allTotal.toLocaleString()} />
+            <Counter label="TODAY" value={loading ? "–" : todayTotal.toLocaleString("ko-KR")} />
+            <Counter label="TOTAL" value={loading ? "–" : allTotal.toLocaleString("ko-KR")} />
           </div>
           <p className="mt-3 text-center text-[11px] text-white/60">
             {loading ? " " : `앱 ${compactNumber(owned.length)}개 · 1K 돌파 ${compactNumber(graduated)}개`}

@@ -9,7 +9,8 @@ import {
   dailyHourStats,
 } from "@/lib/db/schema";
 import { sql, desc, ilike, or, eq, and } from "drizzle-orm";
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
+import { unstable_cache } from "next/cache";
 import { todayKST } from "@/lib/format";
 import { getBufferedMap } from "@/lib/hit-buffer";
 import type { RecentSite } from "@/lib/types";
@@ -77,35 +78,23 @@ export async function fetchRecentSites({
   const buffered = await getBufferedMap(result.map((s) => s.id), todayStr);
   for (const s of result) {
     const b = buffered.get(s.id);
-    if (b) {
-      s.total = Number(s.total) + b.total;
-      s.today = Number(s.today) + b.today;
-    }
+    // Postgres sum()은 문자열로 온다 — 버퍼가 없는 사이트도 숫자로 맞춘다
+    s.total = Number(s.total) + (b?.total ?? 0);
+    s.today = Number(s.today) + (b?.today ?? 0);
   }
   // 버퍼를 더한 뒤라 방문 기준 정렬은 여기서 다시 세운다. 등록순은 버퍼와 무관해 DB 순서를 그대로 둔다.
-  if (sort === "today") result.sort((a, b) => Number(b.today) - Number(a.today) || Number(b.total) - Number(a.total));
-  else if (sort !== "recent") result.sort((a, b) => Number(b.total) - Number(a.total));
+  if (sort === "today") result.sort((a, b) => b.today - a.today || b.total - a.total);
+  else if (sort !== "recent") result.sort((a, b) => b.total - a.total);
 
-  const userIds = [...new Set(result.map((s) => s.userId).filter(Boolean))] as string[];
-  const userMap: Record<string, { name: string; imageUrl: string }> = {};
-
-  if (userIds.length > 0) {
-    try {
-      const client = await clerkClient();
-      const users = await client.users.getUserList({ userId: userIds, limit: 100 });
-      for (const u of users.data) {
-        userMap[u.id] = { name: u.firstName || u.username || "", imageUrl: u.imageUrl };
-      }
-    } catch (e) {
-      console.error("[fetchRecentSites] clerk user fetch failed:", e);
-    }
-  }
-
-  return result.map(({ id: _id, ...s }) => ({
-    ...s,
-    owner: s.userId && userMap[s.userId] ? userMap[s.userId] : null,
-  }));
+  return result.map(({ id: _id, ...s }) => s);
 }
+
+/** 서버 렌더용 — 첫 화면에 숫자를 바로 그리되 요청마다 DB를 치지 않는다 */
+export const getCachedRecentSites = unstable_cache(
+  (sort: "total" | "today") => fetchRecentSites({ sort }),
+  ["recent-sites"],
+  { revalidate: 30 },
+);
 
 /** slug로 사이트 단건 조회 */
 export async function findSiteBySlug(slug: string): Promise<Site | undefined> {

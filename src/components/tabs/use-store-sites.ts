@@ -10,7 +10,7 @@ import type { KitStatsPayload, Sort } from "./store-tab.types";
  * 렌더에서 분리해 둔 이유: 이 파일은 자주 바뀌는데(churn 26) 쿼리 하나 고치려고
  * JSX 전체를 읽을 필요가 없어야 한다.
  */
-export function useStoreSites() {
+export function useStoreSites(initialSites: RecentSite[]) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sort, setSort] = useState<Sort>("total");
   const [devMode, setDevMode] = useLocalStorage("m1k:store-dev-mode", false);
@@ -26,5 +26,8 @@ export function useStoreSites() {
     staleTime: 5 * 60 * 1000,
   });
 
-  return { searchQuery, setSearchQuery, sort, setSort, devMode, setDevMode, sites, searching, kitStats };
+  // 서버가 그려 준 기본 목록 — 다른 정렬·검색엔 쓰지 않는다
+  const shown = sites ?? (sort === "total" && !debouncedQuery ? initialSites : undefined);
+
+  return { searchQuery, setSearchQuery, sort, setSort, devMode, setDevMode, sites: shown, searching, kitStats };
 }
