@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { RecentSite } from "@/lib/types";
 import type { SiteKitStats, SiteQuality, Bucket } from "./store-tab";
+import { compactNumber } from "@/lib/format";
 import { GRADE_COLORS, REFERENCE_ENTRIES, QualitySheet, isLegacyScale } from "./dev-table-quality";
 
 // FE/BE/공용 라벨 색 — indigo·teal 동계열 + 중립 회색 (파랑/주황 보색 충돌 대신 톤 맞춤)
@@ -71,8 +72,7 @@ const COLS = {
   health: "56px",
   files: "32px",
   code: "88px",
-  perFile: "46px",
-  kit: "34px",
+  kit: "46px",
 };
 
 function TableHead() {
@@ -85,8 +85,7 @@ function TableHead() {
         <th className="text-left font-medium py-1.5 pr-2 whitespace-nowrap" style={{ width: COLS.code }}>
           줄 <span style={{ color: BUCKET_COLORS.frontend }}>FE</span>/<span style={{ color: BUCKET_COLORS.backend }}>BE</span>/<span style={{ color: BUCKET_COLORS.shared }}>공용</span>
         </th>
-        <th className="text-right font-medium py-1.5 pr-2 whitespace-nowrap" style={{ width: COLS.perFile }}>줄/파일</th>
-        <th className="text-right font-medium py-1.5 whitespace-nowrap" style={{ width: COLS.kit }}>kit</th>
+        <th className="text-right font-medium py-1.5 whitespace-nowrap" style={{ width: COLS.kit }}>kit 절약</th>
       </tr>
     </thead>
   );
@@ -110,7 +109,7 @@ export function DevTable({ sites, stats, latest }: {
 
   return (
     <div className="overflow-x-auto -mx-4 px-4 pb-2">
-      <table className="text-[11px] font-mono border-collapse" style={{ width: "386px", tableLayout: "fixed" }}>
+      <table className="text-[11px] font-mono border-collapse" style={{ width: "352px", tableLayout: "fixed" }}>
         <TableHead />
         <tbody>
           {withStats.map(({ site, s }) => {
@@ -134,11 +133,8 @@ export function DevTable({ sites, stats, latest }: {
                   {s.files ?? "—"}
                 </td>
                 <td className="py-2 pr-2"><CodeLoc total={s.codeLines} breakdown={s.breakdown} /></td>
-                <td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
-                  {s.quality?.avgFileLines ?? "—"}
-                </td>
                 <td className="py-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
-                  {s.savedPercent != null ? `${s.savedPercent}%` : "—"}
+                  {s.savedLines ? `+${compactNumber(s.savedLines)}` : "—"}
                 </td>
               </tr>
             );
@@ -146,7 +142,7 @@ export function DevTable({ sites, stats, latest }: {
 
           {/* 참고 — 외부 오픈소스 벤치마크, 별도 구획 */}
           <tr>
-            <td colSpan={6} className="pt-3 pb-1 pr-2 sticky left-0 z-10 bg-white dark:bg-zinc-950 text-[9px] text-zinc-300 dark:text-zinc-600 tracking-wide">
+            <td colSpan={5} className="pt-3 pb-1 pr-2 sticky left-0 z-10 bg-white dark:bg-zinc-950 text-[9px] text-zinc-300 dark:text-zinc-600 tracking-wide">
               ── 참고 (외부 OSS) ──
             </td>
           </tr>
@@ -164,9 +160,6 @@ export function DevTable({ sites, stats, latest }: {
               <HealthCell quality={r.quality} onOpen={() => setOpenQuality({ name: r.name, quality: r.quality })} />
               <td className="py-2 pr-2 tabular-nums text-zinc-500 dark:text-zinc-400">{r.files}</td>
               <td className="py-2 pr-2"><CodeLoc total={r.codeLines} breakdown={r.breakdown} /></td>
-              <td className="py-2 pr-2 text-right tabular-nums text-zinc-500 dark:text-zinc-400">
-                {r.quality.avgFileLines ?? "—"}
-              </td>
               <td className="py-2 text-right tabular-nums text-zinc-300 dark:text-zinc-600">—</td>
             </tr>
           ))}
