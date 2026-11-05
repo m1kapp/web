@@ -14,7 +14,6 @@ export interface KitSiteStats {
   files: number | null;
   codeLines: number | null;
   breakdown: { frontend: KitBucket; backend: KitBucket; shared: KitBucket } | null;
-  savedPercent: number | null;
   savedLines: number | null;
   savedFiles: number | null;
   quality: { score: number; grade: string } | null;
@@ -90,9 +89,9 @@ export function KitCodeSection({ s, latest }: { s: KitSiteStats; latest: string 
         </table>
       </div>
 
-      {s.savedPercent != null && (
+      {s.savedLines != null && (
         <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5">
-          kit이 없었다면 약 <span style={{ color: accent }}>{s.savedLines?.toLocaleString()}줄·{s.savedFiles}파일</span>을 직접 만들었을 것 (전체의 {s.savedPercent}%)
+          kit이 없었다면 약 <span style={{ color: accent }}>{s.savedLines?.toLocaleString()}줄·{s.savedFiles}파일</span>을 직접 만들었을 것
         </p>
       )}
     </div>

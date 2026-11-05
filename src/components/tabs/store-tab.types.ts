@@ -13,7 +13,7 @@ export interface SiteKitStats {
   files: number | null;
   codeLines: number | null;
   breakdown: { frontend: Bucket; backend: Bucket; shared: Bucket } | null;
-  savedPercent: number | null;
+  savedLines: number | null;
   quality: SiteQuality | null;
 }
 
