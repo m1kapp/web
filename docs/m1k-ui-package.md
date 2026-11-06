@@ -89,7 +89,6 @@ export default function App() {
 | 컴포넌트 | 설명 |
 |---------|------|
 | `Accordion` | 접이식 아코디언 (grid 애니메이션) |
-| `CodeSnippet` | 복사 가능한 코드 블록 |
 
 ## 테마
 
