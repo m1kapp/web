@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useCopy } from "@m1kapp/kit";
 import { useRouter } from "next/navigation";
 import { useAppTheme } from "../theme-context";
 
@@ -42,18 +43,10 @@ curl -s -X POST ${origin}/api/sites/cli \\
 }
 
 function CopyButton({ text, label = "복사" }: { text: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopy(1500);
   return (
     <button
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        } catch {
-          /* clipboard 거부 시 무시 */
-        }
-      }}
+      onClick={() => copy(text)}
       className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-zinc-900 dark:bg-white dark:text-zinc-900 hover:opacity-90 transition-opacity"
     >
       {copied ? "복사됨 ✓" : label}

@@ -1,15 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCopy } from "@m1kapp/kit";
 
 export function CodeSnippet({ label, code }: { label: string; code: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
+  const { copied, copy } = useCopy();
+  const handleCopy = () => copy(code);
 
   return (
     <div

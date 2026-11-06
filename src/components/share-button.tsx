@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useCopy, useShare } from "@m1kapp/kit";
 import { appHost } from "@/lib/utils";
 
 export function ShareButton({ slug, title }: { slug: string; title: string }) {
   const [showMenu, setShowMenu] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopy();
+  const { share, canNativeShare } = useShare();
   const url = `https://${appHost()}/${slug}`;
 
-  async function handleCopyLink() {
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  function handleCopyLink() {
+    copy(url);
     setShowMenu(false);
   }
 
@@ -24,9 +24,7 @@ export function ShareButton({ slug, title }: { slug: string; title: string }) {
   }
 
   function handleNativeShare() {
-    if (navigator.share) {
-      navigator.share({ title: `${title} | m1k`, url });
-    }
+    share({ title: `${title} | m1k`, url });
     setShowMenu(false);
   }
 
@@ -67,7 +65,7 @@ export function ShareButton({ slug, title }: { slug: string; title: string }) {
               </svg>
               X(트위터) 공유
             </button>
-            {typeof navigator !== "undefined" && "share" in navigator && (
+            {canNativeShare && (
               <button
                 onClick={handleNativeShare}
                 className="w-full text-left px-3 py-2.5 text-xs text-zinc-600 hover:bg-zinc-50 transition-colors flex items-center gap-2"
