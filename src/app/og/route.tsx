@@ -21,6 +21,10 @@ const DEFAULT_OGIMAGE = (
 );
 
 const OG_SIZE = { width: 1200, height: 630 };
+// req.url 을 읽어 동적 라우트라 위 revalidate 는 안 먹고, ImageResponse 기본값은
+// max-age=0 이다 — 요청마다 이미지를 새로 그려 CPU 를 태운다(로컬 실측 ~350ms/건).
+// revalidate 가 뜻한 1시간을 CDN 캐시로 직접 건다.
+const OG_HEADERS = { "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400" };
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -50,10 +54,10 @@ export async function GET(req: Request) {
           bg="gradient"
           domain="m1k.app"
         />,
-        { ...OG_SIZE, fonts }
+        { ...OG_SIZE, fonts, headers: OG_HEADERS }
       );
     }
   }
 
-  return new ImageResponse(DEFAULT_OGIMAGE, { ...OG_SIZE, fonts });
+  return new ImageResponse(DEFAULT_OGIMAGE, { ...OG_SIZE, fonts, headers: OG_HEADERS });
 }
