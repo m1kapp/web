@@ -20,13 +20,16 @@ export type Site = typeof sites.$inferSelect;
 export interface FetchRecentSitesOptions {
   q?: string;
   sort?: "total" | "today" | "recent";
+  /** `today` 칸을 이 날(KST, YYYY-MM-DD) 방문 수로 채운다. 기본은 오늘 */
+  date?: string;
 }
 
 export async function fetchRecentSites({
   q = "",
   sort = "total",
+  date,
 }: FetchRecentSitesOptions = {}): Promise<RecentSite[]> {
-  const todayStr = todayKST();
+  const todayStr = date ?? todayKST();
 
   const totalExpr = sql<number>`coalesce(sum(${hits.count}), 0)`;
   const todayExpr = sql<number>`coalesce(sum(case when ${hits.date} = ${todayStr} then ${hits.count} else 0 end), 0)`;
