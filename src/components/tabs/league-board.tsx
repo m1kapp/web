@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { SectionHeader } from "@m1kapp/kit";
 import { compactNumber } from "@/lib/format";
 import { leagueOf, LEAGUE_TARGETS } from "@/lib/league";
 import { slugToColor } from "@/lib/site-color";
@@ -29,13 +30,16 @@ export function LeagueBoard({
   // 스토어의 인기 차트라 기본은 전체 — 리그는 좁혀 볼 때 쓰는 필터다
   const [selected, setSelected] = useState<string>(ALL);
   const [sort, setSort] = useState<"today" | "total">("total");
+  // 0 = 오늘, 1 = 어제. 서버가 이틀치만 주니 그 사이만 오간다.
+  const [daysAgo, setDaysAgo] = useState<0 | 1>(0);
+  const dayCount = (s: RecentSite) => (daysAgo ? s.yesterday : s.today) ?? 0;
 
   const { chips, rows, total } = useMemo(() => {
     // 리그는 주인이 있는 사이트만 — 아직 아무도 자기 것이라 하지 않은 사이트를
     // 순위표에 세우면 축하할 사람이 없다
     const ranked = sites
       .filter((s) => s.userId)
-      .sort((a, b) => (sort === "today" ? (b.today ?? 0) - (a.today ?? 0) : 0) || b.total - a.total);
+      .sort((a, b) => (sort === "today" ? dayCount(b) - dayCount(a) : 0) || b.total - a.total);
 
     // 사이트가 없는 리그는 칩을 만들지 않는다 — 눌러도 빈 화면인 탭은 없느니만 못하다
     const counts = new Map<string, number>();
@@ -56,10 +60,18 @@ export function LeagueBoard({
       rows: matched.slice(0, VISIBLE),
       total: matched.length,
     };
-  }, [sites, selected, sort]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dayCount는 daysAgo로만 바뀐다
+  }, [sites, selected, sort, daysAgo]);
+
+  const dayLabel = daysAgo ? "어제" : "오늘";
 
   return (
     <>
+      <div className="flex items-center justify-between">
+        <SectionHeader>인기 차트</SectionHeader>
+        <DayStepper daysAgo={daysAgo} onChange={setDaysAgo} />
+      </div>
+
       <div className="mb-2 flex gap-1.5 overflow-x-auto scrollbar-hide">
         {chips.map((chip) => {
           const active = chip.id === selected;
@@ -84,7 +96,7 @@ export function LeagueBoard({
       <div className="flex justify-end gap-1 text-[11px] font-bold">
         {(
           [
-            ["today", "오늘"],
+            ["today", dayLabel],
             ["total", "누적"],
           ] as const
         ).map(([id, label]) => (
@@ -102,7 +114,7 @@ export function LeagueBoard({
 
       <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
         {rows.map((site, i) => (
-          <LeagueRow key={site.slug} site={site} rank={i + 1} bgColor={bgColor} />
+          <LeagueRow key={site.slug} site={site} rank={i + 1} bgColor={bgColor} dayCount={dayCount(site)} />
         ))}
       </div>
 
@@ -122,7 +134,26 @@ export function LeagueBoard({
   );
 }
 
-function LeagueRow({ site, rank, bgColor }: { site: RecentSite; rank: number; bgColor: string }) {
+/** 우상단 날짜 — ‹ 로 어제, › 로 오늘 */
+function DayStepper({ daysAgo, onChange }: { daysAgo: 0 | 1; onChange: (d: 0 | 1) => void }) {
+  const [now] = useState(Date.now);
+  const date = new Date(now - daysAgo * 86_400_000).toLocaleDateString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+  });
+  const arrow = "flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 disabled:opacity-25 disabled:hover:bg-transparent dark:hover:bg-zinc-800";
+  return (
+    <div className="flex items-center gap-0.5 text-[11px] font-bold tabular-nums text-zinc-500 dark:text-zinc-400">
+      <button className={arrow} onClick={() => onChange(1)} disabled={daysAgo === 1} aria-label="어제 보기">‹</button>
+      <span className="min-w-[72px] text-center">{date}</span>
+      <button className={arrow} onClick={() => onChange(0)} disabled={daysAgo === 0} aria-label="오늘 보기">›</button>
+    </div>
+  );
+}
+
+function LeagueRow({ site, rank, bgColor, dayCount }: { site: RecentSite; rank: number; bgColor: string; dayCount: number }) {
   const league = leagueOf(site.total);
   const name = site.ogTitle || site.title || site.slug;
   const color = site.color || slugToColor(site.slug);
@@ -150,9 +181,9 @@ function LeagueRow({ site, rank, bgColor }: { site: RecentSite; rank: number; bg
 
       <div className="flex shrink-0 items-center gap-1 text-right tabular-nums">
         <span
-          className={`w-12 text-[14px] font-black ${site.today ? "text-emerald-500" : "text-zinc-300 dark:text-zinc-600"}`}
+          className={`w-12 text-[14px] font-black ${dayCount ? "text-emerald-500" : "text-zinc-300 dark:text-zinc-600"}`}
         >
-          {site.today ? `+${compactNumber(site.today)}` : "0"}
+          {dayCount ? `+${compactNumber(dayCount)}` : "0"}
         </span>
         <span className="w-12 text-[14px] font-black text-zinc-900 dark:text-white">
           {compactNumber(site.total)}

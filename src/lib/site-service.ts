@@ -27,9 +27,11 @@ export async function fetchRecentSites({
   sort = "total",
 }: FetchRecentSitesOptions = {}): Promise<RecentSite[]> {
   const todayStr = todayKST();
+  const yesterdayStr = todayKST(new Date(Date.now() - 86_400_000));
 
   const totalExpr = sql<number>`coalesce(sum(${hits.count}), 0)`;
   const todayExpr = sql<number>`coalesce(sum(case when ${hits.date} = ${todayStr} then ${hits.count} else 0 end), 0)`;
+  const yesterdayExpr = sql<number>`coalesce(sum(case when ${hits.date} = ${yesterdayStr} then ${hits.count} else 0 end), 0)`;
 
   const whereCondition = q
     ? and(
@@ -56,6 +58,7 @@ export async function fetchRecentSites({
       userId: sites.userId,
       total: totalExpr,
       today: todayExpr,
+      yesterday: yesterdayExpr,
       createdAt: sites.createdAt,
     })
     .from(sites)
@@ -81,6 +84,7 @@ export async function fetchRecentSites({
     // Postgres sum()은 문자열로 온다 — 버퍼가 없는 사이트도 숫자로 맞춘다
     s.total = Number(s.total) + (b?.total ?? 0);
     s.today = Number(s.today) + (b?.today ?? 0);
+    s.yesterday = Number(s.yesterday);
   }
   // 버퍼를 더한 뒤라 방문 기준 정렬은 여기서 다시 세운다. 등록순은 버퍼와 무관해 DB 순서를 그대로 둔다.
   if (sort === "today") result.sort((a, b) => b.today - a.today || b.total - a.total);

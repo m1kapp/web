@@ -80,7 +80,6 @@ export function HomeTab({
 
       {recentSites.length > 0 && (
         <div className="px-4 pb-2">
-          <SectionHeader>인기 차트</SectionHeader>
           <LeagueBoard sites={recentSites} bgColor={bgColor} onMore={onBrowseApps} />
         </div>
       )}
