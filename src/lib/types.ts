@@ -4,8 +4,6 @@ export interface RecentSite {
   url: string | null;
   total: number;
   today?: number;
-  /** 어제(KST) 방문 — 인기 차트에서 하루 전으로 넘겨 볼 때 */
-  yesterday?: number;
   ogTitle: string | null;
   ogDescription: string | null;
   ogImage: string | null;

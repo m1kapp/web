@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SectionHeader } from "@m1kapp/kit";
+import { SectionHeader, kstToday, useFetch } from "@m1kapp/kit";
 import { compactNumber } from "@/lib/format";
 import { leagueOf, LEAGUE_TARGETS } from "@/lib/league";
 import { slugToColor } from "@/lib/site-color";
@@ -30,16 +30,23 @@ export function LeagueBoard({
   // 스토어의 인기 차트라 기본은 전체 — 리그는 좁혀 볼 때 쓰는 필터다
   const [selected, setSelected] = useState<string>(ALL);
   const [sort, setSort] = useState<"today" | "total">("total");
-  // 0 = 오늘, 1 = 어제. 서버가 이틀치만 주니 그 사이만 오간다.
-  const [daysAgo, setDaysAgo] = useState<0 | 1>(0);
-  const dayCount = (s: RecentSite) => (daysAgo ? s.yesterday : s.today) ?? 0;
+  // 우상단 날짜 — 0이면 오늘(받은 sites 그대로), 지난 날은 그날 기준으로 다시 받는다
+  const [now] = useState(Date.now);
+  const [daysAgo, setDaysAgo] = useState(0);
+  const dateMs = now - daysAgo * 86_400_000;
+  const { data: pastSites, loading } = useFetch<RecentSite[]>(
+    daysAgo ? `/api/sites/recent?sort=total&date=${kstToday(dateMs)}` : null,
+    { staleTime: 5 * 60 * 1000 },
+  );
+  const source = daysAgo ? (pastSites ?? sites) : sites;
+  const pending = daysAgo > 0 && loading && !pastSites;
 
   const { chips, rows, total } = useMemo(() => {
     // 리그는 주인이 있는 사이트만 — 아직 아무도 자기 것이라 하지 않은 사이트를
     // 순위표에 세우면 축하할 사람이 없다
-    const ranked = sites
+    const ranked = source
       .filter((s) => s.userId)
-      .sort((a, b) => (sort === "today" ? dayCount(b) - dayCount(a) : 0) || b.total - a.total);
+      .sort((a, b) => (sort === "today" ? (b.today ?? 0) - (a.today ?? 0) : 0) || b.total - a.total);
 
     // 사이트가 없는 리그는 칩을 만들지 않는다 — 눌러도 빈 화면인 탭은 없느니만 못하다
     const counts = new Map<string, number>();
@@ -60,16 +67,15 @@ export function LeagueBoard({
       rows: matched.slice(0, VISIBLE),
       total: matched.length,
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- dayCount는 daysAgo로만 바뀐다
-  }, [sites, selected, sort, daysAgo]);
+  }, [source, selected, sort]);
 
-  const dayLabel = daysAgo ? "어제" : "오늘";
+  const dayLabel = daysAgo === 0 ? "오늘" : daysAgo === 1 ? "어제" : `${daysAgo}일 전`;
 
   return (
     <>
       <div className="flex items-center justify-between">
         <SectionHeader>인기 차트</SectionHeader>
-        <DayStepper daysAgo={daysAgo} onChange={setDaysAgo} />
+        <DayStepper dateMs={dateMs} daysAgo={daysAgo} onChange={setDaysAgo} />
       </div>
 
       <div className="mb-2 flex gap-1.5 overflow-x-auto scrollbar-hide">
@@ -112,9 +118,9 @@ export function LeagueBoard({
         ))}
       </div>
 
-      <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+      <div className={`divide-y divide-zinc-100 transition-opacity dark:divide-zinc-800 ${pending ? "opacity-40" : ""}`}>
         {rows.map((site, i) => (
-          <LeagueRow key={site.slug} site={site} rank={i + 1} bgColor={bgColor} dayCount={dayCount(site)} />
+          <LeagueRow key={site.slug} site={site} rank={i + 1} bgColor={bgColor} dayCount={site.today ?? 0} />
         ))}
       </div>
 
@@ -134,10 +140,9 @@ export function LeagueBoard({
   );
 }
 
-/** 우상단 날짜 — ‹ 로 어제, › 로 오늘 */
-function DayStepper({ daysAgo, onChange }: { daysAgo: 0 | 1; onChange: (d: 0 | 1) => void }) {
-  const [now] = useState(Date.now);
-  const date = new Date(now - daysAgo * 86_400_000).toLocaleDateString("ko-KR", {
+/** 우상단 날짜 — ‹ 하루 전, › 하루 뒤(오늘까지) */
+function DayStepper({ dateMs, daysAgo, onChange }: { dateMs: number; daysAgo: number; onChange: (d: number) => void }) {
+  const date = new Date(dateMs).toLocaleDateString("ko-KR", {
     timeZone: "Asia/Seoul",
     month: "numeric",
     day: "numeric",
@@ -146,9 +151,9 @@ function DayStepper({ daysAgo, onChange }: { daysAgo: 0 | 1; onChange: (d: 0 | 1
   const arrow = "flex h-6 w-6 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 disabled:opacity-25 disabled:hover:bg-transparent dark:hover:bg-zinc-800";
   return (
     <div className="flex items-center gap-0.5 text-[11px] font-bold tabular-nums text-zinc-500 dark:text-zinc-400">
-      <button className={arrow} onClick={() => onChange(1)} disabled={daysAgo === 1} aria-label="어제 보기">‹</button>
+      <button className={arrow} onClick={() => onChange(daysAgo + 1)} aria-label="하루 전">‹</button>
       <span className="min-w-[72px] text-center">{date}</span>
-      <button className={arrow} onClick={() => onChange(0)} disabled={daysAgo === 0} aria-label="오늘 보기">›</button>
+      <button className={arrow} onClick={() => onChange(daysAgo - 1)} disabled={daysAgo === 0} aria-label="하루 뒤">›</button>
     </div>
   );
 }
